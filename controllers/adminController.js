@@ -2,7 +2,8 @@
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 
-exports.showUsers = async (req, res) => {
+// ✅ Renamed from showUsers → listUsers to match router
+exports.listUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ username: 1 }).lean();
     res.render('admin_users', { users });
@@ -64,6 +65,31 @@ exports.deleteUser = async (req, res) => {
     res.redirect('/admin/users');
   } catch (err) {
     console.error('Error deleting user:', err);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+// ✅ You must add these missing functions to fix the crash
+exports.viewLogs = async (req, res) => {
+  try {
+    const logs = await AuditLog.find().sort({ createdAt: -1 }).lean();
+    res.render('logs', { logs });
+  } catch (err) {
+    console.error('Error fetching logs:', err);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+exports.downloadLogs = async (req, res) => {
+  try {
+    const logs = await AuditLog.find().sort({ createdAt: -1 }).lean();
+    const logText = logs.map(log => `${log.createdAt} - ${log.action} by ${log.performedBy}`).join('\n');
+    
+    res.setHeader('Content-disposition', 'attachment; filename=audit-logs.txt');
+    res.setHeader('Content-type', 'text/plain');
+    res.send(logText);
+  } catch (err) {
+    console.error('Error downloading logs:', err);
     res.status(500).send('Internal Server Error');
   }
 };
