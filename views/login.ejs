@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔐 Smart Building Login</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --primary: #3f51b5;
+      --accent: #5c6bc0;
+      --white: #ffffff;
+      --text: #222;
+      --input-bg: rgba(255, 255, 255, 0.15);
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    [data-theme="dark"] {
+      --primary: #1e1e2f;
+      --accent: #2d2d4f;
+      --white: #f0f0f0;
+      --text: #ffffff;
+      --input-bg: rgba(255,255,255,0.1);
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.15);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.4s ease;
+    }
+
+    .login-box {
+      backdrop-filter: blur(20px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 2.2rem 2.6rem;
+      width: 95%;
+      max-width: 420px;
+      color: var(--white);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.7s ease-in;
+      position: relative;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      color: var(--white);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto 1.2rem;
+      width: 60px;
+      height: 60px;
+    }
+
+    .login-box h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 1.9rem;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 1.4rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.95rem 1rem;
+      padding-left: 2.8rem;
+      border-radius: 12px;
+      border: none;
+      background: var(--input-bg);
+      color: var(--white);
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .form-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ccc;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      background-color: #ffffff;
+      color: var(--primary);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .error-message {
+      color: #ff5f5f;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      animation: bounce 0.4s ease;
+    }
+
+    .success-message {
+      text-align: center;
+      color: #00ffcc;
+      font-weight: bold;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    .extra-links {
+      text-align: center;
+      margin-top: 1.2rem;
+    }
+
+    .extra-links a {
+      color: var(--white);
+      text-decoration: underline;
+      margin: 0 12px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 500px) {
+      .login-box {
+        padding: 2rem 1.4rem;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes bounce {
+      0% { transform: translateY(-4px); }
+      50% { transform: translateY(3px); }
+      100% { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="dark-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+      <i class="fas fa-moon"></i>
+    </div>
+
+    <img src="https://img.icons8.com/ios-filled/100/ffffff/smart-home-automation.png" class="logo" alt="logo" />
+    <h2>Smart Building Login</h2>
+
+    <% if (error) { %>
+      <div class="error-message">❌ <%= error %></div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="success-message">✅ <%= success %></div>
+      <script>
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
+      </script>
+    <% } %>
+
+    <form method="POST" action="/login" onsubmit="return validateLogin()">
+      <div class="form-group">
+        <i class="fas fa-user"></i>
+        <input type="text" name="username" id="username" placeholder="Username" required />
+      </div>
+
+      <div class="form-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="password" id="passwordInput" placeholder="Password" required />
+        <span class="toggle-password" onclick="togglePassword()">
+          <i class="fas fa-eye"></i>
+        </span>
+      </div>
+
+      <button type="submit">Login</button>
+    </form>
+
+    <div class="extra-links">
+      <a href="/forgot">Forgot Password?</a>
+      <a href="/register">Register</a>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('passwordInput');
+      const icon = document.querySelector('.toggle-password i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+
+    function validateLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('passwordInput').value.trim();
+
+      if (!username || !password) {
+        alert("Please fill in both fields.");
+        return false;
+      }
+
+      if (password.length < 4) {
+        alert("Password must be at least 4 characters.");
+        return false;
+      }
+
+      return true;
+    }
+  </script>
+</body>
+</html>

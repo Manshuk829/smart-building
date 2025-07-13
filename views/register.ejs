@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>👤 Register - Smart Building</title>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --primary: #00b4db;
+      --accent: #0083b0;
+      --white: #fff;
+      --text: #222;
+      --input-bg: rgba(255,255,255,0.2);
+      --glass-bg: rgba(255,255,255,0.08);
+      --glass-border: rgba(255,255,255,0.25);
+    }
+
+    [data-theme="dark"] {
+      --primary: #1e1e2f;
+      --accent: #003a52;
+      --white: #f0f0f0;
+      --text: #ffffff;
+      --input-bg: rgba(255,255,255,0.1);
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.15);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      transition: background 0.3s;
+    }
+
+    .register-box {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 2rem 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      color: var(--white);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      animation: fadeIn 0.6s ease;
+      position: relative;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      padding-left: 2.8rem;
+      border-radius: 12px;
+      border: none;
+      background: var(--input-bg);
+      color: var(--white);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .form-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ccc;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #ccc;
+    }
+
+    select option {
+      background: var(--white);
+      color: var(--text);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      background-color: var(--white);
+      color: var(--accent);
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .login-link a {
+      color: var(--white);
+      font-size: 0.9rem;
+      text-decoration: underline;
+    }
+
+    .error-message {
+      text-align: center;
+      color: #ff8080;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      animation: bounce 0.4s ease;
+    }
+
+    .success-message {
+      text-align: center;
+      color: #00ffcc;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      animation: successFade 0.6s ease-in-out;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      color: white;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0% { transform: translateY(-5px); }
+      50% { transform: translateY(3px); }
+      100% { transform: translateY(0); }
+    }
+
+    @keyframes successFade {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-box">
+    <div class="dark-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+      <i class="fas fa-moon"></i>
+    </div>
+
+    <h2>👤 Guest Registration</h2>
+
+    <% if (error) { %>
+      <div class="error-message">❌ <%= error %></div>
+    <% } else if (success) { %>
+      <div class="success-message">✅ <%= success %></div>
+      <script>
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 3000);
+      </script>
+    <% } %>
+
+    <form method="POST" action="/register" onsubmit="return validateForm()">
+      <div class="form-group">
+        <i class="fas fa-user"></i>
+        <input type="text" name="username" id="username" placeholder="Username" required />
+      </div>
+
+      <div class="form-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="password" id="regPassword" placeholder="Password" required />
+        <span class="toggle-password" onclick="togglePassword()">
+          <i class="fas fa-eye"></i>
+        </span>
+      </div>
+
+      <div class="form-group">
+        <i class="fas fa-user-shield"></i>
+        <select name="role" id="role" required>
+          <option value="" disabled selected>Choose Role</option>
+          <option value="admin">Admin</option>
+          <option value="guest">Guest</option>
+        </select>
+      </div>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <div class="login-link">
+      Already have an account? <a href="/login">Login here</a>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('regPassword');
+      const icon = document.querySelector('.toggle-password i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+
+    function validateForm() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      const role = document.getElementById('role').value;
+
+      if (!username || !password || !role) {
+        alert("Please fill in all fields and select a role.");
+        return false;
+      }
+
+      if (password.length < 4) {
+        alert("Password must be at least 4 characters.");
+        return false;
+      }
+
+      return true;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📡 Live Sensor Monitoring</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg-color: #eef2f7;
+      --text-color: #2c3e50;
+      --card-bg: #fff;
+      --btn-bg: #007bff;
+      --btn-hover: #0056b3;
+      --status-online: green;
+      --status-offline: red;
+      --intruder-border: red;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --card-bg: #1e1e1e;
+      --btn-bg: #2980b9;
+      --btn-hover: #3498db;
+      --status-online: #00ff66;
+      --status-offline: #ff4d4d;
+      --intruder-border: red;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+    }
+
+    .floor-section {
+      margin-bottom: 50px;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+
+    .status-line, .last-updated, .mqtt-status {
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    .online {
+      color: var(--status-online);
+    }
+
+    .offline {
+      color: var(--status-offline);
+    }
+
+    .esp32-cam {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .esp32-cam img {
+      max-width: 90%;
+      border-radius: 12px;
+      border: 2px solid #ccc;
+      margin-top: 10px;
+    }
+
+    .esp32-cam button {
+      margin: 10px 6px;
+      padding: 8px 14px;
+      background: var(--btn-bg);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .esp32-cam button:hover {
+      background: var(--btn-hover);
+    }
+
+    .intruder-box {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .intruder-box img {
+      max-width: 100%;
+      border: 3px solid var(--intruder-border);
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    .intruder-box h3 {
+      color: var(--intruder-border);
+      margin-bottom: 10px;
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .back a {
+      text-decoration: none;
+      font-weight: bold;
+      color: var(--btn-bg);
+      margin: 0 15px;
+      font-size: 16px;
+    }
+
+    .back a:hover {
+      text-decoration: underline;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+    }
+
+    .theme-toggle button {
+      padding: 8px 12px;
+      background: var(--btn-bg);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .theme-toggle button:hover {
+      background: var(--btn-hover);
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="theme-toggle">
+    <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
+  </div>
+
+  <h1><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Alerts)</h1>
+
+  <div class="mqtt-status" id="mqtt-status">
+    WebSocket Status: <span class="offline">🔴 Disconnected</span>
+  </div>
+
+  <% for (let floor = 1; floor <= 4; floor++) { %>
+    <div class="floor-section" id="floor-<%= floor %>">
+      <h2>🏢 Floor <%= floor %></h2>
+
+      <div class="status-line" id="status-<%= floor %>">
+        🟢 Status: <span class="offline">Offline</span>
+      </div>
+
+      <div class="last-updated" id="last-updated-<%= floor %>">
+        🕒 Last updated: --
+      </div>
+
+      <div class="esp32-cam">
+        <h3>📷 ESP32-CAM Feed</h3>
+        <img id="cam-<%= floor %>" src="/snapshot/<%= floor %>.jpg?ts=<%= Date.now() %>" alt="Live Camera Snapshot" />
+        <div>
+          <button class="download-snapshot" data-floor="<%= floor %>" title="Download snapshot of Floor <%= floor %>">
+            <i class="fas fa-download"></i> Download Snapshot
+          </button>
+          <button class="trigger-alert" data-floor="<%= floor %>" title="Trigger buzzer alert for Floor <%= floor %>">
+            <i class="fas fa-bell"></i> Trigger Alert
+          </button>
+        </div>
+      </div>
+
+      <div class="intruder-box" id="intruder-<%= floor %>" style="display: none;">
+        <h3><i class="fas fa-user-secret"></i> Intruder Detected!</h3>
+        <img id="intruder-img-<%= floor %>" src="" alt="Intruder Image" />
+      </div>
+    </div>
+  <% } %>
+
+  <div class="back">
+    <a href="/charts"><i class="fas fa-chart-line"></i> View Charts</a>
+    <a href="/"><i class="fas fa-home"></i> Back to Dashboard</a>
+  </div>
+
+  <script>
+    const themeBtn = document.getElementById('toggleTheme');
+    const body = document.body;
+    const saved = localStorage.getItem('theme') || 'light';
+    body.setAttribute('data-theme', saved);
+
+    themeBtn.addEventListener('click', () => {
+      const current = body.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      body.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+  </script>
+  <script src="/js/live.js"></script>
+</body>
+</html>
