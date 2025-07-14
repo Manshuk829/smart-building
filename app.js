@@ -56,6 +56,9 @@ app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
+// ✅ MQTT ML Prediction Listener — pass `io` to MQTT module
+require('./mqtt/mqttClient')(io);
+
 // ---------- Start Server ----------
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
