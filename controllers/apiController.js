@@ -1,51 +1,57 @@
 // controllers/apiController.js
+
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 
-// ✅ Save sensor data from HTTP POST
+// ✅ Save sensor data (from sensors or ML service)
 exports.saveSensorData = async (req, res) => {
   try {
     const { topic, payload, time } = req.body;
 
     if (!topic || payload === undefined) {
-      return res.status(400).json({ error: 'Topic and payload are required' });
+      return res.status(400).json({ error: '❌ "topic" and "payload" are required' });
     }
 
     const newData = new SensorData({
       topic,
       payload,
-      time: time || new Date()
+      time: time ? new Date(time) : new Date()
     });
 
     await newData.save();
 
+    // Emit to frontend (real-time dashboard)
     const io = req.app.get('io');
     io.emit('sensorUpdate', newData);
 
     res.status(200).json({ message: '✅ Sensor data saved', data: newData });
+
   } catch (err) {
     console.error('❌ Sensor save error:', err.message);
     res.status(500).json({ error: 'Sensor save failed' });
   }
 };
 
-// ✅ Trigger manual alert by admin
+// ✅ Trigger manual alert (admin only)
 exports.triggerAlert = async (req, res) => {
   try {
     const { floor, message } = req.body;
-    const io = req.app.get('io');
 
     if (!floor || !message) {
-      return res.status(400).json({ error: 'Floor and message are required' });
+      return res.status(400).json({ error: '❌ "floor" and "message" are required' });
     }
 
+    const username = req.session.user?.username || 'Admin';
+
+    // Save to audit logs
     await AuditLog.create({
       action: `🚨 Manual Alert: ${message}`,
       floor,
-      performedBy: req.session.user?.username || 'Admin'
+      performedBy: username
     });
 
-    // Emit real-time alert
+    // Send to frontend
+    const io = req.app.get('io');
     io.emit('manual-alert', {
       floor,
       message,
@@ -54,9 +60,9 @@ exports.triggerAlert = async (req, res) => {
 
     console.log(`⚠️ Manual alert sent → Floor ${floor}: ${message}`);
     res.status(200).json({ success: true, message: `Alert triggered for Floor ${floor}` });
+
   } catch (err) {
     console.error('❌ Alert error:', err.message);
     res.status(500).json({ success: false, message: 'Alert failed' });
   }
 };
-

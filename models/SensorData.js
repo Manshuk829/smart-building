@@ -10,19 +10,43 @@ const sensorDataSchema = new mongoose.Schema({
   },
 
   // Environmental sensor readings
-  temperature: Number,
-  humidity: Number,
-  gas: Number,
-  flame: Boolean,
-  motion: Boolean,
-  vibration: Number,
+  temperature: {
+    type: Number,
+    default: 0
+  },
+  humidity: {
+    type: Number,
+    default: 0
+  },
+  gas: {
+    type: Number,
+    required: true
+  },
+  flame: {
+    type: Boolean,
+    default: false
+  },
+  motion: {
+    type: Boolean,
+    default: false
+  },
+  vibration: {
+    type: Number,
+    default: 0
+  },
 
-  // ESP32-CAM intruder image (optional)
+  // Optional: ESP32-CAM intruder image URL
   intruderImageURL: {
-    type: String, // Image URL (can be local path or cloud-hosted)
-    default: null,
+    type: String,
+    default: null
+  },
+
+  // Optional: ML prediction label (e.g., 'fire', 'intruder')
+  prediction: {
+    type: String,
+    default: 'normal'
   }
 
-}, { timestamps: true }); // Automatically adds createdAt and updatedAt
+}, { timestamps: true }); // Adds createdAt and updatedAt automatically
 
 module.exports = mongoose.model('SensorData', sensorDataSchema);

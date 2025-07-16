@@ -7,27 +7,40 @@ const http = require('http');
 const session = require('express-session');
 const { Server } = require('socket.io');
 
+// MongoDB Models
 const SensorData = require('./models/SensorData');
 const AuditLog = require('./models/AuditLog');
 
+// Route Files
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const viewRoutes = require('./routes/viewRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 
+// App Setup
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-// ---------- Config ----------
-const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0 };
+// ----------------------------
+// ✅ Config Settings
+// ----------------------------
+const thresholds = {
+  temperature: 50,
+  humidity: 70,
+  gas: 300,
+  vibration: 5.0
+};
+
 const floors = [1, 2, 3, 4];
 app.set('floors', floors);
 app.set('thresholds', thresholds);
 app.set('io', io);
 
-// ---------- Middleware ----------
+// ----------------------------
+// ✅ Middleware
+// ----------------------------
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -40,26 +53,41 @@ app.use(session({
   cookie: { secure: false }
 }));
 
+// Pass user to views
 app.use((req, res, next) => {
   res.locals.user = req.session.user;
   next();
 });
 
-// ---------- MongoDB ----------
-mongoose.connect(process.env.MONGO_URI)
+// ----------------------------
+// ✅ MongoDB Connection
+// ----------------------------
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
   .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB connection failed:', err));
+  .catch(err => {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1); // Stop server if DB fails
+  });
 
-// ---------- Routes ----------
+// ----------------------------
+// ✅ Routes
+// ----------------------------
 app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
-// ✅ MQTT ML Prediction Listener — pass `io` to MQTT module
+// ----------------------------
+// ✅ MQTT Listener (for ML alerts)
+// ----------------------------
 require('./mqtt/mqttClient')(io);
 
-// ---------- Start Server ----------
+// ----------------------------
+// ✅ Start Server
+// ----------------------------
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
