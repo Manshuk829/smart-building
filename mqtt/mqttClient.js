@@ -20,28 +20,42 @@ module.exports = function (io) {
 
   client.on('message', async (topic, message) => {
     try {
-      const data = JSON.parse(message.toString());
-      const prediction = data.prediction || 'normal';
+      const str = message.toString();
+      const data = JSON.parse(str);
+
+      // Validate required fields
+      const isNumber = (val) => typeof val === 'number' && !isNaN(val);
+
+      const temperature = isNumber(data.temp) ? data.temp : null;
+      const gas = isNumber(data.gas) ? data.gas : null;
+      const humidity = isNumber(data.humidity) ? data.humidity : 0;
+      const vibration = isNumber(data.vibration) ? data.vibration : 0;
+      const floor = isNumber(data.floor) ? data.floor : 1;
+      const prediction = typeof data.prediction === 'string' ? data.prediction : 'normal';
+
+      // Ensure critical values are valid
+      if (temperature === null || gas === null) {
+        console.warn('⚠️ Skipped invalid payload:', str);
+        return;
+      }
 
       // Save to MongoDB
       await SensorData.create({
-        temperature: data.temp,
-        humidity: data.humidity || 0,
-        gas: data.gas,
-        vibration: data.vibration || 0,
-        floor: data.floor || 1,
+        temperature,
+        humidity,
+        gas,
+        vibration,
+        floor,
         prediction,
         timestamp: new Date()
       });
 
       if (prediction !== 'normal') {
-        // Save alert in audit log
         await AuditLog.create({
           action: `🚨 ${prediction.toUpperCase()} detected via ML`,
           performedBy: 'ML-Pipeline'
         });
 
-        // Emit alert to frontend
         io.emit('ml-alert', { type: prediction, time: new Date() });
         console.log(`⚠️ ALERT: ${prediction.toUpperCase()}`);
       } else {
