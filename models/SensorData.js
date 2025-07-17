@@ -1,3 +1,4 @@
+// models/SensorData.js
 const mongoose = require('mongoose');
 
 // Schema for sensor data collected from each floor
@@ -12,11 +13,11 @@ const sensorDataSchema = new mongoose.Schema({
   // Environmental sensor readings
   temperature: {
     type: Number,
-    default: 0
+    default: null
   },
   humidity: {
     type: Number,
-    default: 0
+    default: null
   },
   gas: {
     type: Number,
@@ -32,7 +33,7 @@ const sensorDataSchema = new mongoose.Schema({
   },
   vibration: {
     type: Number,
-    default: 0
+    default: null
   },
 
   // Optional: ESP32-CAM intruder image URL

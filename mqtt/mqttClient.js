@@ -3,6 +3,7 @@ const mqtt = require('mqtt');
 const handleMQTTMessage = require('./mqttController');
 
 module.exports = function (io) {
+  // Connect to MQTT broker
   const client = mqtt.connect('mqtt://localhost:1883');
 
   client.on('connect', () => {
@@ -17,6 +18,18 @@ module.exports = function (io) {
   });
 
   client.on('message', async (topic, message) => {
-    await handleMQTTMessage(topic, message, io);
+    try {
+      if (topic === 'iot/predictions') {
+        await handleMQTTMessage(topic, message, io);
+      } else {
+        console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
+      }
+    } catch (err) {
+      console.error('❌ Error processing MQTT message:', err.message);
+    }
+  });
+
+  client.on('error', (err) => {
+    console.error('❌ MQTT connection error:', err.message);
   });
 };

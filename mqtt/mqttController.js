@@ -5,9 +5,16 @@ const AuditLog = require('../models/AuditLog');
 module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
     const str = message.toString();
-    const data = JSON.parse(str);
 
-    // Validate required fields
+    let data;
+    try {
+      data = JSON.parse(str);
+    } catch (parseErr) {
+      console.warn('⚠️ Invalid JSON payload:', str);
+      return;
+    }
+
+    // Validate values
     const isNumber = (val) => typeof val === 'number' && !isNaN(val);
 
     const temperature = isNumber(data.temp) ? data.temp : null;
@@ -17,9 +24,11 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     const floor = isNumber(data.floor) ? data.floor : 1;
     const prediction = typeof data.prediction === 'string' ? data.prediction : 'normal';
 
-    // Ensure critical values are valid
     if (temperature === null || gas === null) {
-      console.warn('⚠️ Skipped invalid payload:', str);
+      console.warn('⚠️ Skipping payload due to missing critical values:', {
+        temp: data.temp,
+        gas: data.gas
+      });
       return;
     }
 
@@ -31,7 +40,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       vibration,
       floor,
       prediction,
-      timestamp: new Date()
+      timestamp: Date.now()
     });
 
     if (prediction !== 'normal') {
@@ -47,6 +56,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     }
 
   } catch (err) {
-    console.error('❌ MQTT message error:', err.message);
+    console.error('❌ Error handling MQTT message:', err.message);
   }
 };
