@@ -138,6 +138,9 @@
       </button>
     </div>
 
+    <!-- 🔥 ML Alert Box -->
+    <div id="ml-alert" class="status-alert" style="display: none;"></div>
+
     <% const now = new Date(); %>
     <% for (let floor = 1; floor <= 4; floor++) {
       const data = dataByFloor[floor];
@@ -225,9 +228,13 @@
     </div>
   </div>
 
+  <!-- ✅ Socket.IO for ML Alert -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <script>
     setTimeout(() => window.location.reload(), 3000);
 
+    // 🔁 Dark Mode
     const body = document.body;
     const toggleBtn = document.querySelector('.dark-mode-toggle');
     const icon = toggleBtn.querySelector('i');
@@ -253,6 +260,19 @@
       const newMode = current === 'enabled' ? 'disabled' : 'enabled';
       setMode(newMode);
       localStorage.setItem('darkMode', newMode);
+    });
+
+    // 🧠 ML Alert from server via Socket.IO
+    const socket = io();
+    const mlAlertBox = document.getElementById('ml-alert');
+
+    socket.on('ml-alert', (msg) => {
+      mlAlertBox.textContent = msg;
+      mlAlertBox.style.display = 'block';
+      mlAlertBox.style.color = 'red';
+      setTimeout(() => {
+        mlAlertBox.style.display = 'none';
+      }, 10000);
     });
   </script>
 </body>

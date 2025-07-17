@@ -91,6 +91,27 @@
       background: var(--btn-hover);
     }
 
+    .sensor-data {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    .sensor-data span {
+      display: inline-block;
+      margin: 8px 15px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background-color: #ddd;
+      color: #333;
+      min-width: 130px;
+    }
+
+    [data-theme="dark"] .sensor-data span {
+      background-color: #333;
+      color: #fff;
+    }
+
     .intruder-box {
       text-align: center;
       margin-top: 20px;
@@ -200,14 +221,24 @@
         🕒 Last updated: --
       </div>
 
+      <!-- ✅ SENSOR DATA UI -->
+      <div class="sensor-data" id="sensor-data-<%= floor %>">
+        <span id="temp-<%= floor %>">🌡️ Temp: --</span>
+        <span id="mq135-<%= floor %>">🧪 Gas: --</span>
+        <span id="flame-<%= floor %>">🔥 Flame: --</span>
+        <span id="motion-<%= floor %>">🏃 Motion: --</span>
+        <span id="quake-<%= floor %>">🌎 Quake: --</span>
+        <span id="emergency-<%= floor %>">🚨 Emergency: --</span>
+      </div>
+
       <div class="esp32-cam">
         <h3>📷 ESP32-CAM Feed</h3>
         <img id="cam-<%= floor %>" src="/snapshot/<%= floor %>.jpg?ts=<%= Date.now() %>" alt="Live Camera Snapshot" />
         <div>
-          <button class="download-snapshot" data-floor="<%= floor %>" title="Download snapshot of Floor <%= floor %>">
+          <button class="download-snapshot" data-floor="<%= floor %>">
             <i class="fas fa-download"></i> Download Snapshot
           </button>
-          <button class="trigger-alert" data-floor="<%= floor %>" title="Trigger buzzer alert for Floor <%= floor %>">
+          <button class="trigger-alert" data-floor="<%= floor %>">
             <i class="fas fa-bell"></i> Trigger Alert
           </button>
         </div>
