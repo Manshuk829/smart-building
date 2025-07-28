@@ -1,4 +1,5 @@
 // app.js
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -51,10 +52,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Set true if using HTTPS
+  cookie: { secure: false } // 🔐 Use true if using HTTPS
 }));
 
-// Set user in all views
+// ✅ Inject user in EJS views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
@@ -83,7 +84,8 @@ app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes); // ✅ ML Alerts
 
 // ----------------------------
-// ✅ MQTT Integration (for real-time ML alerts)
+// ✅ MQTT Integration
+// ----------------------------
 require('./mqtt/mqttClient')(io);
 
 // ----------------------------

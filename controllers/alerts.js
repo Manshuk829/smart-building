@@ -1,3 +1,5 @@
+// controllers/alerts.js
+
 const Alert = require('../models/Alert'); // Load Alert model
 
 // GET /alerts - Render recent ML alerts
@@ -10,7 +12,7 @@ exports.getAlertsPage = async (req, res) => {
 
     res.render('alerts', { alerts: alerts || [] }); // ✅ fallback to empty list
   } catch (err) {
-    console.error('🔴 [AlertController] Failed to fetch alerts:', err.message);
+    console.error('🔴 [alerts.js] Failed to fetch alerts:', err.message);
     res.status(500).send('Error loading alerts page.');
   }
 };
