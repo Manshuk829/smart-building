@@ -1,12 +1,10 @@
-// controllers/apiController.js
-
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 
-// ✅ Save sensor data (from sensors or ML service)
+// ✅ Save sensor data (from IoT or ML)
 exports.saveSensorData = async (req, res) => {
   try {
-    const { topic, payload, time } = req.body;
+    const { topic, payload, time, source = 'sensor' } = req.body;
 
     if (!topic || payload === undefined) {
       return res.status(400).json({ error: '❌ "topic" and "payload" are required' });
@@ -15,14 +13,23 @@ exports.saveSensorData = async (req, res) => {
     const newData = new SensorData({
       topic,
       payload,
-      time: time ? new Date(time) : new Date()
+      time: time ? new Date(time) : new Date(),
+      source // e.g., 'sensor' or 'ml'
     });
 
     await newData.save();
 
-    // Emit to frontend (real-time dashboard)
     const io = req.app.get('io');
-    io.emit('sensorUpdate', newData);
+    io.emit('sensorUpdate', newData); // ✅ Real-time dashboard update
+
+    // Optional: If data came from ML and has high risk, emit as alert
+    if (source === 'ml' && topic.includes('alert')) {
+      io.emit('ml-alert', {
+        floor: topic.match(/\d+/)?.[0] || 'unknown',
+        message: payload,
+        time: newData.time
+      });
+    }
 
     res.status(200).json({ message: '✅ Sensor data saved', data: newData });
 
@@ -43,14 +50,12 @@ exports.triggerAlert = async (req, res) => {
 
     const username = req.session.user?.username || 'Admin';
 
-    // Save to audit logs
     await AuditLog.create({
       action: `🚨 Manual Alert: ${message}`,
       floor,
       performedBy: username
     });
 
-    // Send to frontend
     const io = req.app.get('io');
     io.emit('manual-alert', {
       floor,

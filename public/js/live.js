@@ -1,137 +1,129 @@
-const socket = io();
-const lastUpdateTimes = {};
-const floorCount = 4;
+/* global io */
+const socket           = io();
+const floorCount       = 4;
+const lastUpdateTimes  = {};
 
-const mqttStatus = document.getElementById("mqtt-status");
-const alertBanner = document.getElementById("ml-alert-banner");
-let mlAlertTimeout = null;  // Prevent overlapping alerts
+// ---------- DOM refs ----------
+const mqttStatus   = document.getElementById('mqtt-status');
+const alertBanner  = document.getElementById('ml-alert-banner');
 
-// ===== Update WebSocket Connection Status =====
-function updateConnectionStatus(connected) {
-  if (mqttStatus) {
-    mqttStatus.innerHTML = `WebSocket Status: 
-      <span class="${connected ? 'online' : 'offline'}" title="${connected ? 'Connected to server' : 'Disconnected'}">
-        ${connected ? '🟢 Connected' : '🔴 Disconnected'}
-      </span>`;
-  }
-}
+let mlAlertTimeout = null;   // prevent overlapping alerts
 
-socket.on("connect", () => updateConnectionStatus(true));
-socket.on("disconnect", () => updateConnectionStatus(false));
-
-// ===== Helper: Timestamp =====
+// ---------- helpers ----------
 const nowTS = () => Date.now();
+const fmt   = (v, unit = '') => (v === null || v === undefined ? '--' : `${v}${unit}`);
 
-// ===== Setup buttons for each floor =====
+// ---------- connection status ----------
+function updateConnectionStatus(connected) {
+  mqttStatus.innerHTML = `WebSocket Status:
+    <span class="${connected ? 'online' : 'offline'}" title="${connected ? 'Connected to server' : 'Disconnected'}">
+      ${connected ? '🟢 Connected' : '🔴 Disconnected'}
+    </span>`;
+}
+socket.on('connect',    () => updateConnectionStatus(true));
+socket.on('disconnect', () => updateConnectionStatus(false));
+
+// ---------- per‑floor setup ----------
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
-  // 📸 Download Snapshot
-  document.querySelector(`[data-floor="${floor}"].download-snapshot`)?.addEventListener("click", () => {
-    const link = document.createElement("a");
-    link.href = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
-    link.download = `floor_${floor}_snapshot.jpg`;
-    link.click();
-  });
+  // 📸 download snapshot
+  document
+    .querySelector(`[data-floor="${floor}"].download-snapshot`)
+    ?.addEventListener('click', () => {
+      const link   = document.createElement('a');
+      link.href    = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
+      link.download = `floor_${floor}_snapshot.jpg`;
+      link.click();
+    });
 
-  // 🚨 Trigger Alert
-  document.querySelector(`[data-floor="${floor}"].trigger-alert`)?.addEventListener("click", () => {
-    fetch("/api/alert", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ floor }),
-    })
-      .then((res) => {
-        if (res.ok) {
-          alert(`✅ Alert triggered for Floor ${floor}`);
-        } else {
-          alert("❌ Failed to trigger alert");
-        }
+  // 🚨 manual trigger alert
+  document
+    .querySelector(`[data-floor="${floor}"].trigger-alert`)
+    ?.addEventListener('click', () => {
+      fetch('/api/alert', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ floor })
       })
-      .catch((err) => {
-        alert("⚠️ Error contacting server.");
-        console.error(err);
-      });
-  });
+        .then(r => r.ok
+          ? alert(`✅ Alert triggered for Floor ${floor}`)
+          : alert('❌ Failed to trigger alert'))
+        .catch(e => {
+          alert('⚠️ Error contacting server'); console.error(e);
+        });
+    });
 }
 
-// ===== Handle Incoming Sensor Data =====
-socket.on("sensorUpdate", (data) => {
-  const floor = data.floor;
+// ---------- real‑time sensor updates ----------
+socket.on('sensorUpdate', data => {
+  const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
-  // ✅ Update Online Status
-  const statusEl = document.getElementById(`status-${floor}`);
-  if (statusEl) {
-    statusEl.innerHTML = `Status: <span class="online">🟢 Online</span>`;
-  }
+  // 1️⃣ status & timestamp
+  document.getElementById(`status-${floor}`).innerHTML =
+    'Status: <span class="online">🟢 Online</span>';
 
-  // ⏱️ Update Timestamp
-  const updatedEl = document.getElementById(`last-updated-${floor}`);
-  if (updatedEl) {
-    updatedEl.textContent = `Last updated: just now`;
-  }
+  document.getElementById(`last-updated-${floor}`).textContent =
+    'Last updated: just now';
 
-  // 🔄 Refresh Camera Feed
-  const camImg = document.getElementById(`cam-${floor}`);
-  if (camImg) {
-    camImg.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
-  }
+  // 2️⃣ camera refresh
+  const cam = document.getElementById(`cam-${floor}`);
+  cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
-  // 🕵️‍♂️ Intruder Detected
+  // 3️⃣ sensor readings
+  document.getElementById(`temp-${floor}`).textContent      = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
+  document.getElementById(`mq135-${floor}`).textContent     = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
+  document.getElementById(`flame-${floor}`).textContent     = `🔥 Flame: ${data.flame ? 'Yes' : 'No'}`;
+  document.getElementById(`motion-${floor}`).textContent    = `🏃 Motion: ${data.motion ? 'Yes' : 'No'}`;
+  document.getElementById(`quake-${floor}`).textContent     = `🌎 Quake: ${fmt(data.vibration)}`;
+  document.getElementById(`emergency-${floor}`).textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
+
+  // 4️⃣ intruder snapshot (optional)
   if (data.intruderImage) {
     const intruderBox = document.getElementById(`intruder-${floor}`);
     const intruderImg = document.getElementById(`intruder-img-${floor}`);
-    if (intruderBox && intruderImg) {
-      intruderImg.src = data.intruderImage;
-      intruderBox.style.display = "block";
+    intruderImg.src   = data.intruderImage;
+    intruderBox.style.display = 'block';
 
-      setTimeout(() => {
-        intruderBox.style.display = "none";
-      }, 30000); // Auto-hide after 30 seconds
-    }
+    // auto‑hide after 30 s
+    setTimeout(() => (intruderBox.style.display = 'none'), 30_000);
   }
 });
 
-// ===== Mark Offline if No Recent Updates =====
+// ---------- mark offline if silent >15 s ----------
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {
     const last = lastUpdateTimes[floor];
+    const status  = document.getElementById(`status-${floor}`);
     const updated = document.getElementById(`last-updated-${floor}`);
-    const status = document.getElementById(`status-${floor}`);
 
-    if (!last || now - last > 15000) {
-      if (status) status.innerHTML = `Status: <span class="offline">🔴 Offline</span>`;
-      if (updated) updated.textContent = `Last updated: more than 15 seconds ago`;
+    if (!last || now - last > 15_000) {
+      status.innerHTML  = 'Status: <span class="offline">🔴 Offline</span>';
+      updated.textContent = 'Last updated: more than 15 seconds ago';
     } else {
-      const secondsAgo = Math.round((now - last) / 1000);
-      if (updated) updated.textContent = `Last updated: ${secondsAgo} seconds ago`;
+      const s = Math.round((now - last) / 1000);
+      updated.textContent = `Last updated: ${s} s ago`;
     }
   }
-}, 1000);
+}, 1_000);
 
-// ===== 📣 Handle ML Prediction Alert =====
-socket.on("ml-alert", (data) => {
-  if (!data?.type || !data?.time) return;
+// ---------- ML prediction alerts ----------
+socket.on('ml-alert', ({ type, time }) => {
+  if (!type || !time) return;
 
-  if (alertBanner) {
-    // Clear any previous timeout to avoid stacking
-    if (mlAlertTimeout) clearTimeout(mlAlertTimeout);
+  clearTimeout(mlAlertTimeout);
 
-    const timeString = new Date(data.time).toLocaleTimeString();
-    alertBanner.textContent = `⚠️ ML Alert: ${data.type.toUpperCase()} detected at ${timeString}`;
-    alertBanner.classList.add("active");
+  const tStr = new Date(time).toLocaleTimeString();
+  alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected at ${tStr}`;
+  alertBanner.classList.add('active');
 
-    // Auto-hide after 10s
-    mlAlertTimeout = setTimeout(() => {
-      alertBanner.classList.remove("active");
-    }, 10000);
-  }
+  mlAlertTimeout = setTimeout(() =>
+    alertBanner.classList.remove('active'), 10_000);
 });
 
-// ===== ✅ Clear ML Alert Banner Manually =====
-socket.on("ml-normal", () => {
-  if (mlAlertTimeout) clearTimeout(mlAlertTimeout);
-  alertBanner?.classList.remove("active");
+socket.on('ml-normal', () => {
+  clearTimeout(mlAlertTimeout);
+  alertBanner.classList.remove('active');
 });

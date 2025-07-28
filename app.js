@@ -16,6 +16,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const viewRoutes = require('./routes/viewRoutes');
 const apiRoutes = require('./routes/apiRoutes');
+const alertsRoutes = require('./routes/alertsRoutes'); // ✅ ML Alerts
 
 // Initialize app and server
 const app = express();
@@ -50,7 +51,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // change to true if using HTTPS
+  cookie: { secure: false } // Set true if using HTTPS
 }));
 
 // Set user in all views
@@ -79,10 +80,10 @@ app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
+app.use('/alerts', alertsRoutes); // ✅ ML Alerts
 
 // ----------------------------
-// ✅ MQTT Listener
-// ----------------------------
+// ✅ MQTT Integration (for real-time ML alerts)
 require('./mqtt/mqttClient')(io);
 
 // ----------------------------

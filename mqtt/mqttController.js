@@ -13,17 +13,19 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    // Helper to validate numeric fields
     const isNumber = (val) => typeof val === 'number' && !isNaN(val);
 
     const temperature = isNumber(data.temp) ? data.temp : null;
-    const gas = isNumber(data.gas) ? data.gas : null;
     const humidity = isNumber(data.humidity) ? data.humidity : null;
+    const gas = isNumber(data.gas) ? data.gas : null;
     const vibration = isNumber(data.vibration) ? data.vibration : null;
     const floor = isNumber(data.floor) ? data.floor : null;
-    const prediction = typeof data.prediction === 'string' ? data.prediction : 'normal';
+    const prediction = typeof data.prediction === 'string' ? data.prediction.toLowerCase() : 'normal';
 
-    // Skip saving if required values are missing
+    const motion = typeof data.motion === 'boolean' ? data.motion : false;
+    const flame = typeof data.flame === 'boolean' ? data.flame : false;
+    const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : null;
+
     if (temperature === null || gas === null || floor === null) {
       console.warn('⚠️ Skipping payload due to missing critical values:', {
         temp: data.temp,
@@ -33,28 +35,42 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    // Save to MongoDB
-    await SensorData.create({
+    const sensorDoc = await SensorData.create({
+      floor,
       temperature,
       humidity,
       gas,
       vibration,
-      floor,
-      prediction,
-      timestamp: Date.now()
+      flame,
+      motion,
+      intruderImageURL: intruderImage,
+      prediction
+      // timestamp omitted because schema already includes timestamps
     });
 
-    // Alert handling based on ML prediction
+    io.emit('sensorUpdate', {
+      floor,
+      temp: temperature,
+      humidity,
+      gas,
+      vibration,
+      flame,
+      motion,
+      intruderImage,
+      prediction
+    });
+
     if (prediction !== 'normal') {
       await AuditLog.create({
         action: `🚨 ${prediction.toUpperCase()} detected via ML`,
+        floor,
         performedBy: 'ML-Pipeline'
       });
 
-      io.emit('ml-alert', { type: prediction, time: new Date() });
-      console.log(`⚠️ ALERT: ${prediction.toUpperCase()}`);
+      io.emit('ml-alert', { type: prediction, time: new Date(), floor });
+      console.log(`⚠️ ALERT: ${prediction.toUpperCase()} (Floor ${floor})`);
     } else {
-      io.emit('ml-normal', { time: new Date() });
+      io.emit('ml-normal', { time: new Date(), floor });
     }
 
   } catch (err) {

@@ -1,28 +1,32 @@
 const mongoose = require('mongoose');
 
-// Schema for sensor data collected from each floor
 const sensorDataSchema = new mongoose.Schema({
   floor: {
     type: Number,
-    required: false, // Temporarily optional due to incomplete MQTT payloads
     min: 1,
     max: 4,
-    default: null
+    default: null,
+    required: false
   },
 
   // Environmental sensor readings
   temperature: {
     type: Number,
+    min: -20,
+    max: 100,
     default: null
   },
   humidity: {
     type: Number,
+    min: 0,
+    max: 100,
     default: null
   },
   gas: {
     type: Number,
-    required: false, // Temporarily optional due to incomplete MQTT payloads
-    default: null
+    min: 0,
+    default: null,
+    required: false
   },
   flame: {
     type: Boolean,
@@ -34,21 +38,27 @@ const sensorDataSchema = new mongoose.Schema({
   },
   vibration: {
     type: Number,
+    min: 0,
     default: null
   },
 
-  // Optional: ESP32-CAM intruder image URL
-  intruderImageURL: {
+  // ESP32-CAM image for intruder detection (optional)
+  intruderImage: {
     type: String,
+    trim: true,
     default: null
   },
 
-  // Optional: ML prediction label (e.g., 'fire', 'intruder')
+  // ML prediction result
   prediction: {
     type: String,
+    enum: ['normal', 'fire', 'intruder', 'gas leak', 'earthquake'],
     default: 'normal'
   }
 
-}, { timestamps: true }); // Adds createdAt and updatedAt automatically
+}, { timestamps: true });
+
+// Optimize queries on recent data by floor
+sensorDataSchema.index({ floor: 1, createdAt: -1 });
 
 module.exports = mongoose.model('SensorData', sensorDataSchema);

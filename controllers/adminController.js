@@ -1,8 +1,8 @@
 // controllers/adminController.js
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+const Alert = require('../models/Alert'); // ✅ For ML Alert Summary (AI)
 
-// ✅ Renamed from showUsers → listUsers to match router
 exports.listUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ username: 1 }).lean();
@@ -50,9 +50,8 @@ exports.deleteUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.redirect('/admin/users');
 
-    // Optional: prevent admin from deleting their own account
     if (req.session.user?.username === user.username) {
-      return res.redirect('/admin/users');
+      return res.redirect('/admin/users'); // prevent self-deletion
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -69,11 +68,24 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// ✅ You must add these missing functions to fix the crash
 exports.viewLogs = async (req, res) => {
   try {
     const logs = await AuditLog.find().sort({ createdAt: -1 }).lean();
-    res.render('logs', { logs });
+
+    // ✅ AI-style admin activity summary
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const recentLogs = logs.filter(log => new Date(log.createdAt) > yesterday);
+
+    const promoteCount = recentLogs.filter(log => log.action.includes('Promoted')).length;
+    const demoteCount = recentLogs.filter(log => log.action.includes('Demoted')).length;
+    const deleteCount = recentLogs.filter(log => log.action.includes('Deleted')).length;
+
+    const summary = `In the last 24 hours: ${promoteCount} promoted, ${demoteCount} demoted, ${deleteCount} deleted.`;
+
+    res.render('logs', { logs, summary }); // ✅ Pass summary to logs.ejs
   } catch (err) {
     console.error('Error fetching logs:', err);
     res.status(500).send('Internal Server Error');
@@ -84,12 +96,36 @@ exports.downloadLogs = async (req, res) => {
   try {
     const logs = await AuditLog.find().sort({ createdAt: -1 }).lean();
     const logText = logs.map(log => `${log.createdAt} - ${log.action} by ${log.performedBy}`).join('\n');
-    
+
     res.setHeader('Content-disposition', 'attachment; filename=audit-logs.txt');
     res.setHeader('Content-type', 'text/plain');
     res.send(logText);
   } catch (err) {
     console.error('Error downloading logs:', err);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+// ✅ New: ML Alert Summary for Admin Dashboard (Optional Endpoint)
+exports.getMLAlertStats = async (req, res) => {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 7); // past 7 days
+
+    const alerts = await Alert.find({ createdAt: { $gte: since } }).lean();
+
+    const alertCount = alerts.length;
+    const grouped = alerts.reduce((acc, alert) => {
+      acc[alert.type] = (acc[alert.type] || 0) + 1;
+      return acc;
+    }, {});
+
+    res.json({
+      total: alertCount,
+      perType: grouped
+    });
+  } catch (err) {
+    console.error('Error fetching ML alert stats:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
