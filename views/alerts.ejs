@@ -62,14 +62,16 @@
       div.classList.add('alert-card');
 
       const timestamp = new Date(data.time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const type = data.type?.toUpperCase() || 'ALERT';
+      const floor = data.floor ? ` (Floor ${data.floor})` : '';
 
       div.innerHTML = `
-        <h5>⚠️ ${data.type?.toUpperCase() || 'ALERT'} detected</h5>
+        <h5>⚠️ ${type} detected${floor}</h5>
         <p class="timestamp">Time: ${timestamp}</p>
       `;
 
       if (alertContainer.firstChild?.classList.contains('no-alert-msg')) {
-        alertContainer.innerHTML = ''; // remove "No alerts yet" message
+        alertContainer.innerHTML = '';
       }
 
       alertContainer.prepend(div);

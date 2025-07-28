@@ -7,7 +7,60 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    /* ... existing CSS (keep all your styles as they are) ... */
+    .floor-section {
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 900px;
+      background: var(--card-bg);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .sensor-data span {
+      display: inline-block;
+      margin: 5px 10px;
+      font-size: 16px;
+    }
+
+    .esp32-cam {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .esp32-cam img {
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .esp32-cam button {
+      margin: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .status-line, .last-updated {
+      margin: 5px 0;
+      font-weight: bold;
+    }
+
+    .intruder-box {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .intruder-box img {
+      width: 100%;
+      max-width: 500px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
     .prediction-alert {
       background-color: #ffcccc;
       color: #900;
@@ -28,12 +81,23 @@
     }
 
     @keyframes blink-animation {
-      0%, 100% {
-        background-color: #ffcccc;
-      }
-      50% {
-        background-color: #ff6666;
-      }
+      0%, 100% { background-color: #ffcccc; }
+      50% { background-color: #ff6666; }
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .back a {
+      margin: 10px;
+      font-size: 16px;
+    }
+
+    .theme-toggle {
+      text-align: right;
+      padding: 10px 20px;
     }
   </style>
 </head>
@@ -42,9 +106,9 @@
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
 
-  <h1><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Alerts)</h1>
+  <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Alerts)</h1>
 
-  <div class="mqtt-status" id="mqtt-status">
+  <div class="mqtt-status" id="mqtt-status" style="text-align:center;">
     WebSocket Status: <span class="offline">🔴 Disconnected</span>
   </div>
 
@@ -56,11 +120,11 @@
       <h2>🏢 Floor <%= floor %></h2>
 
       <div class="status-line" id="status-<%= floor %>">
-        🟢 Status: <span class="offline">Offline</span>
+        Status: <span class="offline">Offline</span>
       </div>
 
       <div class="last-updated" id="last-updated-<%= floor %>">
-        🕒 Last updated: --
+        Last updated: --
       </div>
 
       <div class="sensor-data" id="sensor-data-<%= floor %>">
