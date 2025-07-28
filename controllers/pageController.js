@@ -14,7 +14,7 @@ exports.showDashboard = async (req, res) => {
     const results = await Promise.all(promises);
 
     floors.forEach((floor, i) => {
-      dataByFloor[floor] = results[i];
+      dataByFloor[floor] = results[i] || null;
     });
 
     res.render('dashboard', { dataByFloor, thresholds });
@@ -34,7 +34,7 @@ exports.showLive = async (req, res) => {
     const results = await Promise.all(promises);
 
     floors.forEach((floor, i) => {
-      dataByFloor[floor] = results[i];
+      dataByFloor[floor] = results[i] || null;
     });
 
     res.render('live', { dataByFloor, thresholds });
@@ -55,31 +55,41 @@ exports.showHistory = async (req, res) => {
     if (intruder) filter.intruderImage = { $ne: null };
 
     const total = await SensorData.countDocuments(filter);
-    const [record] = await SensorData.find(filter).sort({ createdAt: -1 }).skip(index).limit(1);
+    const [record] = await SensorData.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(index)
+      .limit(1);
+
     const recent = await SensorData.find(filter).sort({ createdAt: -1 }).limit(10);
 
     const stats = {
       avgTemp: 0, minTemp: 0, maxTemp: 0,
-      avgHumidity: 0, avgGas: 0, avgVibration: 0
+      avgHumidity: 0, avgGas: 0, avgVibration: 0,
     };
 
-    if (recent.length) {
-      const temps = recent.map(r => r.temperature);
-      const hums = recent.map(r => r.humidity);
-      const gases = recent.map(r => r.gas);
-      const vibes = recent.map(r => r.vibration ?? 0);
+    if (recent.length > 0) {
+      const getAvg = arr => (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+      const temps = recent.map(r => r.temperature || 0);
+      const hums = recent.map(r => r.humidity || 0);
+      const gases = recent.map(r => r.gas || 0);
+      const vibes = recent.map(r => r.vibration || 0);
 
-      stats.avgTemp = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(2);
+      stats.avgTemp = getAvg(temps);
       stats.minTemp = Math.min(...temps).toFixed(2);
       stats.maxTemp = Math.max(...temps).toFixed(2);
-      stats.avgHumidity = (hums.reduce((a, b) => a + b, 0) / hums.length).toFixed(2);
-      stats.avgGas = (gases.reduce((a, b) => a + b, 0) / gases.length).toFixed(2);
-      stats.avgVibration = (vibes.reduce((a, b) => a + b, 0) / vibes.length).toFixed(2);
+      stats.avgHumidity = getAvg(hums);
+      stats.avgGas = getAvg(gases);
+      stats.avgVibration = getAvg(vibes);
     }
 
     res.render('history', {
-      record, currentIndex: index, total,
-      stats, thresholds, floor, intruder
+      record: record || null,
+      currentIndex: index,
+      total,
+      stats,
+      thresholds,
+      floor,
+      intruder,
     });
   } catch (err) {
     console.error('❌ History page error:', err.message);
@@ -103,7 +113,12 @@ exports.showCharts = async (req, res) => {
     else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };
 
     const records = await SensorData.find(query).sort({ createdAt: 1 }).limit(100);
-    res.render('charts', { records, query: req.query, thresholds });
+
+    res.render('charts', {
+      records: records || [],
+      query: req.query,
+      thresholds,
+    });
   } catch (err) {
     console.error('❌ Charts page error:', err.message);
     res.status(500).send('Error loading charts');
