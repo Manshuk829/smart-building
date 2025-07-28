@@ -12,7 +12,7 @@ module.exports = function (io) {
   const client = mqtt.connect(brokerUrl, {
     clientId: 'SmartBuildingClient_' + Math.random().toString(16).substr(2, 8),
     keepalive: 60,
-    reconnectPeriod: 2000, // Retry every 2 seconds
+    reconnectPeriod: 2000,
     clean: true
   });
 
@@ -30,9 +30,8 @@ module.exports = function (io) {
   client.on('message', async (receivedTopic, message) => {
     if (receivedTopic === topic) {
       try {
-        // Optional: parse JSON if messages are structured that way
-        const parsed = message.toString();
-        await handleMQTTMessage(receivedTopic, parsed, io);
+        // ✅ Let mqttController handle .toString() and JSON parsing
+        await handleMQTTMessage(receivedTopic, message, io);
       } catch (err) {
         console.error('❌ Error processing MQTT message:', err.message);
       }

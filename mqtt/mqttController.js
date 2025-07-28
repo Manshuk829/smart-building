@@ -15,23 +15,19 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const isNumber = (val) => typeof val === 'number' && !isNaN(val);
 
-    const temperature = isNumber(data.temp) ? data.temp : null;
-    const humidity = isNumber(data.humidity) ? data.humidity : null;
-    const gas = isNumber(data.gas) ? data.gas : null;
-    const vibration = isNumber(data.vibration) ? data.vibration : null;
-    const floor = isNumber(data.floor) ? data.floor : null;
+    const temperature = isNumber(data.temp) ? data.temp : undefined;
+    const humidity = isNumber(data.humidity) ? data.humidity : undefined;
+    const gas = isNumber(data.gas) ? data.gas : undefined;
+    const vibration = isNumber(data.vibration) ? data.vibration : undefined;
+    const floor = isNumber(data.floor) ? data.floor : undefined;
     const prediction = typeof data.prediction === 'string' ? data.prediction.toLowerCase() : 'normal';
 
-    const motion = typeof data.motion === 'boolean' ? data.motion : false;
-    const flame = typeof data.flame === 'boolean' ? data.flame : false;
-    const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : null;
+    const motion = typeof data.motion === 'boolean' ? data.motion : undefined;
+    const flame = typeof data.flame === 'boolean' ? data.flame : undefined;
+    const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
 
-    if (temperature === null || gas === null || floor === null) {
-      console.warn('⚠️ Skipping payload due to missing critical values:', {
-        temp: data.temp,
-        gas: data.gas,
-        floor: data.floor
-      });
+    if (floor === undefined) {
+      console.warn('⚠️ Skipping payload due to missing floor:', { floor: data.floor });
       return;
     }
 
@@ -45,17 +41,16 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       motion,
       intruderImageURL: intruderImage,
       prediction
-      // timestamp omitted because schema already includes timestamps
     });
 
     io.emit('sensorUpdate', {
       floor,
-      temp: temperature,
-      humidity,
-      gas,
-      vibration,
-      flame,
-      motion,
+      temp: temperature ?? null,
+      humidity: humidity ?? null,
+      gas: gas ?? null,
+      vibration: vibration ?? null,
+      flame: flame ?? null,
+      motion: motion ?? null,
       intruderImage,
       prediction
     });
