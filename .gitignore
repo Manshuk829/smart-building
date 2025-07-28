@@ -19,6 +19,11 @@ logs/
 *.log.*
 
 # ======================
+# 🧪 Coverage reports (optional)
+# ======================
+coverage/
+
+# ======================
 # 🛠️ IDEs and Editors
 # ======================
 .vscode/

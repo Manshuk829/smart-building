@@ -1,13 +1,13 @@
-// models/SensorData.js
 const mongoose = require('mongoose');
 
 // Schema for sensor data collected from each floor
 const sensorDataSchema = new mongoose.Schema({
   floor: {
     type: Number,
-    required: true,
+    required: false, // Temporarily optional due to incomplete MQTT payloads
     min: 1,
-    max: 4, // Supports 4-floor building
+    max: 4,
+    default: null
   },
 
   // Environmental sensor readings
@@ -21,7 +21,8 @@ const sensorDataSchema = new mongoose.Schema({
   },
   gas: {
     type: Number,
-    required: true
+    required: false, // Temporarily optional due to incomplete MQTT payloads
+    default: null
   },
   flame: {
     type: Boolean,

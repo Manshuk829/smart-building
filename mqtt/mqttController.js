@@ -1,4 +1,3 @@
-// mqtt/mqttController.js
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 
@@ -14,20 +13,22 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    // Validate values
+    // Helper to validate numeric fields
     const isNumber = (val) => typeof val === 'number' && !isNaN(val);
 
     const temperature = isNumber(data.temp) ? data.temp : null;
     const gas = isNumber(data.gas) ? data.gas : null;
-    const humidity = isNumber(data.humidity) ? data.humidity : 0;
-    const vibration = isNumber(data.vibration) ? data.vibration : 0;
-    const floor = isNumber(data.floor) ? data.floor : 1;
+    const humidity = isNumber(data.humidity) ? data.humidity : null;
+    const vibration = isNumber(data.vibration) ? data.vibration : null;
+    const floor = isNumber(data.floor) ? data.floor : null;
     const prediction = typeof data.prediction === 'string' ? data.prediction : 'normal';
 
-    if (temperature === null || gas === null) {
+    // Skip saving if required values are missing
+    if (temperature === null || gas === null || floor === null) {
       console.warn('⚠️ Skipping payload due to missing critical values:', {
         temp: data.temp,
-        gas: data.gas
+        gas: data.gas,
+        floor: data.floor
       });
       return;
     }
@@ -43,6 +44,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       timestamp: Date.now()
     });
 
+    // Alert handling based on ML prediction
     if (prediction !== 'normal') {
       await AuditLog.create({
         action: `🚨 ${prediction.toUpperCase()} detected via ML`,
