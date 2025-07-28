@@ -3,12 +3,12 @@
 const express = require('express');
 const router = express.Router();
 const viewController = require('../controllers/viewController');
-const { requireAuth } = require('../middleware/authMiddleware');
+const { isAuthenticated } = require('../middleware/authMiddleware');
 
 // 🔐 Protected View Routes
-router.get('/', requireAuth, viewController.dashboard);
-router.get('/live', requireAuth, viewController.liveView);
-router.get('/history', requireAuth, viewController.history);
-router.get('/charts', requireAuth, viewController.charts);
+router.get('/', isAuthenticated, viewController.dashboard);
+router.get('/live', isAuthenticated, viewController.liveView);
+router.get('/history', isAuthenticated, viewController.history);
+router.get('/charts', isAuthenticated, viewController.charts);
 
 module.exports = router;

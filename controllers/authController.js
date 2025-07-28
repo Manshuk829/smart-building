@@ -14,7 +14,7 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: username.trim() });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
@@ -22,7 +22,7 @@ exports.login = async (req, res) => {
     req.session.user = { username: user.username, role: user.role };
     res.redirect('/');
   } catch (err) {
-    console.error('❌ Login error:', err.message);
+    console.error('❌ Login error:', err);
     res.status(500).render('login', { error: 'Server error', success: null });
   }
 };
@@ -46,17 +46,17 @@ exports.register = async (req, res) => {
       return res.render('register', { error: 'All fields are required.', success: null });
     }
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: username.trim() });
     if (existingUser) {
       return res.render('register', { error: 'Username already exists', success: null });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await new User({ username, password: hashedPassword, role }).save();
+    await new User({ username: username.trim(), password: hashedPassword, role }).save();
 
     res.redirect('/login?success=✅ Registered successfully! You can now login.');
   } catch (err) {
-    console.error('❌ Registration error:', err.message);
+    console.error('❌ Registration error:', err);
     res.render('register', { error: 'Registration failed', success: null });
   }
 };
@@ -69,7 +69,7 @@ exports.showForgot = (req, res) => {
 // Handle Forgot Password
 exports.forgot = async (req, res) => {
   try {
-    const { username } = req.body;
+    const username = req.body.username?.trim();
     const user = await User.findOne({ username });
 
     if (!user) {
@@ -83,14 +83,14 @@ exports.forgot = async (req, res) => {
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetURL = `http://${req.headers.host}/reset/${rawToken}`;
+    const resetURL = `http://${req.headers.host}/reset/${rawToken}`; // use https if deployed with SSL
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
+        pass: process.env.EMAIL_PASS,
+      },
     });
 
     await transporter.sendMail({
@@ -101,46 +101,46 @@ exports.forgot = async (req, res) => {
         <h3>🔐 Password Reset</h3>
         <p>Click below to reset your password:</p>
         <a href="${resetURL}">${resetURL}</a>
-        <p>This link will expire in 1 hour.</p>`
+        <p>This link will expire in 1 hour.</p>
+      `,
     });
 
     res.render('forgot', { error: null, success: '📧 Reset email sent!' });
-
   } catch (err) {
-    console.error('❌ Forgot password error:', err.message);
+    console.error('❌ Forgot password error:', err);
     res.render('forgot', { error: 'Failed to send reset email.', success: null });
   }
 };
 
-// Show Reset Page
+// Show Reset Password Page
 exports.showReset = async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
     const user = await User.findOne({
       resetToken: hashedToken,
-      resetTokenExpiry: { $gt: Date.now() }
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.render('reset', {
         token: req.params.token,
         error: '⛔ Token expired or invalid',
-        success: null
+        success: null,
       });
     }
 
     res.render('reset', {
       token: req.params.token,
       error: null,
-      success: null
+      success: null,
     });
   } catch (err) {
-    console.error('❌ Show reset error:', err.message);
+    console.error('❌ Show reset error:', err);
     res.render('reset', {
       token: req.params.token,
       error: 'Something went wrong.',
-      success: null
+      success: null,
     });
   }
 };
@@ -153,14 +153,14 @@ exports.reset = async (req, res) => {
 
     const user = await User.findOne({
       resetToken: hashedToken,
-      resetTokenExpiry: { $gt: Date.now() }
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.render('reset', {
         token: req.params.token,
         error: '⛔ Token expired or invalid',
-        success: null
+        success: null,
       });
     }
 
@@ -168,7 +168,7 @@ exports.reset = async (req, res) => {
       return res.render('reset', {
         token: req.params.token,
         error: '❌ Passwords do not match',
-        success: null
+        success: null,
       });
     }
 
@@ -179,11 +179,11 @@ exports.reset = async (req, res) => {
 
     res.redirect('/login?success=✅ Password updated! You can now log in.');
   } catch (err) {
-    console.error('❌ Reset password error:', err.message);
+    console.error('❌ Reset password error:', err);
     res.render('reset', {
       token: req.params.token,
       error: 'Failed to reset password.',
-      success: null
+      success: null,
     });
   }
 };

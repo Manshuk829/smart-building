@@ -1,7 +1,7 @@
 // middleware/authMiddleware.js
 
 // ✅ Middleware: Only logged-in users can proceed
-exports.isAuthenticated = (req, res, next) => {
+const isAuthenticated = (req, res, next) => {
   if (req.session?.user) {
     res.locals.user = req.session.user; // Makes user info available in EJS views
     return next();
@@ -11,7 +11,7 @@ exports.isAuthenticated = (req, res, next) => {
 };
 
 // ✅ Middleware: Only admins can access
-exports.isAdmin = (req, res, next) => {
+const isAdmin = (req, res, next) => {
   const user = req.session?.user;
   if (user?.role === 'admin') {
     res.locals.user = user;
@@ -20,4 +20,9 @@ exports.isAdmin = (req, res, next) => {
 
   console.warn(`🚫 Admin access denied for user: ${user?.username || 'Unknown'}`);
   return res.status(403).send('Access Denied: Admins only');
+};
+
+module.exports = {
+  isAuthenticated,
+  isAdmin,
 };
