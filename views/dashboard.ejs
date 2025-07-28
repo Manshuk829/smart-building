@@ -166,21 +166,21 @@
             <i class="fas fa-thermometer-half"></i>
             <div>
               <div class="sensor-label">Temperature</div>
-              <div class="sensor-value"><%= data.temperature %> °C</div>
+              <div class="sensor-value"><%= data.temperature ?? 'N/A' %> °C</div>
             </div>
           </div>
           <div class="sensor-box">
             <i class="fas fa-tint"></i>
             <div>
               <div class="sensor-label">Humidity</div>
-              <div class="sensor-value"><%= data.humidity %> %</div>
+              <div class="sensor-value"><%= data.humidity ?? 'N/A' %> %</div>
             </div>
           </div>
           <div class="sensor-box">
             <i class="fas fa-smog"></i>
             <div>
               <div class="sensor-label">Gas</div>
-              <div class="sensor-value"><%= data.gas %></div>
+              <div class="sensor-value"><%= data.gas ?? 'N/A' %></div>
             </div>
           </div>
           <div class="sensor-box">
@@ -201,7 +201,7 @@
             <i class="fas fa-ruler"></i>
             <div>
               <div class="sensor-label">Vibration</div>
-              <div class="sensor-value"><%= data.vibration %></div>
+              <div class="sensor-value"><%= data.vibration ?? 'N/A' %></div>
             </div>
           </div>
         </div>
@@ -214,7 +214,8 @@
         <% } %>
 
         <div style="text-align: center; margin-top: 10px; font-size: 14px;">
-          <i class="fas fa-clock"></i> Last updated: <%= updatedAt.toLocaleString() %>
+          <i class="fas fa-clock"></i> Last updated:
+          <%= updatedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) %>
         </div>
       <% } else { %>
         <p style="text-align: center; color: #888;">No data available for Floor <%= floor %></p>
@@ -228,13 +229,10 @@
     </div>
   </div>
 
-  <!-- ✅ Socket.IO for ML Alert -->
   <script src="/socket.io/socket.io.js"></script>
-
   <script>
     setTimeout(() => window.location.reload(), 3000);
 
-    // 🔁 Dark Mode
     const body = document.body;
     const toggleBtn = document.querySelector('.dark-mode-toggle');
     const icon = toggleBtn.querySelector('i');
@@ -262,7 +260,6 @@
       localStorage.setItem('darkMode', newMode);
     });
 
-    // 🧠 ML Alert from server via Socket.IO
     const socket = io();
     const mlAlertBox = document.getElementById('ml-alert');
 

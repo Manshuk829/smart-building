@@ -4,24 +4,35 @@
   <%- include('partials/head') %>
   <title>ML Alerts</title>
   <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+    }
+
     .alert-card {
       border-left: 8px solid #d00;
       background-color: #ffe6e6;
       padding: 1rem 1.5rem;
       margin-bottom: 1rem;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       animation: fadeIn 0.4s ease-in-out;
     }
 
     .alert-card h5 {
       margin: 0 0 5px;
-      color: #900;
+      color: #b30000;
+      font-weight: bold;
     }
 
     .timestamp {
       font-size: 0.9rem;
       color: #555;
+    }
+
+    .no-alert-msg {
+      text-align: center;
+      color: #888;
+      font-style: italic;
     }
 
     @keyframes fadeIn {
@@ -37,7 +48,7 @@
     <h2 class="mb-4 text-center">🚨 Machine Learning Alerts</h2>
     
     <div id="alert-container">
-      <p class="text-muted text-center">No alerts yet. Waiting for alerts...</p>
+      <p class="no-alert-msg">No alerts yet. Waiting for alerts...</p>
     </div>
   </div>
 
@@ -49,16 +60,20 @@
     socket.on('ml-alert', (data) => {
       const div = document.createElement('div');
       div.classList.add('alert-card');
+
+      const timestamp = new Date(data.time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
       div.innerHTML = `
-        <h5>⚠️ ${data.type.toUpperCase()} detected</h5>
-        <p class="timestamp">Time: ${new Date(data.time).toLocaleString()}</p>
+        <h5>⚠️ ${data.type?.toUpperCase() || 'ALERT'} detected</h5>
+        <p class="timestamp">Time: ${timestamp}</p>
       `;
 
-      if (alertContainer.firstChild?.tagName === 'P') {
-        alertContainer.innerHTML = ''; // remove "Waiting for alerts..." message
+      if (alertContainer.firstChild?.classList.contains('no-alert-msg')) {
+        alertContainer.innerHTML = ''; // remove "No alerts yet" message
       }
 
       alertContainer.prepend(div);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   </script>
 </body>
