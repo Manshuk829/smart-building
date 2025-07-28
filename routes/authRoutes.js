@@ -1,24 +1,30 @@
+// routes/authRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// 🔐 Login Routes
-router.get('/login', authController.showLogin);
-router.post('/login', authController.login);
+// =====================
+// 🔐 AUTHENTICATION ROUTES
+// =====================
 
-// 👤 Register Routes
-router.get('/register', authController.showRegister);
-router.post('/register', authController.register);
+// 🟢 Login
+router.get('/login', authController.showLogin);       // Show login form
+router.post('/login', authController.login);          // Handle login submission
 
-// 📧 Forgot Password Routes
-router.get('/forgot', authController.showForgot);
-router.post('/forgot', authController.forgot);
+// 🆕 Register
+router.get('/register', authController.showRegister); // Show register form
+router.post('/register', authController.register);    // Handle registration
 
-// 🔁 Reset Password Routes
-router.get('/reset/:token', authController.showReset);
-router.post('/reset/:token', authController.reset);
+// 🔑 Forgot Password
+router.get('/forgot', authController.showForgot);     // Show forgot password form
+router.post('/forgot', authController.forgot);        // Send reset link via email
 
-// 🚪 Logout Route
-router.get('/logout', authController.logout);
+// 🔁 Reset Password via Token
+router.get('/reset/:token', authController.showReset); // Show reset form
+router.post('/reset/:token', authController.reset);    // Handle reset submission
+
+// 🚪 Logout
+router.get('/logout', authController.logout);         // Clear session + redirect
 
 module.exports = router;
