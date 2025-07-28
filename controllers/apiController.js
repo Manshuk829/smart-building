@@ -10,11 +10,20 @@ exports.saveSensorData = async (req, res) => {
       return res.status(400).json({ error: '❌ "topic" and "payload" are required' });
     }
 
+    // 🧠 Extract floor number and sensor type from topic
+    const topicParts = topic.split('/');
+    const floorMatch = topicParts.find(part => part.startsWith('floor'));
+    const type = topicParts.at(-1); // last part is usually the sensor type
+
+    const floor = floorMatch ? floorMatch.replace('floor', '') : 'unknown';
+
     const newData = new SensorData({
       topic,
+      floor,
+      type,
       payload,
       time: time ? new Date(time) : new Date(),
-      source // e.g., 'sensor' or 'ml'
+      source
     });
 
     await newData.save();
@@ -22,10 +31,10 @@ exports.saveSensorData = async (req, res) => {
     const io = req.app.get('io');
     io.emit('sensorUpdate', newData); // ✅ Real-time dashboard update
 
-    // Optional: If data came from ML and has high risk, emit as alert
+    // 🔔 Emit ML alert if applicable
     if (source === 'ml' && topic.includes('alert')) {
       io.emit('ml-alert', {
-        floor: topic.match(/\d+/)?.[0] || 'unknown',
+        floor,
         message: payload,
         time: newData.time
       });
