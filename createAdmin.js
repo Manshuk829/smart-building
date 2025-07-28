@@ -4,13 +4,17 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = require('./models/User');
 
-const username = 'admin';             // Change if needed
-const plainPassword = 'admin123';     // Change to secure password
+// ✅ You can pass username & password via ENV or fallback to default
+const username = process.env.ADMIN_USERNAME || 'admin';
+const plainPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
 async function createAdmin() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
     console.log('✅ Connected to MongoDB');
 
     // Check if admin user already exists
@@ -37,7 +41,7 @@ async function createAdmin() {
     console.log(`🛡️ Role: admin`);
     process.exit(0);
   } catch (err) {
-    console.error('❌ Error creating admin user:', err);
+    console.error('❌ Error creating admin user:', err.message);
     process.exit(1);
   }
 }

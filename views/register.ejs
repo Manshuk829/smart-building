@@ -171,10 +171,10 @@
 <body>
   <div class="register-box">
     <div class="dark-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-      <i class="fas fa-moon"></i>
+      <i class="fas fa-moon" id="theme-icon"></i>
     </div>
 
-    <h2>👤 Guest Registration</h2>
+    <h2>👤 Register as Admin or Guest</h2>
 
     <% if (error) { %>
       <div class="error-message">❌ <%= error %></div>
@@ -189,11 +189,13 @@
 
     <form method="POST" action="/register" onsubmit="return validateForm()">
       <div class="form-group">
+        <label for="username" class="sr-only">Username</label>
         <i class="fas fa-user"></i>
         <input type="text" name="username" id="username" placeholder="Username" required />
       </div>
 
       <div class="form-group">
+        <label for="regPassword" class="sr-only">Password</label>
         <i class="fas fa-lock"></i>
         <input type="password" name="password" id="regPassword" placeholder="Password" required />
         <span class="toggle-password" onclick="togglePassword()">
@@ -202,9 +204,10 @@
       </div>
 
       <div class="form-group">
+        <label for="role" class="sr-only">Role</label>
         <i class="fas fa-user-shield"></i>
         <select name="role" id="role" required>
-          <option value="" disabled selected>Choose Role</option>
+          <option value="" disabled hidden selected>Select Role</option>
           <option value="admin">Admin</option>
           <option value="guest">Guest</option>
         </select>
@@ -233,8 +236,11 @@
 
     function toggleDarkMode() {
       const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
       const current = html.getAttribute('data-theme') || 'light';
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+      const next = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      icon.classList.replace(current === 'light' ? 'fa-moon' : 'fa-sun', next === 'dark' ? 'fa-sun' : 'fa-moon');
     }
 
     function validateForm() {

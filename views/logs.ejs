@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📝 Admin Logs - Smart Building</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
@@ -9,7 +10,9 @@
       font-family: 'Segoe UI', sans-serif;
       background-color: #f5f6fa;
       color: #2c3e50;
-      padding: 40px;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: auto;
     }
 
     h1 {
@@ -37,6 +40,11 @@
       color: #fff;
     }
 
+    td time {
+      font-family: monospace;
+      color: #555;
+    }
+
     tr:hover {
       background-color: #f1f1f1;
     }
@@ -52,8 +60,12 @@
       font-weight: bold;
     }
 
+    .back a:hover {
+      text-decoration: underline;
+    }
+
     .download-btn {
-      margin: 15px auto;
+      margin: 0 auto 20px auto;
       display: block;
       padding: 10px 20px;
       background-color: #007bff;
@@ -61,10 +73,43 @@
       border-radius: 8px;
       border: none;
       cursor: pointer;
+      font-size: 16px;
     }
 
     .download-btn:hover {
       background-color: #0056b3;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 15px;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 10px;
+      }
+
+      td {
+        padding: 8px 12px;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        font-size: 15px;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #2c3e50;
+      }
     }
   </style>
 </head>
@@ -87,10 +132,12 @@
     <tbody>
       <% logs.forEach(log => { %>
         <tr>
-          <td><%= log.action %></td>
-          <td><%= log.floor ?? '--' %></td>
-          <td><%= log.performedBy %></td>
-          <td><%= new Date(log.createdAt).toLocaleString() %></td>
+          <td data-label="Action"><%= log.action %></td>
+          <td data-label="Floor"><%= log.floor ?? '--' %></td>
+          <td data-label="Performed By"><%= log.performedBy %></td>
+          <td data-label="Time">
+            <time><%= new Date(log.createdAt).toLocaleString() %></time>
+          </td>
         </tr>
       <% }) %>
     </tbody>

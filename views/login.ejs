@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🔐 Smart Building Login</title>
   <link rel="stylesheet" href="/styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
@@ -187,7 +187,7 @@
       <i class="fas fa-moon"></i>
     </div>
 
-    <img src="https://img.icons8.com/ios-filled/100/ffffff/smart-home-automation.png" class="logo" alt="logo" />
+    <img src="https://img.icons8.com/ios-filled/100/ffffff/smart-home-automation.png" class="logo" alt="Smart Home Icon" />
     <h2>Smart Building Login</h2>
 
     <% if (error) { %>
@@ -195,23 +195,21 @@
     <% } %>
 
     <% if (success) { %>
-      <div class="success-message">✅ <%= success %></div>
+      <div class="success-message">✅ <%= success %> Redirecting...</div>
       <script>
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
+        setTimeout(() => window.location.href = "/", 2000);
       </script>
     <% } %>
 
     <form method="POST" action="/login" onsubmit="return validateLogin()">
       <div class="form-group">
         <i class="fas fa-user"></i>
-        <input type="text" name="username" id="username" placeholder="Username" required />
+        <input type="text" name="username" id="username" placeholder="Username" aria-label="Username" autocomplete="username" required />
       </div>
 
       <div class="form-group">
         <i class="fas fa-lock"></i>
-        <input type="password" name="password" id="passwordInput" placeholder="Password" required />
+        <input type="password" name="password" id="passwordInput" placeholder="Password" aria-label="Password" autocomplete="off" required />
         <span class="toggle-password" onclick="togglePassword()">
           <i class="fas fa-eye"></i>
         </span>
@@ -242,8 +240,16 @@
     function toggleDarkMode() {
       const html = document.documentElement;
       const current = html.getAttribute('data-theme') || 'light';
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+      const newTheme = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
     }
+
+    // Persist dark mode
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    });
 
     function validateLogin() {
       const username = document.getElementById('username').value.trim();

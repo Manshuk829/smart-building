@@ -2,10 +2,10 @@
   "name": "smart-building-website",
   "version": "1.0.0",
   "description": "IoT + ML Smart Building Monitoring System",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [
     "IoT",
@@ -15,7 +15,9 @@
     "Socket.io",
     "Chart.js",
     "Dashboard",
-    "Monitoring"
+    "Monitoring",
+    "ESP32",
+    "MQTT"
   ],
   "author": "Manshuk Garg",
   "license": "MIT",

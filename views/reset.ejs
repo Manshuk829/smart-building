@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🔐 Reset Password</title>
+  <title>Smart Building | 🔐 Reset Password</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
     body {
@@ -24,10 +24,15 @@
       margin-bottom: 1rem;
       text-align: center;
     }
+    label {
+      font-size: 0.9rem;
+      display: block;
+      margin: 0.5rem 0 0.2rem;
+    }
     input {
       width: 100%;
       padding: 0.7rem;
-      margin: 0.5rem 0;
+      margin-bottom: 0.7rem;
       border: 1px solid #ccc;
       border-radius: 0.5rem;
       font-size: 1rem;
@@ -41,7 +46,6 @@
       border-radius: 0.5rem;
       cursor: pointer;
       font-size: 1rem;
-      margin-top: 0.5rem;
     }
     .msg {
       margin-top: 1rem;
@@ -80,8 +84,12 @@
   <div class="reset-box">
     <h2>🔐 Reset Password</h2>
     <form method="POST" action="/reset/<%= token %>" onsubmit="return validateForm()">
-      <input id="pwd" type="password" name="password" placeholder="New Password" required />
-      <input id="confirm" type="password" name="confirm" placeholder="Confirm Password" required />
+      <label for="pwd">New Password</label>
+      <input id="pwd" type="password" name="password" placeholder="Enter new password" required autocomplete="new-password" />
+
+      <label for="confirm">Confirm Password</label>
+      <input id="confirm" type="password" name="confirm" placeholder="Confirm new password" required autocomplete="new-password" />
+
       <button type="submit">Reset Password</button>
     </form>
 
