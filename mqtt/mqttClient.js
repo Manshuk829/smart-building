@@ -10,7 +10,7 @@ module.exports = function (io) {
   }
 
   const client = mqtt.connect(brokerUrl, {
-    clientId: 'SmartBuildingClient_' + Math.random().toString(16).substr(2, 8),
+    clientId: 'SmartBuildingClient_' + Math.random().toString(36).substr(2, 9),
     keepalive: 60,
     reconnectPeriod: 2000,
     clean: true
@@ -20,7 +20,7 @@ module.exports = function (io) {
     console.log(`📡 Connected to MQTT broker at ${brokerUrl}`);
     client.subscribe(topic, (err) => {
       if (err) {
-        console.error('❌ Failed to subscribe to topic:', err.message);
+        console.error('❌ Failed to subscribe to topic:', topic, err.message);
       } else {
         console.log(`✅ Subscribed to topic: ${topic}`);
       }
@@ -30,18 +30,17 @@ module.exports = function (io) {
   client.on('message', async (receivedTopic, message) => {
     if (receivedTopic === topic) {
       try {
-        // ✅ Let mqttController handle .toString() and JSON parsing
         await handleMQTTMessage(receivedTopic, message, io);
       } catch (err) {
         console.error('❌ Error processing MQTT message:', err.message);
       }
     } else {
-      console.warn(`⚠️ Message received on unexpected topic: ${receivedTopic}`);
+      console.warn(`⚠️ Received message on unexpected topic: ${receivedTopic}`);
     }
   });
 
   client.on('error', (err) => {
-    console.error('❌ MQTT client error:', err.message);
+    console.error('❌ MQTT Client Error:', err.message);
   });
 
   client.on('close', () => {

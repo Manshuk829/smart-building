@@ -13,17 +13,37 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    const isNumber = (val) => typeof val === 'number' && !isNaN(val);
+    const toNumber = (val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) ? num : undefined;
+    };
 
-    const temperature = isNumber(data.temp) ? data.temp : undefined;
-    const humidity = isNumber(data.humidity) ? data.humidity : undefined;
-    const gas = isNumber(data.gas) ? data.gas : undefined;
-    const vibration = isNumber(data.vibration) ? data.vibration : undefined;
-    const floor = isNumber(data.floor) ? data.floor : undefined;
-    const prediction = typeof data.prediction === 'string' ? data.prediction.toLowerCase() : 'normal';
+    const temperature = toNumber(data.temp);
+    const humidity = toNumber(data.humidity);
+    const gas = toNumber(data.gas);
+    const vibration = toNumber(data.vibration);
+    const floor = toNumber(data.floor);
 
-    const motion = typeof data.motion === 'boolean' ? data.motion : undefined;
-    const flame = typeof data.flame === 'boolean' ? data.flame : undefined;
+    const prediction = typeof data.prediction === 'string'
+      ? data.prediction.toLowerCase()
+      : 'normal';
+
+    const motion = typeof data.motion === 'boolean'
+      ? data.motion
+      : data.motion === 'true'
+      ? true
+      : data.motion === 'false'
+      ? false
+      : undefined;
+
+    const flame = typeof data.flame === 'boolean'
+      ? data.flame
+      : data.flame === 'true'
+      ? true
+      : data.flame === 'false'
+      ? false
+      : undefined;
+
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
 
     if (floor === undefined) {
@@ -31,6 +51,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
+    // Save to DB
     const sensorDoc = await SensorData.create({
       floor,
       temperature,
@@ -43,6 +64,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       prediction
     });
 
+    // Emit to all clients
     io.emit('sensorUpdate', {
       floor,
       temp: temperature ?? null,
@@ -67,7 +89,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     } else {
       io.emit('ml-normal', { time: new Date(), floor });
     }
-
   } catch (err) {
     console.error('❌ Error handling MQTT message:', err.message);
   }
