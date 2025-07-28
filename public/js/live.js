@@ -10,7 +10,7 @@ let mlAlertTimeout = null;
 
 // ---------- Helpers ----------
 const nowTS = () => Date.now();
-const fmt = (v, unit = '') => (v === null || v === undefined ? '--' : `${v}${unit}`);
+const fmt = (v, unit = '') => (v === null || v === undefined ? 'N/A' : `${v}${unit}`);
 
 // ---------- WebSocket (MQTT) connection status ----------
 function updateConnectionStatus(connected) {
@@ -76,9 +76,10 @@ socket.on('sensorUpdate', data => {
 
   // 🌡️ Update sensor readings
   document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
+  document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
   document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
-  document.getElementById(`flame-${floor}`)?.textContent = `🔥 Flame: ${data.flame ? 'Yes' : 'No'}`;
-  document.getElementById(`motion-${floor}`)?.textContent = `🏃 Motion: ${data.motion ? 'Yes' : 'No'}`;
+  document.getElementById(`flame-${floor}`)?.textContent = `🔥 Flame: ${data.flame ? '❌ Detected' : '✅ Safe'}`;
+  document.getElementById(`motion-${floor}`)?.textContent = `🏃 Motion: ${data.motion ? '❌ Detected' : '✅ None'}`;
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
