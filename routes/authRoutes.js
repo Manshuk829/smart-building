@@ -34,4 +34,16 @@ router.get('/check-session', (req, res) => {
   res.json(req.session.authUser || { message: '❌ No session found' });
 });
 
+// ✅ TEMP: Debug session creation manually
+router.get('/debug-session', (req, res) => {
+  req.session.test = 'Session working';
+  console.log('✅ /debug-session set test session');
+  res.send('✅ Session test set. Now visit /check-debug-session.');
+});
+
+router.get('/check-debug-session', (req, res) => {
+  const value = req.session.test;
+  res.send(`Session value: ${value || '❌ No session found'}`);
+});
+
 module.exports = router;
