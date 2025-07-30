@@ -3,19 +3,20 @@
 const express = require('express');
 const router = express.Router();
 const viewController = require('../controllers/viewController');
+const alertsController = require('../controllers/alerts');
 const { isAuthenticated } = require('../middleware/authMiddleware');
-const alertsController = require('../controllers/alerts'); // ✅ Import alerts controller
 
-// 🔐 Protected View Routes
-router.get('/', isAuthenticated, viewController.dashboard);
-router.get('/live', isAuthenticated, viewController.liveView);
-router.get('/history', isAuthenticated, viewController.history);
-router.get('/charts', isAuthenticated, viewController.charts);
+// 🔐 Apply authentication to all routes below
+router.use(isAuthenticated);
 
-// ✅ New: ML Alerts Page
-router.get('/alerts', isAuthenticated, alertsController.getAlertsPage);
+// Protected Views
+router.get('/', viewController.dashboard);
+router.get('/live', viewController.liveView);
+router.get('/history', viewController.history);
+router.get('/charts', viewController.charts);
+router.get('/alerts', alertsController.getAlertsPage);
 
-// Optional: Dev check to warn about missing handlers
+// ✅ Dev check: warn if any handlers are missing
 if (process.env.NODE_ENV !== 'production') {
   const requiredHandlers = ['dashboard', 'liveView', 'history', 'charts'];
   requiredHandlers.forEach(fn => {

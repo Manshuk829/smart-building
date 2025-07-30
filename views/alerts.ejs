@@ -24,6 +24,10 @@
       font-weight: bold;
     }
 
+    .alert-card p {
+      margin: 0.25rem 0 0;
+    }
+
     .timestamp {
       font-size: 0.9rem;
       color: #555;
@@ -45,13 +49,13 @@
 <body>
   <%- include('partials/navbar') %>
 
-  <div class="container mt-5">
+  <main class="container mt-5">
     <h2 class="mb-4 text-center">🚨 Machine Learning Alerts</h2>
-    
+
     <div id="alert-container" aria-live="polite">
-      <p class="no-alert-msg">No alerts yet. Waiting for alerts...</p>
+      <p class="no-alert-msg">✅ No alerts received yet.</p>
     </div>
-  </div>
+  </main>
 
   <%- include('partials/scripts') %>
   <script>
@@ -72,8 +76,9 @@
         timeZone: 'Asia/Kolkata'
       });
 
-      const type = data.type.toUpperCase();
+      const type = (data.type || 'UNKNOWN').toUpperCase();
       const floor = data.floor;
+      const message = data.message || '';  // Optional additional message
 
       const icon = type.includes('FIRE') ? '🔥' :
                    type.includes('INTRUSION') ? '🕵️' :
@@ -84,6 +89,7 @@
       div.innerHTML = `
         <h5>${icon} ${type} detected (Floor ${floor})</h5>
         <p class="timestamp">Time: ${timestamp}</p>
+        ${message ? `<p>${message}</p>` : ''}
       `;
 
       if (alertContainer.firstChild?.classList.contains('no-alert-msg')) {

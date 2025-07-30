@@ -1,6 +1,8 @@
 const SensorData = require('../models/SensorData');
 
-// Dashboard View
+// ===============================
+// 🏠 Dashboard View
+// ===============================
 exports.dashboard = async (req, res) => {
   try {
     const floors = req.app.get('floors');
@@ -18,7 +20,9 @@ exports.dashboard = async (req, res) => {
   }
 };
 
-// Live View
+// ===============================
+// 📹 Live View
+// ===============================
 exports.liveView = async (req, res) => {
   try {
     const floors = req.app.get('floors');
@@ -36,7 +40,9 @@ exports.liveView = async (req, res) => {
   }
 };
 
-// History View
+// ===============================
+// 📜 History View
+// ===============================
 exports.history = async (req, res) => {
   try {
     const floors = req.app.get('floors');
@@ -58,17 +64,18 @@ exports.history = async (req, res) => {
     };
 
     if (recent.length) {
+      const getAvg = arr => (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
       const temps = recent.map(r => r.temperature);
       const hums = recent.map(r => r.humidity);
       const gases = recent.map(r => r.gas);
       const vibes = recent.map(r => r.vibration ?? 0);
 
-      stats.avgTemp = (temps.reduce((a, b) => a + b) / temps.length).toFixed(2);
+      stats.avgTemp = getAvg(temps);
       stats.minTemp = Math.min(...temps).toFixed(2);
       stats.maxTemp = Math.max(...temps).toFixed(2);
-      stats.avgHumidity = (hums.reduce((a, b) => a + b) / hums.length).toFixed(2);
-      stats.avgGas = (gases.reduce((a, b) => a + b) / gases.length).toFixed(2);
-      stats.avgVibration = (vibes.reduce((a, b) => a + b) / vibes.length).toFixed(2);
+      stats.avgHumidity = getAvg(hums);
+      stats.avgGas = getAvg(gases);
+      stats.avgVibration = getAvg(vibes);
     }
 
     res.render('history', {
@@ -86,7 +93,9 @@ exports.history = async (req, res) => {
   }
 };
 
-// Charts View
+// ===============================
+// 📈 Charts View
+// ===============================
 exports.charts = async (req, res) => {
   try {
     const thresholds = req.app.get('thresholds');
@@ -98,6 +107,7 @@ exports.charts = async (req, res) => {
     const query = { floor };
     if (intruder) query.intruderImage = { $ne: null };
 
+    // 📅 Filter by time range
     if (range === '1h') query.createdAt = { $gte: new Date(now - 3600000) };
     else if (range === '24h') query.createdAt = { $gte: new Date(now - 86400000) };
     else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };

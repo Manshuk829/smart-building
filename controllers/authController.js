@@ -12,7 +12,7 @@ exports.showLogin = (req, res) => {
 // Handle Login
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username = '', password = '' } = req.body;
     const user = await User.findOne({ username: username.trim() });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -40,10 +40,14 @@ exports.showRegister = (req, res) => {
 // Handle Register
 exports.register = async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username = '', password = '', role } = req.body;
 
     if (!username || !password || !role) {
       return res.render('register', { error: 'All fields are required.', success: null });
+    }
+
+    if (password.length < 6) {
+      return res.render('register', { error: 'Password must be at least 6 characters.', success: null });
     }
 
     const existingUser = await User.findOne({ username: username.trim() });
@@ -83,7 +87,8 @@ exports.forgot = async (req, res) => {
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetURL = `http://${req.headers.host}/reset/${rawToken}`; // use https if deployed with SSL
+    const isSecure = req.protocol === 'https' || process.env.NODE_ENV === 'production';
+    const resetURL = `${isSecure ? 'https' : 'http'}://${req.headers.host}/reset/${rawToken}`;
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -99,12 +104,13 @@ exports.forgot = async (req, res) => {
       subject: 'Smart Building Password Reset',
       html: `
         <h3>🔐 Password Reset</h3>
-        <p>Click below to reset your password:</p>
+        <p>Click the link below to reset your password:</p>
         <a href="${resetURL}">${resetURL}</a>
         <p>This link will expire in 1 hour.</p>
       `,
     });
 
+    console.log(`📧 Reset link sent to ${username}: ${resetURL}`);
     res.render('forgot', { error: null, success: '📧 Reset email sent!' });
   } catch (err) {
     console.error('❌ Forgot password error:', err);
@@ -168,6 +174,14 @@ exports.reset = async (req, res) => {
       return res.render('reset', {
         token: req.params.token,
         error: '❌ Passwords do not match',
+        success: null,
+      });
+    }
+
+    if (password.length < 6) {
+      return res.render('reset', {
+        token: req.params.token,
+        error: 'Password must be at least 6 characters.',
         success: null,
       });
     }

@@ -5,12 +5,12 @@ const isAuthenticated = (req, res, next) => {
   const user = req.session?.user;
 
   if (user) {
-    res.locals.user = user; // Make user data available in views
+    res.locals.user = user; // Makes user info available to EJS views
     return next();
   }
 
   console.warn(`🔒 Access denied to '${req.originalUrl}': not logged in`);
-  return res.status(401).redirect('/login');
+  return res.redirect('/login'); // ⚠️ Avoid sending 401 before redirect (Render may treat 401 differently)
 };
 
 // ✅ Middleware: Only admins can access
