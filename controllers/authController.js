@@ -37,12 +37,15 @@ exports.login = async (req, res) => {
 
     console.log("✅ Session set:", req.session.user);
 
-    // (optional but safe) Ensure session is saved before redirect
     req.session.save((err) => {
       if (err) {
         console.error("❌ Session save error:", err);
         return res.status(500).render('login', { error: 'Session error', success: null });
       }
+
+      // ⬇️ ADD DEBUGGING LINE
+      console.log("✅ Final session object before redirect:", req.session);
+
       return res.redirect('/');
     });
   } catch (err) {

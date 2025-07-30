@@ -17,10 +17,10 @@ exports.showDashboard = async (req, res) => {
       dataByFloor[floor] = results[i] || null;
     });
 
-    res.render('dashboard', { dataByFloor, thresholds });
+    return res.render('dashboard', { dataByFloor, thresholds });
   } catch (err) {
     console.error('❌ Dashboard error:', err.message);
-    res.status(500).send('Error loading dashboard');
+    return res.status(500).send('Error loading dashboard');
   }
 };
 
@@ -37,10 +37,10 @@ exports.showLive = async (req, res) => {
       dataByFloor[floor] = results[i] || null;
     });
 
-    res.render('live', { dataByFloor, thresholds });
+    return res.render('live', { dataByFloor, thresholds });
   } catch (err) {
     console.error('❌ Live view error:', err.message);
-    res.status(500).send('Error loading live view');
+    return res.status(500).send('Error loading live view');
   }
 };
 
@@ -82,7 +82,7 @@ exports.showHistory = async (req, res) => {
       stats.avgVibration = getAvg(vibes);
     }
 
-    res.render('history', {
+    return res.render('history', {
       record: record || null,
       currentIndex: index,
       total,
@@ -93,7 +93,7 @@ exports.showHistory = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ History page error:', err.message);
-    res.status(500).send('Error loading history');
+    return res.status(500).send('Error loading history');
   }
 };
 
@@ -114,13 +114,13 @@ exports.showCharts = async (req, res) => {
 
     const records = await SensorData.find(query).sort({ createdAt: 1 }).limit(100);
 
-    res.render('charts', {
+    return res.render('charts', {
       records: records || [],
       query: req.query,
       thresholds,
     });
   } catch (err) {
     console.error('❌ Charts page error:', err.message);
-    res.status(500).send('Error loading charts');
+    return res.status(500).send('Error loading charts');
   }
 };

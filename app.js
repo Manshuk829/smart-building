@@ -16,6 +16,9 @@ const alertsRoutes = require('./routes/alertsRoutes');
 // Express App Init
 const app = express();
 
+// ✅ Trust proxy (for session cookies on Render)
+app.set('trust proxy', 1);
+
 // Custom app settings
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
