@@ -5,72 +5,64 @@ const User = require('../models/User');
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
-// Show Login Page
+// Show login page
 exports.showLogin = (req, res) => {
   const { success } = req.query;
   res.render('login', { error: null, success });
 };
 
-// Handle Login
+// Handle login
 exports.login = async (req, res) => {
   try {
     const { username = '', password = '' } = req.body;
-    console.log(`🔐 Attempting login with username: ${username}`);
-
     const user = await User.findOne({ username: username.trim() });
 
     if (!user) {
-      console.log('❌ User not found');
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      console.log('❌ Password does not match');
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
 
-    // ✅ Store session using 'authUser'
+    // Set session
     req.session.authUser = {
       id: user._id,
       username: user.username,
-      role: user.role,
+      role: user.role
     };
 
-    console.log("✅ Session set:", req.session.authUser);
-
-    req.session.save((err) => {
+    // Force session save before redirect
+    req.session.save(err => {
       if (err) {
         console.error("❌ Session save error:", err);
         return res.status(500).render('login', { error: 'Session error', success: null });
       }
-
-      console.log("✅ Final session object before redirect:", req.session);
       return res.redirect('/');
     });
-  } catch (err) {
-    console.error('❌ Login error:', err);
-    return res.status(500).render('login', { error: 'Server error', success: null });
+  } catch (error) {
+    console.error("❌ Login error:", error);
+    res.status(500).render('login', { error: 'Server error', success: null });
   }
 };
 
-// Logout
+// Handle logout
 exports.logout = (req, res) => {
-  req.session.destroy((err) => {
+  req.session.destroy(err => {
     if (err) {
-      console.error("❌ Logout session destroy error:", err);
-      return res.redirect('/');
+      console.error("❌ Logout error:", err);
     }
     res.redirect('/login');
   });
 };
 
-// Show Register Page
+// Show register page
 exports.showRegister = (req, res) => {
   res.render('register', { error: null, success: null });
 };
 
-// Handle Register
+// Handle registration
 exports.register = async (req, res) => {
   try {
     const { username = '', password = '', role } = req.body;
@@ -85,32 +77,32 @@ exports.register = async (req, res) => {
 
     const existingUser = await User.findOne({ username: username.trim() });
     if (existingUser) {
-      return res.render('register', { error: 'Username already exists', success: null });
+      return res.render('register', { error: 'Username already exists.', success: null });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     await new User({ username: username.trim(), password: hashedPassword, role }).save();
 
-    res.redirect('/login?success=' + encodeURIComponent('✅ Registered successfully! You can now login.'));
-  } catch (err) {
-    console.error('❌ Registration error:', err);
-    res.render('register', { error: 'Registration failed', success: null });
+    return res.redirect('/login?success=' + encodeURIComponent('✅ Registered successfully! You can now login.'));
+  } catch (error) {
+    console.error("❌ Registration error:", error);
+    res.status(500).render('register', { error: 'Registration failed.', success: null });
   }
 };
 
-// Show Forgot Password Page
+// Show forgot password page
 exports.showForgot = (req, res) => {
   res.render('forgot', { error: null, success: null });
 };
 
-// Handle Forgot Password
+// Handle forgot password
 exports.forgot = async (req, res) => {
   try {
     const username = req.body.username?.trim();
     const user = await User.findOne({ username });
 
     if (!user) {
-      return res.render('forgot', { error: 'User not found', success: null });
+      return res.render('forgot', { error: 'User not found.', success: null });
     }
 
     const rawToken = crypto.randomBytes(32).toString('hex');
@@ -143,15 +135,14 @@ exports.forgot = async (req, res) => {
       `,
     });
 
-    console.log(`📧 Reset link sent to ${username}: ${resetURL}`);
     res.render('forgot', { error: null, success: '📧 Reset email sent!' });
-  } catch (err) {
-    console.error('❌ Forgot password error:', err);
+  } catch (error) {
+    console.error("❌ Forgot password error:", error);
     res.render('forgot', { error: 'Failed to send reset email.', success: null });
   }
 };
 
-// Show Reset Password Page
+// Show reset password page
 exports.showReset = async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
@@ -169,22 +160,14 @@ exports.showReset = async (req, res) => {
       });
     }
 
-    res.render('reset', {
-      token: req.params.token,
-      error: null,
-      success: null,
-    });
-  } catch (err) {
-    console.error('❌ Show reset error:', err);
-    res.render('reset', {
-      token: req.params.token,
-      error: 'Something went wrong.',
-      success: null,
-    });
+    res.render('reset', { token: req.params.token, error: null, success: null });
+  } catch (error) {
+    console.error("❌ Show reset error:", error);
+    res.render('reset', { token: req.params.token, error: 'Something went wrong.', success: null });
   }
 };
 
-// Handle Reset Password
+// Handle reset password
 exports.reset = async (req, res) => {
   try {
     const { password, confirm } = req.body;
@@ -224,13 +207,9 @@ exports.reset = async (req, res) => {
     user.resetTokenExpiry = undefined;
     await user.save();
 
-    res.redirect('/login?success=' + encodeURIComponent('✅ Password updated! You can now log in.'));
-  } catch (err) {
-    console.error('❌ Reset password error:', err);
-    res.render('reset', {
-      token: req.params.token,
-      error: 'Failed to reset password.',
-      success: null,
-    });
+    return res.redirect('/login?success=' + encodeURIComponent('✅ Password updated! You can now log in.'));
+  } catch (error) {
+    console.error("❌ Reset password error:", error);
+    res.render('reset', { token: req.params.token, error: 'Failed to reset password.', success: null });
   }
 };

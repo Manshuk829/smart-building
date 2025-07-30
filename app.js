@@ -13,11 +13,13 @@ const viewRoutes = require('./routes/viewRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 
-// Express App Init
+// Initialize Express App
 const app = express();
-app.set('trust proxy', 1); // ✅ For secure cookies on Render
 
-// App settings
+// Set trust proxy for secure cookies (Render)
+app.set('trust proxy', 1);
+
+// Floor & Threshold App Configs
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -26,50 +28,57 @@ app.set('thresholds', {
   vibration: 5.0
 });
 
-// Middleware
+// Static Files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// View Engine
 app.set('view engine', 'ejs');
+
+// Body Parsers
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session Middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60 // 1 day
-  }),
-  cookie: {
-    httpOnly: true,
-    secure: true, // ✅ Required on Render
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  }
-}));
+// Session Configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 24 * 60 * 60 // 1 day
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: true, // Required for HTTPS on Render
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
+  })
+);
 
-// ✅ Debug: Log session user
+// Middleware: Log current session user (for debugging)
 app.use((req, res, next) => {
   console.log('🔍 Session user:', req.session.authUser);
   next();
 });
 
-// ✅ Make session user available to all EJS views
+// Middleware: Make session user available in all views
 app.use((req, res, next) => {
   res.locals.user = req.session.authUser || null;
   next();
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => {
+  .catch((err) => {
     console.error('❌ MongoDB connection failed:', err.message);
     process.exit(1);
   });
 
-// Routes
+// Route Handlers
 app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
