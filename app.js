@@ -16,7 +16,7 @@ const alertsRoutes = require('./routes/alertsRoutes');
 // Initialize Express App
 const app = express();
 
-// ✅ Trust proxy for secure cookies on Render
+// ✅ Trust proxy so secure cookies work behind Render's proxy
 app.set('trust proxy', 1);
 
 // App-wide Configs
@@ -50,9 +50,9 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: true,           // ✅ Required on Render (HTTPS)
+      secure: process.env.NODE_ENV === 'production', // 🔁 Works on localhost + Render
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
   })
 );
