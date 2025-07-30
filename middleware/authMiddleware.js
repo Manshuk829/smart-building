@@ -2,6 +2,9 @@
 
 // ✅ Middleware: Only logged-in users can proceed
 const isAuthenticated = (req, res, next) => {
+  // Allow favicon.ico to bypass authentication
+  if (req.path === '/favicon.ico') return next();
+
   const user = req.session?.user;
 
   if (user) {
