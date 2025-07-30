@@ -31,8 +31,9 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session Middleware
+// Session Middleware (configured for Render compatibility)
 const isProduction = process.env.NODE_ENV === 'production';
+const isRender = process.env.RENDER === 'true'; // Render sets this automatically
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
@@ -44,8 +45,8 @@ app.use(session({
   }),
   cookie: {
     httpOnly: true,
-    secure: isProduction, // true in production (HTTPS)
-    sameSite: isProduction ? 'strict' : 'lax',
+    secure: isProduction && !isRender ? true : false, // Force secure=false for Render HTTP
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
