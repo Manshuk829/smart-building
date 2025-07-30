@@ -48,11 +48,17 @@ app.use(session({
   }),
   cookie: {
     httpOnly: true,
-    secure: isProduction && !isRender ? true : false, // Force secure=false for Render HTTP
+    secure: isProduction && !isRender ? true : false,
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
+
+// ✅ Debug session (TEMPORARY for testing login issue)
+app.use((req, res, next) => {
+  console.log('🔍 Session user:', req.session.user);
+  next();
+});
 
 // Inject user into all views
 app.use((req, res, next) => {
