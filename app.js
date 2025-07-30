@@ -50,7 +50,7 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: false, // ✅ FOR RENDER FREE TIER (http only)
+      secure: true, // ✅ FIXED: Required on Render (uses HTTPS)
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     }
