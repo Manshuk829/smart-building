@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = require('./models/User');
 
-// ✅ You can pass username & password via ENV or fallback to default
 const username = process.env.ADMIN_USERNAME || 'admin';
 const plainPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -26,7 +25,7 @@ async function createAdmin() {
       return process.exit(0);
     }
 
-    // Hash password and create user
+    // Create admin user
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
     const admin = new User({
       username,
@@ -35,10 +34,10 @@ async function createAdmin() {
     });
 
     await admin.save();
-    console.log(`✅ Admin user created successfully`);
+    console.log('✅ Admin user created successfully:');
     console.log(`🧑 Username: ${username}`);
     console.log(`🔑 Password: ${plainPassword}`);
-    console.log(`🛡️ Role: admin`);
+    console.log('🛡️ Role: admin');
     process.exit(0);
   } catch (err) {
     console.error('❌ Error creating admin user:', err.message);

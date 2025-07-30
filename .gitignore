@@ -5,13 +5,15 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json  # Optional: ignore if you use only yarn
+*.tgz
 
 # ======================
-# 🔐 Environment
+# 🔐 Environment Variables
 # ======================
 .env
-.env.*             # Covers .env.production, .env.local etc.
+.env.*
+.env.local
+.env.production.local
 
 # ======================
 # 📝 Logs
@@ -21,13 +23,13 @@ logs/
 *.log.*
 
 # ======================
-# 🧪 Coverage reports (optional)
+# 🧪 Test Coverage
 # ======================
 coverage/
 .nyc_output/
 
 # ======================
-# 🛠️ IDEs and Editors
+# 🛠️ IDE / Editor Config
 # ======================
 .vscode/
 .idea/
@@ -44,25 +46,30 @@ build/
 out/
 
 # ======================
-# 💾 MongoDB (Optional)
+# 💾 MongoDB
 # ======================
 dump/
 *.mongodb.js
 
 # ======================
-# 🎨 EJS cache (Optional)
+# 🎨 EJS cache
 # ======================
 *.ejs~
 
 # ======================
-# 📸 ESP32-CAM / Images (Optional)
+# 📸 ESP32-CAM Uploads / Snapshots
 # ======================
 uploads/
 images/
 
 # ======================
-# ⚙️ System/OS-specific
+# ⚙️ System Files
 # ======================
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ======================
+# 🛑 Render-specific or Deployment artifacts (optional)
+# ======================
+render.yaml

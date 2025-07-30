@@ -1,7 +1,7 @@
 {
   "name": "smart-building-website",
   "version": "1.0.0",
-  "description": "IoT + ML Smart Building Monitoring System",
+  "description": "IoT and ML based smart system for emergency alerting and monitoring in a smart building",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,14 +10,15 @@
   "keywords": [
     "IoT",
     "Smart Building",
+    "Emergency Alerts",
+    "ESP32-CAM",
     "Express",
     "MongoDB",
     "Socket.io",
     "Chart.js",
-    "Dashboard",
+    "MQTT",
     "Monitoring",
-    "ESP32",
-    "MQTT"
+    "Dashboard"
   ],
   "author": "Manshuk Garg",
   "license": "MIT",
@@ -27,7 +28,7 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "connect-mongo": "^5.1.0",
-    "dotenv": "^17.2.0",
+    "dotenv": "^16.3.1",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
