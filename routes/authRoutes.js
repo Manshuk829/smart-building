@@ -6,7 +6,7 @@ const authController = require('../controllers/authController');
 // 🔐 AUTHENTICATION ROUTES
 // =====================
 
-// Default route → Redirect to login (especially useful on Render root access if not logged in)
+// 🌐 Redirect root to login page
 router.get('/', (req, res) => res.redirect('/login'));
 
 // 🟢 Login
@@ -26,6 +26,12 @@ router.get('/reset/:token', authController.showReset); // Show reset form
 router.post('/reset/:token', authController.reset);    // Handle reset submission
 
 // 🚪 Logout
-router.get('/logout', authController.logout);          // Clear session + redirect
+router.get('/logout', authController.logout);          // Clear session and redirect to login
+
+// 🧪 Session test route (for debugging only — remove in production!)
+router.get('/check-session', (req, res) => {
+  console.log('📦 Current session:', req.session.user);
+  res.json(req.session.user || { message: '❌ No session found' });
+});
 
 module.exports = router;
