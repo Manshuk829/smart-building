@@ -1,3 +1,5 @@
+// mqtt/mqttController.js
+
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 
@@ -9,49 +11,41 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     try {
       data = JSON.parse(str);
     } catch (parseErr) {
-      console.warn('⚠️ Invalid JSON payload:', str);
+      console.warn('⚠️ Invalid JSON received (not a valid JSON string):', str);
       return;
     }
 
+    // Utility to safely parse numbers
     const toNumber = (val) => {
       const num = parseFloat(val);
-      return !isNaN(num) ? num : undefined;
+      return isNaN(num) ? undefined : num;
     };
+
+    const floor = toNumber(data.floor);
+    if (floor === undefined) {
+      console.warn('⚠️ Missing or invalid floor value:', data.floor);
+      return;
+    }
 
     const temperature = toNumber(data.temp);
     const humidity = toNumber(data.humidity);
     const gas = toNumber(data.gas);
     const vibration = toNumber(data.vibration);
-    const floor = toNumber(data.floor);
 
-    const prediction = typeof data.prediction === 'string'
-      ? data.prediction.toLowerCase()
-      : 'normal';
+    const prediction = (typeof data.prediction === 'string' ? data.prediction : 'normal').toLowerCase();
 
-    const motion = typeof data.motion === 'boolean'
-      ? data.motion
-      : data.motion === 'true'
-      ? true
-      : data.motion === 'false'
-      ? false
-      : undefined;
+    const parseBool = (val) => {
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') return val.toLowerCase() === 'true';
+      return undefined;
+    };
 
-    const flame = typeof data.flame === 'boolean'
-      ? data.flame
-      : data.flame === 'true'
-      ? true
-      : data.flame === 'false'
-      ? false
-      : undefined;
+    const motion = parseBool(data.motion);
+    const flame = parseBool(data.flame);
 
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
 
-    if (floor === undefined) {
-      console.warn('⚠️ Skipping payload due to missing floor:', { floor: data.floor });
-      return;
-    }
-
-    // Save to DB
+    // Save sensor data to MongoDB
     const sensorDoc = await SensorData.create({
       floor,
       temperature,
@@ -64,7 +58,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       prediction
     });
 
-    // Emit to all clients
+    // Emit real-time data to clients
     io.emit('sensorUpdate', {
       floor,
       temp: temperature ?? null,
@@ -77,6 +71,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       prediction
     });
 
+    // Handle ML-based alerts
     if (prediction !== 'normal') {
       await AuditLog.create({
         action: `🚨 ${prediction.toUpperCase()} detected via ML`,
@@ -84,12 +79,18 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         performedBy: 'ML-Pipeline'
       });
 
-      io.emit('ml-alert', { type: prediction, time: new Date(), floor });
-      console.log(`⚠️ ALERT: ${prediction.toUpperCase()} (Floor ${floor})`);
+      io.emit('ml-alert', {
+        type: prediction,
+        time: new Date(),
+        floor
+      });
+
+      console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);
     } else {
       io.emit('ml-normal', { time: new Date(), floor });
     }
+
   } catch (err) {
-    console.error('❌ Error handling MQTT message:', err.message);
+    console.error('❌ MQTT Message Handler Error:', err.message);
   }
 };

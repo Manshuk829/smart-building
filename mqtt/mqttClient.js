@@ -1,3 +1,5 @@
+// mqtt/mqttClient.js
+
 const mqtt = require('mqtt');
 const handleMQTTMessage = require('./mqttController');
 
@@ -6,11 +8,12 @@ module.exports = function (io) {
   const topic = 'iot/predictions';
 
   if (!process.env.MQTT_BROKER_URL) {
-    console.warn('⚠️ MQTT_BROKER_URL not set in .env — using localhost fallback.');
+    console.warn('⚠️ MQTT_BROKER_URL not set in .env — using default localhost.');
   }
 
+  // Create MQTT client
   const client = mqtt.connect(brokerUrl, {
-    clientId: 'SmartBuildingClient_' + Math.random().toString(36).substr(2, 9),
+    clientId: `SmartBuildingClient_${Math.random().toString(36).substr(2, 9)}`,
     keepalive: 60,
     reconnectPeriod: 2000,
     clean: true
@@ -18,9 +21,10 @@ module.exports = function (io) {
 
   client.on('connect', () => {
     console.log(`📡 Connected to MQTT broker at ${brokerUrl}`);
+    
     client.subscribe(topic, (err) => {
       if (err) {
-        console.error('❌ Failed to subscribe to topic:', topic, err.message);
+        console.error(`❌ Failed to subscribe to topic "${topic}":`, err.message);
       } else {
         console.log(`✅ Subscribed to topic: ${topic}`);
       }
@@ -28,14 +32,14 @@ module.exports = function (io) {
   });
 
   client.on('message', async (receivedTopic, message) => {
-    if (receivedTopic === topic) {
-      try {
+    try {
+      if (receivedTopic === topic) {
         await handleMQTTMessage(receivedTopic, message, io);
-      } catch (err) {
-        console.error('❌ Error processing MQTT message:', err.message);
+      } else {
+        console.warn(`⚠️ Unexpected topic received: ${receivedTopic}`);
       }
-    } else {
-      console.warn(`⚠️ Received message on unexpected topic: ${receivedTopic}`);
+    } catch (err) {
+      console.error('❌ Error handling MQTT message:', err.message);
     }
   });
 
