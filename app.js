@@ -1,3 +1,4 @@
+// app.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -15,7 +16,7 @@ const alertsRoutes = require('./routes/alertsRoutes');
 // Express App Init
 const app = express();
 
-// ✅ Trust proxy (for session cookies on Render)
+// ✅ Required for session cookies on Render
 app.set('trust proxy', 1);
 
 // Custom app settings
@@ -33,40 +34,37 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session Middleware (configured for Render compatibility)
-const isProduction = process.env.NODE_ENV === 'production';
-const isRender = process.env.RENDER === 'true'; // Render sets this automatically
-
+// Session Middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI, // ✅ FIXED for Render
+    mongoUrl: process.env.MONGODB_URI,
     ttl: 24 * 60 * 60 // 1 day
   }),
   cookie: {
     httpOnly: true,
-    secure: isProduction && !isRender ? true : false,
+    secure: true, // ✅ Always true on Render (trust proxy handles it)
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
 
-// ✅ Debug session (TEMPORARY for testing login issue)
+// ✅ TEMP: Log session user for debugging login issue
 app.use((req, res, next) => {
   console.log('🔍 Session user:', req.session.user);
   next();
 });
 
-// Inject user into all views
+// Make user available in all EJS views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI) // ✅ FIXED
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => {
     console.error('❌ MongoDB connection failed:', err.message);
