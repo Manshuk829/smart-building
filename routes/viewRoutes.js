@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const viewController = require('../controllers/viewController');
 const alertsController = require('../controllers/alerts');
-const { isAuthenticated } = require('../middleware/authMiddleware');
+const { requireLogin } = require('../middleware/authMiddleware'); // ✅ updated
 
 // 🔐 Apply authentication to all routes
-router.use(isAuthenticated);
+router.use(requireLogin); // ✅ updated
 
 // ✅ Protected Views
 router.get('/', viewController.dashboard);
