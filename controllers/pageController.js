@@ -16,10 +16,10 @@ exports.showDashboard = async (req, res) => {
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
-    return res.render('dashboard', { dataByFloor, thresholds, alerts });
+    res.render('dashboard', { dataByFloor, thresholds, alerts });
   } catch (err) {
     console.error('❌ Dashboard error:', err.message);
-    return res.status(500).send('Error loading dashboard');
+    res.status(500).send('Error loading dashboard');
   }
 };
 
@@ -34,10 +34,10 @@ exports.showLive = async (req, res) => {
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
-    return res.render('live', { dataByFloor, thresholds, alerts });
+    res.render('live', { dataByFloor, thresholds, alerts });
   } catch (err) {
     console.error('❌ Live view error:', err.message);
-    return res.status(500).send('Error loading live view');
+    res.status(500).send('Error loading live view');
   }
 };
 
@@ -57,7 +57,9 @@ exports.showHistory = async (req, res) => {
       .skip(index)
       .limit(1);
 
-    const recent = await SensorData.find(filter).sort({ createdAt: -1 }).limit(10);
+    const recent = await SensorData.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(10);
 
     const stats = {
       avgTemp: 0, minTemp: 0, maxTemp: 0,
@@ -65,7 +67,7 @@ exports.showHistory = async (req, res) => {
     };
 
     if (recent.length > 0) {
-      const getAvg = arr => (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+      const getAvg = arr => (arr.reduce((a, b) => a + b, 0) / arr.length || 0).toFixed(2);
       const temps = recent.map(r => r.temperature || 0);
       const hums = recent.map(r => r.humidity || 0);
       const gases = recent.map(r => r.gas || 0);
@@ -79,7 +81,7 @@ exports.showHistory = async (req, res) => {
       stats.avgVibration = getAvg(vibes);
     }
 
-    return res.render('history', {
+    res.render('history', {
       record: record || null,
       currentIndex: index,
       total,
@@ -90,7 +92,7 @@ exports.showHistory = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ History page error:', err.message);
-    return res.status(500).send('Error loading history');
+    res.status(500).send('Error loading history');
   }
 };
 
@@ -111,13 +113,13 @@ exports.showCharts = async (req, res) => {
 
     const records = await SensorData.find(query).sort({ createdAt: 1 }).limit(100);
 
-    return res.render('charts', {
+    res.render('charts', {
       records: records || [],
       query: req.query,
       thresholds,
     });
   } catch (err) {
     console.error('❌ Charts page error:', err.message);
-    return res.status(500).send('Error loading charts');
+    res.status(500).send('Error loading charts');
   }
 };

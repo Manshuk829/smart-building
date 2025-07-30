@@ -16,10 +16,10 @@ const alertsRoutes = require('./routes/alertsRoutes');
 // Initialize Express App
 const app = express();
 
-// ✅ Trust proxy needed for secure cookies on Render
+// ✅ Trust proxy for secure cookies on Render
 app.set('trust proxy', 1);
 
-// Floor & Threshold App Configs
+// App-wide Configs
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -28,17 +28,17 @@ app.set('thresholds', {
   vibration: 5.0
 });
 
-// Serve Static Files
+// Middleware: Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Set EJS as View Engine
+// View Engine
 app.set('view engine', 'ejs');
 
 // Body Parsers
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ Session Configuration with MongoDB Store
+// ✅ Session Configuration using MongoDB Store
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
@@ -46,25 +46,20 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
-      ttl: 24 * 60 * 60 // 1 day
+      ttl: 24 * 60 * 60, // 1 day
     }),
     cookie: {
       httpOnly: true,
-      secure: true, // ✅ Required for HTTPS on Render
+      secure: true,           // ✅ Required on Render (HTTPS)
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     }
   })
 );
 
-// Debug Middleware: Show session user in console
+// Middleware: Debug + Make user available in views
 app.use((req, res, next) => {
   console.log('🔍 Session user:', req.session.authUser);
-  next();
-});
-
-// View Global: Make user available in all views
-app.use((req, res, next) => {
   res.locals.user = req.session.authUser || null;
   next();
 });
