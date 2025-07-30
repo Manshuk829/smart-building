@@ -1,5 +1,6 @@
 // controllers/pageController.js
 const SensorData = require('../models/SensorData');
+const Alert = require('../models/Alert'); // ML alerts
 
 const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0 };
 const floors = [1, 2, 3, 4];
@@ -8,16 +9,14 @@ const floors = [1, 2, 3, 4];
 exports.showDashboard = async (req, res) => {
   try {
     const dataByFloor = {};
-    const promises = floors.map(floor =>
-      SensorData.findOne({ floor }).sort({ createdAt: -1 })
-    );
-    const results = await Promise.all(promises);
+    const alerts = {};
 
-    floors.forEach((floor, i) => {
-      dataByFloor[floor] = results[i] || null;
-    });
+    for (const floor of floors) {
+      dataByFloor[floor] = await SensorData.findOne({ floor }).sort({ createdAt: -1 }).lean();
+      alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
+    }
 
-    return res.render('dashboard', { dataByFloor, thresholds });
+    return res.render('dashboard', { dataByFloor, thresholds, alerts });
   } catch (err) {
     console.error('❌ Dashboard error:', err.message);
     return res.status(500).send('Error loading dashboard');
@@ -28,16 +27,14 @@ exports.showDashboard = async (req, res) => {
 exports.showLive = async (req, res) => {
   try {
     const dataByFloor = {};
-    const promises = floors.map(floor =>
-      SensorData.findOne({ floor }).sort({ createdAt: -1 })
-    );
-    const results = await Promise.all(promises);
+    const alerts = {};
 
-    floors.forEach((floor, i) => {
-      dataByFloor[floor] = results[i] || null;
-    });
+    for (const floor of floors) {
+      dataByFloor[floor] = await SensorData.findOne({ floor }).sort({ createdAt: -1 }).lean();
+      alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
+    }
 
-    return res.render('live', { dataByFloor, thresholds });
+    return res.render('live', { dataByFloor, thresholds, alerts });
   } catch (err) {
     console.error('❌ Live view error:', err.message);
     return res.status(500).send('Error loading live view');

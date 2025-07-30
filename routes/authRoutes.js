@@ -28,10 +28,10 @@ router.post('/reset/:token', authController.reset);    // Handle reset submissio
 // 🚪 Logout
 router.get('/logout', authController.logout);          // Clear session and redirect to login
 
-// 🧪 Session test route (for debugging only — remove in production!)
+// 🧪 Dev-only: Check current session status
 router.get('/check-session', (req, res) => {
-  console.log('📦 Current session:', req.session.user);
-  res.json(req.session.user || { message: '❌ No session found' });
+  console.log('📦 Current session:', req.session.authUser);
+  res.json(req.session.authUser || { message: '❌ No session found' });
 });
 
 module.exports = router;

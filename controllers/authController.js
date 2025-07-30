@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
 
+const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+
 // Show Login Page
 exports.showLogin = (req, res) => {
   const { success } = req.query;
@@ -28,14 +30,14 @@ exports.login = async (req, res) => {
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
 
-    // ✅ Set session with ID, username and role
-    req.session.user = {
-      _id: user._id,
+    // ✅ Store session using 'authUser'
+    req.session.authUser = {
+      id: user._id,
       username: user.username,
       role: user.role,
     };
 
-    console.log("✅ Session set:", req.session.user);
+    console.log("✅ Session set:", req.session.authUser);
 
     req.session.save((err) => {
       if (err) {
@@ -43,9 +45,7 @@ exports.login = async (req, res) => {
         return res.status(500).render('login', { error: 'Session error', success: null });
       }
 
-      // ⬇️ ADD DEBUGGING LINE
       console.log("✅ Final session object before redirect:", req.session);
-
       return res.redirect('/');
     });
   } catch (err) {
@@ -56,7 +56,13 @@ exports.login = async (req, res) => {
 
 // Logout
 exports.logout = (req, res) => {
-  req.session.destroy(() => res.redirect('/login'));
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("❌ Logout session destroy error:", err);
+      return res.redirect('/');
+    }
+    res.redirect('/login');
+  });
 };
 
 // Show Register Page
@@ -85,7 +91,7 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     await new User({ username: username.trim(), password: hashedPassword, role }).save();
 
-    res.redirect('/login?success=✅ Registered successfully! You can now login.');
+    res.redirect('/login?success=' + encodeURIComponent('✅ Registered successfully! You can now login.'));
   } catch (err) {
     console.error('❌ Registration error:', err);
     res.render('register', { error: 'Registration failed', success: null });
@@ -111,10 +117,10 @@ exports.forgot = async (req, res) => {
     const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     user.resetToken = hashedToken;
-    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    user.resetTokenExpiry = Date.now() + RESET_TOKEN_EXPIRY_MS;
     await user.save();
 
-    const isSecure = req.protocol === 'https' || process.env.NODE_ENV === 'production';
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
     const resetURL = `${isSecure ? 'https' : 'http'}://${req.headers.host}/reset/${rawToken}`;
 
     const transporter = nodemailer.createTransport({
@@ -218,7 +224,7 @@ exports.reset = async (req, res) => {
     user.resetTokenExpiry = undefined;
     await user.save();
 
-    res.redirect('/login?success=✅ Password updated! You can now log in.');
+    res.redirect('/login?success=' + encodeURIComponent('✅ Password updated! You can now log in.'));
   } catch (err) {
     console.error('❌ Reset password error:', err);
     res.render('reset', {

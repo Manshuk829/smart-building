@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const alertsController = require('../controllers/alerts');
-const { isAuthenticated } = require('../middleware/authMiddleware'); // ✅ FIXED
+const { requireLogin } = require('../middleware/authMiddleware'); // ✅ Consistent naming
 
 // Optional warning in development
 if (process.env.NODE_ENV !== 'production') {
@@ -11,6 +11,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // ✅ Protected route for alerts page
-router.get('/', isAuthenticated, alertsController.getAlertsPage);
+router.get('/', requireLogin, alertsController.getAlertsPage);
 
 module.exports = router;

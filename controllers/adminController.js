@@ -46,7 +46,7 @@ exports.demoteUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).lean();
     if (!user) return res.redirect('/admin/users');
 
     if (req.session.user?.username === user.username) {
@@ -71,10 +71,9 @@ exports.viewLogs = async (req, res) => {
   try {
     const logs = await AuditLog.find().sort({ createdAt: -1 }).lean();
 
-    // ✅ AI-style admin activity summary
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
 
     const recentLogs = logs.filter(log => new Date(log.createdAt) > yesterday);
 
@@ -105,13 +104,13 @@ exports.downloadLogs = async (req, res) => {
   }
 };
 
-// ✅ New: ML Alert Summary for Admin Dashboard
+// ✅ ML Alert Summary for Admin Dashboard
 exports.getMLAlertStats = async (req, res) => {
   try {
-    const since = new Date();
-    since.setDate(since.getDate() - 7); // past 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const alerts = await Alert.find({ createdAt: { $gte: since } }).lean();
+    const alerts = await Alert.find({ createdAt: { $gte: sevenDaysAgo } }).lean();
 
     if (!alerts.length) {
       return res.json({ total: 0, perType: {} });

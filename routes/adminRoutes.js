@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { isAdmin } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/authMiddleware');
 
 // 🧠 AI-ready: Centralized admin user management
-router.get('/users', isAdmin, adminController.listUsers);
-router.post('/users/:id/promote', isAdmin, adminController.promoteUser);
-router.post('/users/:id/demote', isAdmin, adminController.demoteUser);
-router.post('/users/:id/delete', isAdmin, adminController.deleteUser);
+router.get('/users', requireAdmin, adminController.listUsers);
+router.post('/users/:id/promote', requireAdmin, adminController.promoteUser);
+router.post('/users/:id/demote', requireAdmin, adminController.demoteUser);
+router.post('/users/:id/delete', requireAdmin, adminController.deleteUser);
 
 // 🕵️‍♂️ Audit log management for accountability
-router.get('/logs', isAdmin, adminController.viewLogs);
-router.get('/logs/download', isAdmin, adminController.downloadLogs);
+router.get('/logs', requireAdmin, adminController.viewLogs);
+router.get('/logs/download', requireAdmin, adminController.downloadLogs);
 
 // Optional safety: Check for missing handlers (in dev)
 if (process.env.NODE_ENV !== 'production') {

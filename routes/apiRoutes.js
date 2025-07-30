@@ -1,16 +1,14 @@
-// routes/apiRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const apiController = require('../controllers/apiController');
-const { isAdmin } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/authMiddleware'); // ✅ Consistent naming
 
 // ✅ Public API: Receive sensor data from ESP32 or ML pipeline
 // Payload: { floor: 2, temperature: 27.5, gas: 310, prediction: "fire" }
 router.post('/sensor', apiController.saveSensorData);
 
 // 🔐 Admin API: Manually trigger emergency alert (used by control room)
-router.post('/alert', isAdmin, apiController.triggerAlert);
+router.post('/alert', requireAdmin, apiController.triggerAlert);
 
 // ✅ Developer sanity check (optional)
 if (process.env.NODE_ENV !== 'production') {

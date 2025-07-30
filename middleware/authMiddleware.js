@@ -1,11 +1,9 @@
-// middleware/authMiddleware.js
-
 // ✅ Middleware: Only logged-in users can proceed
-const isAuthenticated = (req, res, next) => {
+const requireLogin = (req, res, next) => {
   // Allow favicon.ico to bypass authentication
   if (req.path === '/favicon.ico') return next();
 
-  const user = req.session?.user;
+  const user = req.session?.authUser;
 
   if (user) {
     res.locals.user = user; // Makes user info available to EJS views
@@ -13,12 +11,12 @@ const isAuthenticated = (req, res, next) => {
   }
 
   console.warn(`🔒 Access denied to '${req.originalUrl}': not logged in`);
-  return res.redirect('/login'); // ⚠️ Avoid sending 401 before redirect (Render may treat 401 differently)
+  return res.redirect('/login');
 };
 
 // ✅ Middleware: Only admins can access
-const isAdmin = (req, res, next) => {
-  const user = req.session?.user;
+const requireAdmin = (req, res, next) => {
+  const user = req.session?.authUser;
 
   if (user?.role === 'admin') {
     res.locals.user = user;
@@ -30,6 +28,6 @@ const isAdmin = (req, res, next) => {
 };
 
 module.exports = {
-  isAuthenticated,
-  isAdmin,
+  requireLogin,
+  requireAdmin,
 };
