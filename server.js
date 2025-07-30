@@ -14,10 +14,10 @@ const io = new Server(server, {
   }
 });
 
-// Attach Socket.IO instance to Express app
+// Attach Socket.IO instance to Express app for real-time use in routes/controllers
 app.set('io', io);
 
-// Start MQTT listener (pass io for real-time updates)
+// Start MQTT listener with Socket.IO for real-time alerts
 try {
   require('./mqtt/mqttClient')(io);
   console.log('📡 MQTT listener initialized');
@@ -29,6 +29,9 @@ try {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running at: http://localhost:${PORT}`);
+}).on('error', (err) => {
+  console.error('❌ Server failed to start:', err.message);
+  process.exit(1);
 });
 
 // Graceful shutdown on Ctrl+C

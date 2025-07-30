@@ -50,17 +50,14 @@ app.use(session({
   }
 }));
 
-// Inject user into views
+// Inject user into all views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => {
     console.error('❌ MongoDB connection failed:', err.message);
