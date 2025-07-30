@@ -15,11 +15,9 @@ const alertsRoutes = require('./routes/alertsRoutes');
 
 // Express App Init
 const app = express();
+app.set('trust proxy', 1); // ✅ For secure cookies on Render
 
-// ✅ Required for session cookies on Render
-app.set('trust proxy', 1);
-
-// Custom app settings
+// App settings
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -45,21 +43,21 @@ app.use(session({
   }),
   cookie: {
     httpOnly: true,
-    secure: true, // ✅ Always true on Render (trust proxy handles it)
+    secure: true, // ✅ Required on Render
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
 
-// ✅ TEMP: Log session user for debugging login issue
+// ✅ Debug: Log session user
 app.use((req, res, next) => {
-  console.log('🔍 Session user:', req.session.user);
+  console.log('🔍 Session user:', req.session.authUser);
   next();
 });
 
-// Make user available in all EJS views
+// ✅ Make session user available to all EJS views
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
+  res.locals.user = req.session.authUser || null;
   next();
 });
 
@@ -78,5 +76,4 @@ app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
 
-// Export App
 module.exports = app;
