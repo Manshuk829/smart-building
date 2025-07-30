@@ -189,11 +189,17 @@
       mqttStatus.classList.add('offline');
     });
 
-    // ✅ FIXED: This now listens to 'ml-alert' instead of wrong 'prediction_alert'
+    // ✅ ML alert with auto-hide after 10 seconds
     socket.on('ml-alert', (message) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       alertBanner.textContent = `⚠️ ${message}`;
       alertBanner.classList.add('active');
+
+      // Auto-hide after 10 seconds
+      setTimeout(() => {
+        alertBanner.classList.remove('active');
+        alertBanner.textContent = '';
+      }, 10000);
     });
   </script>
 </body>

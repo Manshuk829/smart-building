@@ -2,6 +2,7 @@
 
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
+const Alert = require('../models/Alert'); // ✅ New import
 
 module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
@@ -71,7 +72,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       });
     }
 
-    // If ML prediction is not normal, save as an ML alert
+    // 🚨 If ML prediction is abnormal
     if (prediction !== 'normal') {
       sensorEntries.push({
         topic,
@@ -81,6 +82,14 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         source: 'ml'
       });
 
+      // ✅ Save as alert in Alert model
+      await Alert.create({
+        message: `${prediction.toUpperCase()} detected by ML`,
+        floor,
+        severity: prediction === 'critical' ? 'critical' : 'warning',
+        alertType: 'ml'
+      });
+
       // Log in Audit
       await AuditLog.create({
         action: `🚨 ${prediction.toUpperCase()} detected via ML`,
@@ -88,6 +97,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         performedBy: 'ML-Pipeline'
       });
 
+      // Emit ML alert to frontend
       io.emit('ml-alert', {
         type: prediction,
         time: new Date(),
@@ -99,12 +109,12 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       io.emit('ml-normal', { time: new Date(), floor });
     }
 
-    // Save all entries to DB
+    // Save sensor entries
     if (sensorEntries.length > 0) {
       await SensorData.insertMany(sensorEntries);
     }
 
-    // Emit all data to clients
+    // Emit sensor data to clients
     io.emit('sensorUpdate', {
       floor,
       temp: sensors.temp ?? null,

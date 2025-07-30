@@ -7,16 +7,14 @@ const socket = io({
 const floorCount = 4;
 const lastUpdateTimes = {};
 
-// ---------- DOM references ----------
 const mqttStatus = document.getElementById('mqtt-status');
 const alertBanner = document.getElementById('ml-alert-banner');
 let mlAlertTimeout = null;
 
-// ---------- Helpers ----------
 const nowTS = () => Date.now();
 const fmt = (v, unit = '') => (v === null || v === undefined ? 'N/A' : `${v}${unit}`);
 
-// ---------- WebSocket (MQTT) connection status ----------
+// ---------- MQTT WebSocket status ----------
 function updateConnectionStatus(connected) {
   mqttStatus.innerHTML = `WebSocket Status:
     <span class="${connected ? 'online' : 'offline'}" title="${connected ? 'Connected to server' : 'Disconnected'}">
@@ -26,7 +24,7 @@ function updateConnectionStatus(connected) {
 socket.on('connect', () => updateConnectionStatus(true));
 socket.on('disconnect', () => updateConnectionStatus(false));
 
-// ---------- Setup buttons for each floor ----------
+// ---------- Button listeners for each floor ----------
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
@@ -59,7 +57,7 @@ for (let floor = 1; floor <= floorCount; floor++) {
     });
 }
 
-// ---------- Real-time sensor updates ----------
+// ---------- Real-time sensor data handler ----------
 socket.on('sensorUpdate', data => {
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
@@ -78,11 +76,12 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
+  // ---------- Handle Intruder Image ----------
   if (data.intruderImage) {
     const box = document.getElementById(`intruder-${floor}`);
     const img = document.getElementById(`intruder-img-${floor}`);
     if (box && img) {
-      img.src = data.intruderImage;
+      img.src = `${data.intruderImage}?ts=${nowTS()}`; // 🛠️ Cache-busting timestamp
       box.style.display = 'block';
       box.style.opacity = '1';
 
@@ -95,7 +94,7 @@ socket.on('sensorUpdate', data => {
   }
 });
 
-// ---------- Offline detection ----------
+// ---------- Offline status checker ----------
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {
@@ -113,9 +112,9 @@ setInterval(() => {
       updated.textContent = `Last updated: ${secs} s ago`;
     }
   }
-}, 1_000);
+}, 1000);
 
-// ---------- ML Alert Notifications ----------
+// ---------- ML Alert Notification ----------
 socket.on('ml-alert', ({ type, time, floor }) => {
   if (!type || !time || !floor) return;
 

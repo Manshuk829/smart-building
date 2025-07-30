@@ -48,7 +48,7 @@
   <div class="container mt-5">
     <h2 class="mb-4 text-center">🚨 Machine Learning Alerts</h2>
     
-    <div id="alert-container">
+    <div id="alert-container" aria-live="polite">
       <p class="no-alert-msg">No alerts yet. Waiting for alerts...</p>
     </div>
   </div>
@@ -59,8 +59,7 @@
     const alertContainer = document.getElementById('alert-container');
 
     socket.on('ml-alert', (data) => {
-      const div = document.createElement('div');
-      div.className = 'alert-card';
+      if (!data || !data.time || !data.type || !data.floor) return;
 
       const timestamp = new Date(data.time).toLocaleString('en-IN', {
         hour: '2-digit',
@@ -73,11 +72,17 @@
         timeZone: 'Asia/Kolkata'
       });
 
-      const type = data.type?.toUpperCase() || 'ALERT';
-      const floor = data.floor ? ` (Floor ${data.floor})` : '';
+      const type = data.type.toUpperCase();
+      const floor = data.floor;
 
+      const icon = type.includes('FIRE') ? '🔥' :
+                   type.includes('INTRUSION') ? '🕵️' :
+                   type.includes('GAS') ? '🧪' : '⚠️';
+
+      const div = document.createElement('div');
+      div.className = 'alert-card';
       div.innerHTML = `
-        <h5>⚠️ ${type} detected${floor}</h5>
+        <h5>${icon} ${type} detected (Floor ${floor})</h5>
         <p class="timestamp">Time: ${timestamp}</p>
       `;
 
