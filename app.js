@@ -1,29 +1,22 @@
-// 🌍 Environment & Core Setup
+// app.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
-const http = require('http');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-const { Server } = require('socket.io');
 
-// 🚏 Route Imports
+// Route Imports
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const viewRoutes = require('./routes/viewRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 
-// 🚀 App Init
+// Express App Init
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-const PORT = process.env.PORT || 3000;
 
-// ============================
-// 🌐 App-Level Configuration
-// ============================
+// Custom app settings
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -31,38 +24,33 @@ app.set('thresholds', {
   gas: 300,
   vibration: 5.0
 });
-app.set('io', io);
 
-// ============================
-// ⚙️ Middleware
-// ============================
+// Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// 🔐 Session Middleware (Fix for Render/Local)
+// Session middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
-    secure: false,         // ⛔ Force false so session cookie works on HTTP
-    sameSite: 'lax',       // ✅ Allows normal redirects
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
+    secure: false,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-// 👤 Inject user into views
+// Inject user into views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
 
-// ============================
-// 🔗 MongoDB Connection
-// ============================
+// MongoDB Connection (connect here instead of directly starting server)
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -73,32 +61,12 @@ mongoose.connect(process.env.MONGO_URI, {
     process.exit(1);
   });
 
-// ============================
-// 🚏 Route Middleware
-// ============================
+// Routes
 app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
 
-// ============================
-// 📡 MQTT & WebSocket
-// ============================
-require('./mqtt/mqttClient')(io);
-
-// ============================
-// 🚀 Start Server
-// ============================
-server.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-});
-
-// ============================
-// 📴 Graceful Shutdown
-// ============================
-process.on('SIGINT', async () => {
-  await mongoose.disconnect();
-  console.log('🔌 MongoDB disconnected');
-  process.exit(0);
-});
+// Export app (for server.js)
+module.exports = app;

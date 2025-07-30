@@ -1,34 +1,32 @@
 // server.js
-
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
 
-// Create HTTP server
+// Create server
 const server = http.createServer(app);
 
-// Attach Socket.IO to the HTTP server
+// Attach Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: '*', // ⚠️ Update this in production for security
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
 
-// Attach io instance to Express app for reuse in controllers
+// Attach io instance to Express app
 app.set('io', io);
 
-// 🔌 MQTT integration
-const mqttHandler = require('./mqtt/mqttClient');
-mqttHandler(io); // Pass Socket.IO instance to MQTT listener
+// Start MQTT listener
+require('./mqtt/mqttClient')(io);
 
-// Start the server
+// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running at: http://localhost:${PORT}`);
 });
 
-// Graceful shutdown (optional)
+// Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down server gracefully...');
   server.close(() => {

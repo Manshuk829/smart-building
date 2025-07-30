@@ -13,17 +13,28 @@ exports.showLogin = (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username = '', password = '' } = req.body;
+    console.log(`🔐 Attempting login with username: ${username}`);
+
     const user = await User.findOne({ username: username.trim() });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log('❌ User not found');
+      return res.render('login', { error: '❌ Invalid username or password', success: null });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      console.log('❌ Password does not match');
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
 
     req.session.user = { username: user.username, role: user.role };
-    res.redirect('/');
+    console.log(`✅ Logged in as ${user.username} (${user.role})`);
+
+    return res.redirect('/');
   } catch (err) {
     console.error('❌ Login error:', err);
-    res.status(500).render('login', { error: 'Server error', success: null });
+    return res.status(500).render('login', { error: 'Server error', success: null });
   }
 };
 
