@@ -3,7 +3,7 @@ const requireLogin = (req, res, next) => {
   // Allow favicon.ico to bypass authentication
   if (req.path === '/favicon.ico') return next();
 
-  const user = req.session?.user;
+  const user = req.session?.authUser;  // <== 🔁 Fixed this line
 
   if (user) {
     res.locals.user = user; // Makes user info available to EJS views
@@ -16,7 +16,7 @@ const requireLogin = (req, res, next) => {
 
 // ✅ Middleware: Only admins can access
 const requireAdmin = (req, res, next) => {
-  const user = req.session?.user;
+  const user = req.session?.authUser; // <== 🔁 Fixed this line
 
   if (user?.role === 'admin') {
     res.locals.user = user;
