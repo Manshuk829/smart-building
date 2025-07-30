@@ -99,6 +99,16 @@
       text-align: right;
       padding: 10px 20px;
     }
+
+    .online {
+      color: green;
+      font-weight: bold;
+    }
+
+    .offline {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body data-theme="light">
@@ -176,7 +186,32 @@
     });
   </script>
 
-  <!-- ✅ Live.js client socket logic -->
-  <script src="/js/live.js"></script>
+  <!-- ✅ Live.js socket logic -->
+  <script>
+    const socket = io(); // Connect to server
+
+    const mqttStatus = document.getElementById('mqtt-status').querySelector('span');
+
+    socket.on('connect', () => {
+      mqttStatus.innerHTML = '🟢 Connected';
+      mqttStatus.classList.remove('offline');
+      mqttStatus.classList.add('online');
+    });
+
+    socket.on('disconnect', () => {
+      mqttStatus.innerHTML = '🔴 Disconnected';
+      mqttStatus.classList.remove('online');
+      mqttStatus.classList.add('offline');
+    });
+
+    socket.on('prediction_alert', (message) => {
+      const alertBanner = document.getElementById('ml-alert-banner');
+      alertBanner.textContent = `⚠️ ${message}`;
+      alertBanner.classList.add('active');
+    });
+
+    // Optional: add sensor data listener if you haven't already
+    // socket.on('sensor_data', (data) => { ... });
+  </script>
 </body>
 </html>

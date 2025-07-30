@@ -1,5 +1,9 @@
 /* global io */
-const socket = io();
+const socket = io({
+  transports: ['websocket'],
+  upgrade: false
+});
+
 const floorCount = 4;
 const lastUpdateTimes = {};
 
@@ -22,13 +26,11 @@ function updateConnectionStatus(connected) {
 socket.on('connect', () => updateConnectionStatus(true));
 socket.on('disconnect', () => updateConnectionStatus(false));
 
-// ---------- Per-floor setup ----------
+// ---------- Setup buttons for each floor ----------
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
-  // 📸 Download snapshot
-  document
-    .querySelector(`[data-floor="${floor}"].download-snapshot`)
+  document.querySelector(`[data-floor="${floor}"].download-snapshot`)
     ?.addEventListener('click', () => {
       const link = document.createElement('a');
       link.href = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
@@ -36,24 +38,24 @@ for (let floor = 1; floor <= floorCount; floor++) {
       link.click();
     });
 
-  // 🚨 Manual trigger alert
-  document
-    .querySelector(`[data-floor="${floor}"].trigger-alert`)
+  document.querySelector(`[data-floor="${floor}"].trigger-alert`)
     ?.addEventListener('click', () => {
       fetch('/api/alert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ floor })
       })
-        .then(r =>
-          r.ok
-            ? alert(`✅ Alert triggered for Floor ${floor}`)
-            : alert('❌ Failed to trigger alert')
-        )
-        .catch(e => {
-          alert('⚠️ Error contacting server');
-          console.error(e);
-        });
+      .then(res => {
+        if (res.ok) {
+          alert(`✅ Alert triggered for Floor ${floor}`);
+        } else {
+          alert('❌ Failed to trigger alert');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('⚠️ Error contacting server');
+      });
     });
 }
 
@@ -62,19 +64,15 @@ socket.on('sensorUpdate', data => {
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
-  // ✅ Update status and time
-  const statusEl = document.getElementById(`status-${floor}`);
-  const timeEl = document.getElementById(`last-updated-${floor}`);
-  if (statusEl && timeEl) {
-    statusEl.innerHTML = 'Status: <span class="online">🟢 Online</span>';
-    timeEl.textContent = 'Last updated: just now';
-  }
+  // Status
+  document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
+  document.getElementById(`last-updated-${floor}`)?.textContent = 'Last updated: just now';
 
-  // 📷 Refresh camera snapshot
+  // Live camera
   const cam = document.getElementById(`cam-${floor}`);
   if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
-  // 🌡️ Update sensor readings
+  // Sensor values
   document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
   document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
   document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
@@ -83,26 +81,25 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
-  // 🚨 Intruder image (if any)
+  // Intruder image
   if (data.intruderImage) {
-    const intruderBox = document.getElementById(`intruder-${floor}`);
-    const intruderImg = document.getElementById(`intruder-img-${floor}`);
-    if (intruderBox && intruderImg) {
-      intruderImg.src = data.intruderImage;
-      intruderBox.style.display = 'block';
-      intruderBox.style.opacity = '1';
+    const box = document.getElementById(`intruder-${floor}`);
+    const img = document.getElementById(`intruder-img-${floor}`);
+    if (box && img) {
+      img.src = data.intruderImage;
+      box.style.display = 'block';
+      box.style.opacity = '1';
 
-      // Fade out after 30s
       setTimeout(() => {
-        intruderBox.style.transition = 'opacity 1s ease';
-        intruderBox.style.opacity = '0';
-        setTimeout(() => (intruderBox.style.display = 'none'), 1000);
+        box.style.transition = 'opacity 1s ease';
+        box.style.opacity = '0';
+        setTimeout(() => box.style.display = 'none', 1000);
       }, 30_000);
     }
   }
 });
 
-// ---------- Mark floors offline after 15s silence ----------
+// ---------- Offline detection (every 1s) ----------
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {
@@ -116,19 +113,18 @@ setInterval(() => {
         updated.textContent = 'Last updated: more than 15 seconds ago';
       }
     } else if (updated) {
-      const s = Math.round((now - last) / 1000);
-      updated.textContent = `Last updated: ${s} s ago`;
+      const secs = Math.round((now - last) / 1000);
+      updated.textContent = `Last updated: ${secs} s ago`;
     }
   }
 }, 1_000);
 
-// ---------- ML Alerts ----------
+// ---------- ML Alert Notifications ----------
 socket.on('ml-alert', ({ type, time }) => {
   if (!type || !time) return;
 
   clearTimeout(mlAlertTimeout);
 
-  // 🕒 Convert to IST
   const tStr = new Date(time).toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',

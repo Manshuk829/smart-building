@@ -8,28 +8,21 @@ const http = require('http');
 const session = require('express-session');
 const { Server } = require('socket.io');
 
-// Models (can be removed if unused directly here)
-const SensorData = require('./models/SensorData');
-const AuditLog = require('./models/AuditLog');
-
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const viewRoutes = require('./routes/viewRoutes');
 const apiRoutes = require('./routes/apiRoutes');
-const alertsRoutes = require('./routes/alertsRoutes'); // ✅ ML Alerts
+const alertsRoutes = require('./routes/alertsRoutes');
 
-// ----------------------------
-// ✅ App Setup
-// ----------------------------
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-// ----------------------------
-// ✅ Global Config
-// ----------------------------
+// ========================
+// 🌐 Global App Settings
+// ========================
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -39,9 +32,9 @@ app.set('thresholds', {
 });
 app.set('io', io);
 
-// ----------------------------
-// ✅ Middleware
-// ----------------------------
+// ========================
+// ⚙️ Middleware
+// ========================
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -51,18 +44,21 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Change to true if HTTPS is used
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
 }));
 
-// Inject logged-in user in all views
+// Inject user into all views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
 
-// ----------------------------
-// ✅ MongoDB Connection
-// ----------------------------
+// ========================
+// 🔗 MongoDB
+// ========================
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -73,23 +69,32 @@ mongoose.connect(process.env.MONGO_URI, {
     process.exit(1);
   });
 
-// ----------------------------
-// ✅ Routes
-// ----------------------------
+// ========================
+// 🚏 Routes
+// ========================
 app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
 
-// ----------------------------
-// ✅ MQTT Integration
-// ----------------------------
+// ========================
+// 📡 MQTT + WebSocket
+// ========================
 require('./mqtt/mqttClient')(io);
 
-// ----------------------------
-// ✅ Start Server
-// ----------------------------
+// ========================
+// 🚀 Start Server
+// ========================
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+
+// ========================
+// 📴 Graceful Shutdown
+// ========================
+process.on('SIGINT', async () => {
+  await mongoose.disconnect();
+  console.log('🔌 MongoDB disconnected');
+  process.exit(0);
 });
