@@ -25,7 +25,7 @@ app.set('thresholds', {
   temperature: 50,
   humidity: 70,
   gas: 300,
-  vibration: 5.0
+  vibration: 5.0,
 });
 
 // Middleware: Static files
@@ -45,15 +45,15 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding',
       ttl: 24 * 60 * 60, // 1 day
     }),
     cookie: {
       httpOnly: true,
-      secure: true, // ✅ FIXED: Required on Render (uses HTTPS)
+      secure: process.env.NODE_ENV === 'production', // ✅ secure only in production
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
-    }
+    },
   })
 );
 
@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding')
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => {
     console.error('❌ MongoDB connection failed:', err.message);
