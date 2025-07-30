@@ -33,12 +33,19 @@ exports.login = async (req, res) => {
       role: user.role
     };
 
-    // Force session save before redirect
+    // Debug logging
+    console.log('✅ Session assigned:', req.session.authUser);
+    console.log('📦 Cookies before saving session:', req.cookies);
+    console.log('🔐 Headers:', req.headers);
+
+    // Save session explicitly before redirecting
     req.session.save(err => {
       if (err) {
         console.error("❌ Session save error:", err);
         return res.status(500).render('login', { error: 'Session error', success: null });
       }
+
+      console.log('✅ Session saved successfully.');
       return res.redirect('/');
     });
   } catch (error) {
