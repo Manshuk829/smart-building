@@ -64,15 +64,12 @@ socket.on('sensorUpdate', data => {
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
-  // Status
   document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
   document.getElementById(`last-updated-${floor}`)?.textContent = 'Last updated: just now';
 
-  // Live camera
   const cam = document.getElementById(`cam-${floor}`);
   if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
-  // Sensor values
   document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
   document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
   document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
@@ -81,7 +78,6 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
-  // Intruder image
   if (data.intruderImage) {
     const box = document.getElementById(`intruder-${floor}`);
     const img = document.getElementById(`intruder-img-${floor}`);
@@ -99,7 +95,7 @@ socket.on('sensorUpdate', data => {
   }
 });
 
-// ---------- Offline detection (every 1s) ----------
+// ---------- Offline detection ----------
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {
@@ -120,8 +116,8 @@ setInterval(() => {
 }, 1_000);
 
 // ---------- ML Alert Notifications ----------
-socket.on('ml-alert', ({ type, time }) => {
-  if (!type || !time) return;
+socket.on('ml-alert', ({ type, time, floor }) => {
+  if (!type || !time || !floor) return;
 
   clearTimeout(mlAlertTimeout);
 
@@ -133,7 +129,7 @@ socket.on('ml-alert', ({ type, time }) => {
     timeZone: 'Asia/Kolkata'
   });
 
-  alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected at ${tStr}`;
+  alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected on Floor ${floor} at ${tStr}`;
   alertBanner.classList.add('active');
 
   mlAlertTimeout = setTimeout(() => {

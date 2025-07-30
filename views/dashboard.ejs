@@ -82,6 +82,7 @@
       color: red;
       margin: 10px 0;
       font-weight: bold;
+      font-size: 16px;
     }
     .camera-box {
       text-align: center;
@@ -231,7 +232,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    setTimeout(() => window.location.reload(), 3000);
+    setTimeout(() => window.location.reload(), 3000);  // Auto-refresh every 3 seconds
 
     const body = document.body;
     const toggleBtn = document.querySelector('.dark-mode-toggle');
@@ -260,6 +261,7 @@
       localStorage.setItem('darkMode', newMode);
     });
 
+    // 📡 Listen to ML alerts
     const socket = io();
     const mlAlertBox = document.getElementById('ml-alert');
 

@@ -15,10 +15,15 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    // Utility to safely parse numbers
     const toNumber = (val) => {
       const num = parseFloat(val);
       return isNaN(num) ? undefined : num;
+    };
+
+    const parseBool = (val) => {
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') return val.toLowerCase() === 'true';
+      return undefined;
     };
 
     const floor = toNumber(data.floor);
@@ -27,52 +32,56 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       return;
     }
 
-    const temperature = toNumber(data.temp);
-    const humidity = toNumber(data.humidity);
-    const gas = toNumber(data.gas);
-    const vibration = toNumber(data.vibration);
-
+    const floorStr = floor.toString();
     const prediction = (typeof data.prediction === 'string' ? data.prediction : 'normal').toLowerCase();
-
-    const parseBool = (val) => {
-      if (typeof val === 'boolean') return val;
-      if (typeof val === 'string') return val.toLowerCase() === 'true';
-      return undefined;
-    };
-
-    const motion = parseBool(data.motion);
-    const flame = parseBool(data.flame);
-
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
 
-    // Save sensor data to MongoDB
-    const sensorDoc = await SensorData.create({
-      floor,
-      temperature,
-      humidity,
-      gas,
-      vibration,
-      flame,
-      motion,
-      intruderImageURL: intruderImage,
-      prediction
-    });
+    const sensorEntries = [];
 
-    // Emit real-time data to clients
-    io.emit('sensorUpdate', {
-      floor,
-      temp: temperature ?? null,
-      humidity: humidity ?? null,
-      gas: gas ?? null,
-      vibration: vibration ?? null,
-      flame: flame ?? null,
-      motion: motion ?? null,
-      intruderImage,
-      prediction
-    });
+    // Add individual sensor values if valid
+    const sensors = {
+      temp: toNumber(data.temp),
+      humidity: toNumber(data.humidity),
+      gas: toNumber(data.gas),
+      vibration: toNumber(data.vibration),
+      flame: parseBool(data.flame),
+      motion: parseBool(data.motion),
+    };
 
-    // Handle ML-based alerts
+    for (const [type, value] of Object.entries(sensors)) {
+      if (value !== undefined) {
+        sensorEntries.push({
+          topic,
+          floor: floorStr,
+          type,
+          payload: value,
+          source: 'sensor'
+        });
+      }
+    }
+
+    // If intruder image is present
+    if (intruderImage) {
+      sensorEntries.push({
+        topic,
+        floor: floorStr,
+        type: 'intruderImage',
+        payload: intruderImage,
+        source: 'sensor'
+      });
+    }
+
+    // If ML prediction is not normal, save as an ML alert
     if (prediction !== 'normal') {
+      sensorEntries.push({
+        topic,
+        floor: floorStr,
+        type: 'ml-alert',
+        payload: prediction,
+        source: 'ml'
+      });
+
+      // Log in Audit
       await AuditLog.create({
         action: `🚨 ${prediction.toUpperCase()} detected via ML`,
         floor,
@@ -89,6 +98,24 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     } else {
       io.emit('ml-normal', { time: new Date(), floor });
     }
+
+    // Save all entries to DB
+    if (sensorEntries.length > 0) {
+      await SensorData.insertMany(sensorEntries);
+    }
+
+    // Emit all data to clients
+    io.emit('sensorUpdate', {
+      floor,
+      temp: sensors.temp ?? null,
+      humidity: sensors.humidity ?? null,
+      gas: sensors.gas ?? null,
+      vibration: sensors.vibration ?? null,
+      flame: sensors.flame,
+      motion: sensors.motion,
+      intruderImage,
+      prediction
+    });
 
   } catch (err) {
     console.error('❌ MQTT Message Handler Error:', err.message);

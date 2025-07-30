@@ -16,18 +16,15 @@
       background: var(--card-bg);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-
     .sensor-data span {
       display: inline-block;
       margin: 5px 10px;
       font-size: 16px;
     }
-
     .esp32-cam {
       margin-top: 15px;
       text-align: center;
     }
-
     .esp32-cam img {
       width: 100%;
       max-width: 600px;
@@ -35,7 +32,6 @@
       border-radius: 8px;
       margin-bottom: 10px;
     }
-
     .esp32-cam button {
       margin: 5px;
       padding: 8px 12px;
@@ -43,24 +39,20 @@
       border-radius: 8px;
       cursor: pointer;
     }
-
     .status-line, .last-updated {
       margin: 5px 0;
       font-weight: bold;
     }
-
     .intruder-box {
       margin-top: 15px;
       text-align: center;
     }
-
     .intruder-box img {
       width: 100%;
       max-width: 500px;
       border-radius: 8px;
       margin-top: 10px;
     }
-
     .prediction-alert {
       background-color: #ffcccc;
       color: #900;
@@ -74,37 +66,30 @@
       border-radius: 10px;
       display: none;
     }
-
     .prediction-alert.active {
       display: block;
       animation: blink-animation 1s ease-in-out infinite;
     }
-
     @keyframes blink-animation {
       0%, 100% { background-color: #ffcccc; }
       50% { background-color: #ff6666; }
     }
-
     .back {
       text-align: center;
       margin-top: 30px;
     }
-
     .back a {
       margin: 10px;
       font-size: 16px;
     }
-
     .theme-toggle {
       text-align: right;
       padding: 10px 20px;
     }
-
     .online {
       color: green;
       font-weight: bold;
     }
-
     .offline {
       color: red;
       font-weight: bold;
@@ -204,14 +189,12 @@
       mqttStatus.classList.add('offline');
     });
 
-    socket.on('prediction_alert', (message) => {
+    // ✅ FIXED: This now listens to 'ml-alert' instead of wrong 'prediction_alert'
+    socket.on('ml-alert', (message) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       alertBanner.textContent = `⚠️ ${message}`;
       alertBanner.classList.add('active');
     });
-
-    // Optional: add sensor data listener if you haven't already
-    // socket.on('sensor_data', (data) => { ... });
   </script>
 </body>
 </html>
