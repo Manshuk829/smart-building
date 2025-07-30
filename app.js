@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const http = require('http');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const { Server } = require('socket.io');
 
 // Routes
@@ -40,17 +41,20 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// 🔐 Session Middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // 💾 Session store
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    secure: process.env.NODE_ENV === 'production', // true in production (requires HTTPS)
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
 
-// Inject user into all views
+// 🧑 Inject user into all views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();

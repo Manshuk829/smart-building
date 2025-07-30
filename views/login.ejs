@@ -204,7 +204,7 @@
     <form method="POST" action="/login" onsubmit="return validateLogin()">
       <div class="form-group">
         <i class="fas fa-user"></i>
-        <input type="text" name="username" id="username" placeholder="Username" aria-label="Username" autocomplete="username" required />
+        <input type="text" name="username" id="username" placeholder="Username" aria-label="Username" autocomplete="username" required value="<%= typeof oldUsername !== 'undefined' ? oldUsername : '' %>" />
       </div>
 
       <div class="form-group">
@@ -245,7 +245,6 @@
       localStorage.setItem('theme', newTheme);
     }
 
-    // Persist dark mode
     window.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);

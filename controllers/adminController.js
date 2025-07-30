@@ -1,4 +1,3 @@
-// controllers/adminController.js
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const Alert = require('../models/Alert'); // ✅ For ML Alert Summary (AI)
@@ -15,7 +14,7 @@ exports.listUsers = async (req, res) => {
 
 exports.promoteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { role: 'admin' });
+    const user = await User.findByIdAndUpdate(req.params.id, { role: 'admin' }, { new: true });
     if (user) {
       await AuditLog.create({
         action: `Promoted user ${user.username} to admin`,
@@ -31,7 +30,7 @@ exports.promoteUser = async (req, res) => {
 
 exports.demoteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { role: 'guest' });
+    const user = await User.findByIdAndUpdate(req.params.id, { role: 'guest' }, { new: true });
     if (user) {
       await AuditLog.create({
         action: `Demoted admin ${user.username} to guest`,
@@ -85,7 +84,7 @@ exports.viewLogs = async (req, res) => {
 
     const summary = `In the last 24 hours: ${promoteCount} promoted, ${demoteCount} demoted, ${deleteCount} deleted.`;
 
-    res.render('logs', { logs, summary }); // ✅ Pass summary to logs.ejs
+    res.render('logs', { logs, summary });
   } catch (err) {
     console.error('Error fetching logs:', err);
     res.status(500).send('Internal Server Error');
@@ -106,7 +105,7 @@ exports.downloadLogs = async (req, res) => {
   }
 };
 
-// ✅ New: ML Alert Summary for Admin Dashboard (Optional Endpoint)
+// ✅ New: ML Alert Summary for Admin Dashboard
 exports.getMLAlertStats = async (req, res) => {
   try {
     const since = new Date();
@@ -114,14 +113,17 @@ exports.getMLAlertStats = async (req, res) => {
 
     const alerts = await Alert.find({ createdAt: { $gte: since } }).lean();
 
-    const alertCount = alerts.length;
+    if (!alerts.length) {
+      return res.json({ total: 0, perType: {} });
+    }
+
     const grouped = alerts.reduce((acc, alert) => {
       acc[alert.type] = (acc[alert.type] || 0) + 1;
       return acc;
     }, {});
 
     res.json({
-      total: alertCount,
+      total: alerts.length,
       perType: grouped
     });
   } catch (err) {

@@ -13,8 +13,8 @@ exports.showLogin = (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
-
     const user = await User.findOne({ username: username.trim() });
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }

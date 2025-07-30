@@ -1,5 +1,6 @@
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
+const Alert = require('../models/Alert'); // ✅ Required to store ML alerts
 
 // ✅ Save sensor data (from IoT or ML)
 exports.saveSensorData = async (req, res) => {
@@ -12,10 +13,10 @@ exports.saveSensorData = async (req, res) => {
 
     // 🧠 Extract floor number and sensor type from topic
     const topicParts = topic.split('/');
-    const floorMatch = topicParts.find(part => part.startsWith('floor'));
-    const type = topicParts.at(-1); // last part is usually the sensor type
+    const floorMatch = topicParts.find(part => part.toLowerCase().startsWith('floor'));
+    const type = topicParts.at(-1)?.toLowerCase() || 'unknown';
 
-    const floor = floorMatch ? floorMatch.replace('floor', '') : 'unknown';
+    const floor = floorMatch ? parseInt(floorMatch.replace('floor', ''), 10) : 'unknown';
 
     const newData = new SensorData({
       topic,
@@ -33,10 +34,17 @@ exports.saveSensorData = async (req, res) => {
 
     // 🔔 Emit ML alert if applicable
     if (source === 'ml' && topic.includes('alert')) {
-      io.emit('ml-alert', {
+      const alertEntry = await Alert.create({
+        type: payload,
         floor,
-        message: payload,
-        time: newData.time
+        source,
+        createdAt: newData.time
+      });
+
+      io.emit('ml-alert', {
+        type: payload,
+        floor,
+        time: alertEntry.createdAt
       });
     }
 
