@@ -4,11 +4,10 @@ const Alert = require('../models/Alert'); // Load Alert model
 exports.getAlertsPage = async (req, res) => {
   try {
     const alerts = await Alert.find()
-      .sort({ createdAt: -1 }) // Newest first
-      .limit(50)               // Limit to latest 50 alerts
-      .lean();                 // Use lean for better performance
+      .sort({ timestamp: -1 })  // ✅ Use 'timestamp' instead of 'createdAt'
+      .limit(50)                // Show latest 50 alerts
+      .lean();                  // Improve performance
 
-    // Render 'alerts' view with alerts data, fallback to empty array
     res.render('alerts', { alerts: alerts || [] });
   } catch (err) {
     console.error('🔴 [alerts.js] Failed to fetch alerts:', err.message);
