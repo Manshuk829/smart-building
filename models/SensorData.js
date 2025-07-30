@@ -1,33 +1,27 @@
+// models/SensorData.js
+
 const mongoose = require('mongoose');
 
 const sensorDataSchema = new mongoose.Schema({
-  topic: {
-    type: String,
-    required: true
-  },
   floor: {
-    type: String,         // store as "1", "2", etc.
+    type: Number,
     required: true
   },
-  type: {
-    type: String,         // e.g., temp, gas, flame, motion
-    required: true
-  },
-  payload: {
-    type: mongoose.Schema.Types.Mixed,
-    required: true
-  },
-  source: {
+  temperature: Number,
+  humidity: Number,
+  gas: Number,
+  vibration: Number,
+  flame: Boolean,
+  motion: Boolean,
+  intruderImageURL: String,
+  prediction: {
     type: String,
-    enum: ['sensor', 'ml'],
-    default: 'sensor'
+    default: 'normal'
   },
-  time: {
+  timestamp: {
     type: Date,
     default: Date.now
   }
 }, { timestamps: true });
-
-sensorDataSchema.index({ floor: 1, type: 1, time: -1 });
 
 module.exports = mongoose.model('SensorData', sensorDataSchema);
