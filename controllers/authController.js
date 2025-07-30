@@ -28,10 +28,23 @@ exports.login = async (req, res) => {
       return res.render('login', { error: '❌ Invalid username or password', success: null });
     }
 
-    req.session.user = { username: user.username, role: user.role };
-    console.log(`✅ Logged in as ${user.username} (${user.role})`);
+    // ✅ Set session with ID, username and role
+    req.session.user = {
+      _id: user._id,
+      username: user.username,
+      role: user.role,
+    };
 
-    return res.redirect('/');
+    console.log("✅ Session set:", req.session.user);
+
+    // (optional but safe) Ensure session is saved before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error("❌ Session save error:", err);
+        return res.status(500).render('login', { error: 'Session error', success: null });
+      }
+      return res.redirect('/');
+    });
   } catch (err) {
     console.error('❌ Login error:', err);
     return res.status(500).render('login', { error: 'Server error', success: null });
