@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>🏢 Smart Building Dashboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -42,8 +43,12 @@
       gap: 10px;
     }
     .refresh {
-      color: #777;
       font-size: 14px;
+      color: #777;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .floor-heading {
       margin-top: 30px;
@@ -128,6 +133,62 @@
       color: #f1f1f1;
     }
   </style>
+
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script defer>
+    document.addEventListener("DOMContentLoaded", () => {
+      const body = document.body;
+      const toggleBtn = document.querySelector('.dark-mode-toggle');
+      const icon = toggleBtn.querySelector('i');
+      const label = toggleBtn.querySelector('.mode-label');
+
+      function setMode(mode) {
+        if (mode === 'enabled') {
+          body.classList.add('dark');
+          icon.classList.replace('fa-moon', 'fa-sun');
+          label.textContent = 'Light Mode';
+        } else {
+          body.classList.remove('dark');
+          icon.classList.replace('fa-sun', 'fa-moon');
+          label.textContent = 'Dark Mode';
+        }
+      }
+
+      const saved = localStorage.getItem('darkMode') || 'disabled';
+      setMode(saved);
+
+      toggleBtn.addEventListener('click', () => {
+        const current = body.classList.contains('dark') ? 'enabled' : 'disabled';
+        const newMode = current === 'enabled' ? 'disabled' : 'enabled';
+        setMode(newMode);
+        localStorage.setItem('darkMode', newMode);
+      });
+
+      const socket = io();
+      const mlAlertBox = document.getElementById('ml-alert');
+      socket.on('ml-alert', (msg) => {
+        mlAlertBox.textContent = msg;
+        mlAlertBox.style.display = 'block';
+        setTimeout(() => {
+          mlAlertBox.style.display = 'none';
+        }, 10000);
+      });
+
+      const refreshBtn = document.querySelector('.refresh');
+      let autoRefresh = true;
+
+      refreshBtn.addEventListener('click', () => {
+        autoRefresh = !autoRefresh;
+        refreshBtn.innerHTML = autoRefresh
+          ? '<i class="fas fa-sync-alt"></i> Auto-refreshing'
+          : '<i class="fas fa-pause-circle"></i> Paused';
+      });
+
+      setInterval(() => {
+        if (autoRefresh) location.reload();
+      }, 3000);
+    });
+  </script>
 </head>
 <body>
   <div class="container">
@@ -147,7 +208,6 @@
       const data = dataByFloor[floor];
       const updatedAt = data ? new Date(data.createdAt) : null;
       const diff = data ? Math.floor((now - updatedAt) / 1000) : null;
-
       const days = diff ? Math.floor(diff / 86400) : 0;
       const hrs = diff ? Math.floor((diff % 86400) / 3600) : 0;
       const mins = diff ? Math.floor((diff % 3600) / 60) : 0;
@@ -163,43 +223,37 @@
         <% } %>
 
         <div class="card">
-          <div class="sensor-box">
-            <i class="fas fa-thermometer-half"></i>
+          <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
             <div>
               <div class="sensor-label">Temperature</div>
               <div class="sensor-value"><%= data.temperature ?? 'N/A' %> °C</div>
             </div>
           </div>
-          <div class="sensor-box">
-            <i class="fas fa-tint"></i>
+          <div class="sensor-box"><i class="fas fa-tint"></i>
             <div>
               <div class="sensor-label">Humidity</div>
               <div class="sensor-value"><%= data.humidity ?? 'N/A' %> %</div>
             </div>
           </div>
-          <div class="sensor-box">
-            <i class="fas fa-smog"></i>
+          <div class="sensor-box"><i class="fas fa-smog"></i>
             <div>
               <div class="sensor-label">Gas</div>
               <div class="sensor-value"><%= data.gas ?? 'N/A' %></div>
             </div>
           </div>
-          <div class="sensor-box">
-            <i class="fas fa-fire"></i>
+          <div class="sensor-box"><i class="fas fa-fire"></i>
             <div>
               <div class="sensor-label">Flame</div>
               <div class="sensor-value"><%= data.flame ? "🔥 Detected" : "✅ Safe" %></div>
             </div>
           </div>
-          <div class="sensor-box">
-            <i class="fas fa-running"></i>
+          <div class="sensor-box"><i class="fas fa-running"></i>
             <div>
               <div class="sensor-label">Motion</div>
               <div class="sensor-value"><%= data.motion ? "👤 Detected" : "✅ None" %></div>
             </div>
           </div>
-          <div class="sensor-box">
-            <i class="fas fa-ruler"></i>
+          <div class="sensor-box"><i class="fas fa-ruler"></i>
             <div>
               <div class="sensor-label">Vibration</div>
               <div class="sensor-value"><%= data.vibration ?? 'N/A' %></div>
@@ -210,7 +264,7 @@
         <% if (data.intruderImageURL) { %>
           <div class="camera-box">
             <h3><i class="fas fa-user-secret"></i> Intruder Detected (Floor <%= floor %>)</h3>
-            <img src="<%= data.intruderImageURL %>" alt="Intruder Image">
+            <img src="<%= data.intruderImageURL %>" alt="Intruder Image" loading="lazy">
           </div>
         <% } %>
 
@@ -229,50 +283,5 @@
       <a href="/live">📷 View ESP32-CAM</a>
     </div>
   </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    setTimeout(() => window.location.reload(), 3000);  // Auto-refresh every 3 seconds
-
-    const body = document.body;
-    const toggleBtn = document.querySelector('.dark-mode-toggle');
-    const icon = toggleBtn.querySelector('i');
-    const label = toggleBtn.querySelector('.mode-label');
-
-    function setMode(mode) {
-      if (mode === 'enabled') {
-        body.classList.add('dark');
-        icon.classList.replace('fa-moon', 'fa-sun');
-        label.textContent = 'Light Mode';
-      } else {
-        body.classList.remove('dark');
-        icon.classList.replace('fa-sun', 'fa-moon');
-        label.textContent = 'Dark Mode';
-      }
-    }
-
-    const saved = localStorage.getItem('darkMode') || 'disabled';
-    setMode(saved);
-
-    toggleBtn.addEventListener('click', () => {
-      const current = body.classList.contains('dark') ? 'enabled' : 'disabled';
-      const newMode = current === 'enabled' ? 'disabled' : 'enabled';
-      setMode(newMode);
-      localStorage.setItem('darkMode', newMode);
-    });
-
-    // 📡 Listen to ML alerts
-    const socket = io();
-    const mlAlertBox = document.getElementById('ml-alert');
-
-    socket.on('ml-alert', (msg) => {
-      mlAlertBox.textContent = msg;
-      mlAlertBox.style.display = 'block';
-      mlAlertBox.style.color = 'red';
-      setTimeout(() => {
-        mlAlertBox.style.display = 'none';
-      }, 10000);
-    });
-  </script>
 </body>
 </html>

@@ -1,14 +1,13 @@
 // controllers/pageController.js
+
 const SensorData = require('../models/SensorData');
-const Alert = require('../models/Alert'); // ML alerts
+const Alert = require('../models/Alert');
 
 const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0 };
 const floors = [1, 2, 3, 4];
 
 // 📊 Show Dashboard
 exports.showDashboard = async (req, res) => {
-  if (!req.session.authUser) return res.redirect('/login');
-
   try {
     const dataByFloor = {};
     const alerts = {};
@@ -27,8 +26,6 @@ exports.showDashboard = async (req, res) => {
 
 // 📺 Show Live View
 exports.showLive = async (req, res) => {
-  if (!req.session.authUser) return res.redirect('/login');
-
   try {
     const dataByFloor = {};
     const alerts = {};
@@ -47,8 +44,6 @@ exports.showLive = async (req, res) => {
 
 // 📜 Show History Page
 exports.showHistory = async (req, res) => {
-  if (!req.session.authUser) return res.redirect('/login');
-
   try {
     const floor = parseInt(req.query.floor) || 1;
     const intruder = req.query.intruder === 'true';
@@ -104,8 +99,6 @@ exports.showHistory = async (req, res) => {
 
 // 📈 Show Charts Page
 exports.showCharts = async (req, res) => {
-  if (!req.session.authUser) return res.redirect('/login');
-
   try {
     const floor = parseInt(req.query.floor) || 1;
     const intruder = req.query.intruder === 'true';
