@@ -1,21 +1,19 @@
+// routes/pageRoutes.js
 const express = require('express');
 const router = express.Router();
+const pageController = require('../controllers/pageController');
+const { requireLogin } = require('../middleware/authMiddleware');
 
-// ✅ Use correct filename with capital "C"
-const pageController = require('../controllers/pageController'); // If filename is pageController.js
+// Dashboard (now mapped to /dashboard)
+router.get('/dashboard', requireLogin, pageController.showDashboard);
 
-const { isAuthenticated } = require('../middleware/authMiddleware');
+// Live View
+router.get('/live', requireLogin, pageController.showLive);
 
-// 📊 Dashboard
-router.get('/', isAuthenticated, pageController.showDashboard);
+// History
+router.get('/history', requireLogin, pageController.showHistory);
 
-// 📺 Live View
-router.get('/live', isAuthenticated, pageController.showLive);
-
-// 📜 History
-router.get('/history', isAuthenticated, pageController.showHistory);
-
-// 📈 Charts
-router.get('/charts', isAuthenticated, pageController.showCharts);
+// Charts
+router.get('/charts', requireLogin, pageController.showCharts);
 
 module.exports = router;

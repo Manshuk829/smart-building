@@ -9,7 +9,7 @@ const authController = require('../controllers/authController');
 // ✅ FIXED: Redirect root based on session
 router.get('/', (req, res) => {
   if (req.session.authUser) {
-    return res.redirect('/dashboard'); // Or your protected homepage
+    return res.redirect('/dashboard'); // Redirect to actual dashboard route
   }
   return res.redirect('/login');
 });
