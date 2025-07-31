@@ -1,9 +1,11 @@
+// routes/pageRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const pageController = require('../controllers/pageController');
 const { isAuthenticated } = require('../middleware/authMiddleware');
 
-// ✅ All routes below are protected by session middleware
+// ✅ All below routes require authentication
 router.get('/', isAuthenticated, pageController.showDashboard);
 router.get('/live', isAuthenticated, pageController.showLive);
 router.get('/history', isAuthenticated, pageController.showHistory);

@@ -6,8 +6,13 @@ const authController = require('../controllers/authController');
 // 🔐 AUTHENTICATION ROUTES
 // =====================
 
-// 🌐 Redirect root to login page
-router.get('/', (req, res) => res.redirect('/login'));
+// ✅ FIXED: Redirect root based on session
+router.get('/', (req, res) => {
+  if (req.session.authUser) {
+    return res.redirect('/dashboard'); // Or your protected homepage
+  }
+  return res.redirect('/login');
+});
 
 // 🟢 Login
 router.get('/login', authController.showLogin);        // Show login form

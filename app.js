@@ -9,17 +9,17 @@ const MongoStore = require('connect-mongo');
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const viewRoutes = require('./routes/viewRoutes');
+const pageRoutes = require('./routes/pageRoutes'); // ✅ new
 const apiRoutes = require('./routes/apiRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 
 // Initialize Express App
 const app = express();
 
-// ✅ Trust proxy so secure cookies work behind Render's proxy
+// ✅ Trust proxy for secure cookies on Render
 app.set('trust proxy', 1);
 
-// App-wide Configs
+// Global App Configs
 app.set('floors', [1, 2, 3, 4]);
 app.set('thresholds', {
   temperature: 50,
@@ -28,17 +28,17 @@ app.set('thresholds', {
   vibration: 5.0,
 });
 
-// Middleware: Static files
+// Middleware: Serve static assets
 app.use(express.static(path.join(__dirname, 'public')));
 
-// View Engine
+// View Engine Setup
 app.set('view engine', 'ejs');
 
 // Body Parsers
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ Session Configuration using MongoDB Store
+// ✅ Session Configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
@@ -50,21 +50,21 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // ✅ secure only in production
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
 
-// Middleware: Debug + Make user available in views
+// Middleware: Log user session & set res.locals.user
 app.use((req, res, next) => {
   console.log('🔍 Session user:', req.session.authUser);
   res.locals.user = req.session.authUser || null;
   next();
 });
 
-// Connect to MongoDB
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding')
   .then(() => console.log('✅ MongoDB connected'))
@@ -73,9 +73,9 @@ mongoose
     process.exit(1);
   });
 
-// Route Handlers
+// ✅ Route Handlers
 app.use('/', authRoutes);
-app.use('/', viewRoutes);
+app.use('/', pageRoutes); // ✅ updated to pageRoutes
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
