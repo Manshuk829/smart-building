@@ -76,8 +76,8 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
       }
 
-      // Broadcast to frontend
-      io.emit('sensorUpdate', {
+      // 🔧 FIXED: Event name matches frontend
+      io.emit('sensor-update', {
         floor,
         temp: sensors.temp ?? null,
         humidity: sensors.humidity ?? null,
