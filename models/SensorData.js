@@ -4,19 +4,24 @@ const mongoose = require('mongoose');
 
 const sensorDataSchema = new mongoose.Schema({
   floor: {
-    type: Number,
+    type: String, // Using String because mqttController uses `floorStr`
     required: true
   },
-  temperature: Number,
-  humidity: Number,
-  gas: Number,
-  vibration: Number,
-  flame: Boolean,
-  motion: Boolean,
-  intruderImageURL: String,
-  prediction: {
+  type: {
     type: String,
-    default: 'normal'
+    required: true // e.g., 'temp', 'gas', 'ml-alert'
+  },
+  payload: {
+    type: mongoose.Schema.Types.Mixed, // Can be number, boolean, or string
+    required: true
+  },
+  topic: {
+    type: String
+  },
+  source: {
+    type: String,
+    enum: ['sensor', 'ml'],
+    default: 'sensor'
   },
   timestamp: {
     type: Date,
