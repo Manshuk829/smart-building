@@ -59,6 +59,8 @@ for (let floor = 1; floor <= floorCount; floor++) {
 
 // ---------- Real-time sensor data handler ----------
 socket.on('sensorUpdate', data => {
+  console.log('[client] Received sensor data:', data); // ✅ Debug log
+
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
@@ -76,12 +78,11 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
-  // ---------- Handle Intruder Image ----------
   if (data.intruderImage) {
     const box = document.getElementById(`intruder-${floor}`);
     const img = document.getElementById(`intruder-img-${floor}`);
     if (box && img) {
-      img.src = `${data.intruderImage}?ts=${nowTS()}`; // 🛠️ Cache-busting timestamp
+      img.src = `${data.intruderImage}?ts=${nowTS()}`;
       box.style.display = 'block';
       box.style.opacity = '1';
 

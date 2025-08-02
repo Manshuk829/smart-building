@@ -1,3 +1,5 @@
+// mqtt/mqttController.js
+
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 const Alert = require('../models/Alert');
@@ -10,7 +12,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     try {
       data = JSON.parse(str);
     } catch (parseErr) {
-      console.warn('⚠️ Invalid JSON received (not a valid JSON string):', str);
+      console.warn('⚠️ Invalid JSON received:', str);
       return;
     }
 
@@ -37,7 +39,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const sensorEntries = [];
 
-    // Handle iot/sensors topic
     if (topic === 'iot/sensors') {
       const sensors = {
         temp: toNumber(data.temp),
@@ -75,6 +76,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
       }
 
+      // Broadcast to frontend
       io.emit('sensorUpdate', {
         floor,
         temp: sensors.temp ?? null,
@@ -87,9 +89,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       });
     }
 
-    // Handle iot/predictions topic
     else if (topic === 'iot/predictions') {
-      // Save ML alert only if abnormal
       if (prediction !== 'normal') {
         const mlEntry = {
           topic,
@@ -100,7 +100,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         };
 
         await SensorData.create(mlEntry);
-
         await Alert.create({
           message: `${prediction.toUpperCase()} detected by ML`,
           floor,
@@ -127,7 +126,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       }
     }
 
-    // Unrecognized topic (for safety)
     else {
       console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
     }

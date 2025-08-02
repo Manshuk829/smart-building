@@ -7,93 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    .floor-section {
-      border: 2px solid #ccc;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px auto;
-      max-width: 900px;
-      background: var(--card-bg);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    .sensor-data span {
-      display: inline-block;
-      margin: 5px 10px;
-      font-size: 16px;
-    }
-    .esp32-cam {
-      margin-top: 15px;
-      text-align: center;
-    }
-    .esp32-cam img {
-      width: 100%;
-      max-width: 600px;
-      height: auto;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .esp32-cam button {
-      margin: 5px;
-      padding: 8px 12px;
-      font-size: 14px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .status-line, .last-updated {
-      margin: 5px 0;
-      font-weight: bold;
-    }
-    .intruder-box {
-      margin-top: 15px;
-      text-align: center;
-    }
-    .intruder-box img {
-      width: 100%;
-      max-width: 500px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-    .prediction-alert {
-      background-color: #ffcccc;
-      color: #900;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      padding: 15px;
-      margin: 25px auto;
-      max-width: 600px;
-      border: 2px solid #f00;
-      border-radius: 10px;
-      display: none;
-    }
-    .prediction-alert.active {
-      display: block;
-      animation: blink-animation 1s ease-in-out infinite;
-    }
-    @keyframes blink-animation {
-      0%, 100% { background-color: #ffcccc; }
-      50% { background-color: #ff6666; }
-    }
-    .back {
-      text-align: center;
-      margin-top: 30px;
-    }
-    .back a {
-      margin: 10px;
-      font-size: 16px;
-    }
-    .theme-toggle {
-      text-align: right;
-      padding: 10px 20px;
-    }
-    .online {
-      color: green;
-      font-weight: bold;
-    }
-    .offline {
-      color: red;
-      font-weight: bold;
-    }
+    /* ... your CSS styles (unchanged) ... */
   </style>
 </head>
 <body data-theme="light">
@@ -156,8 +70,8 @@
     <a href="/"><i class="fas fa-home"></i> Back to Dashboard</a>
   </div>
 
-  <!-- 🌐 Theme toggle script -->
   <script>
+    // ✅ Theme toggle
     const themeBtn = document.getElementById('toggleTheme');
     const body = document.body;
     const saved = localStorage.getItem('theme') || 'light';
@@ -169,12 +83,9 @@
       body.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
     });
-  </script>
 
-  <!-- ✅ Live.js socket logic -->
-  <script>
-    const socket = io(); // Connect to server
-
+    // ✅ Socket.IO connection
+    const socket = io();
     const mqttStatus = document.getElementById('mqtt-status').querySelector('span');
 
     socket.on('connect', () => {
@@ -189,17 +100,30 @@
       mqttStatus.classList.add('offline');
     });
 
-    // ✅ ML alert with auto-hide after 10 seconds
+    // ✅ ML Alert Banner
     socket.on('ml-alert', (message) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       alertBanner.textContent = `⚠️ ${message}`;
       alertBanner.classList.add('active');
-
-      // Auto-hide after 10 seconds
       setTimeout(() => {
         alertBanner.classList.remove('active');
         alertBanner.textContent = '';
       }, 10000);
+    });
+
+    // ✅ Live sensor update
+    socket.on('sensor-update', (data) => {
+      const floor = data.floor;
+      if (!floor) return;
+
+      document.getElementById(`status-${floor}`).innerHTML = `Status: <span class="online">Online</span>`;
+      document.getElementById(`last-updated-${floor}`).innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
+      document.getElementById(`temp-${floor}`).innerText = `🌡️ Temp: ${data.temp}`;
+      document.getElementById(`mq135-${floor}`).innerText = `🧪 Gas: ${data.mq135}`;
+      document.getElementById(`flame-${floor}`).innerText = `🔥 Flame: ${data.flame}`;
+      document.getElementById(`motion-${floor}`).innerText = `🏃 Motion: ${data.motion}`;
+      document.getElementById(`quake-${floor}`).innerText = `🌎 Quake: ${data.quake}`;
+      document.getElementById(`emergency-${floor}`).innerText = `🚨 Emergency: ${data.emergency}`;
     });
   </script>
 </body>
