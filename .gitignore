@@ -2,10 +2,10 @@
 # 📦 Node.js
 # ======================
 node_modules/
+*.tgz
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.tgz
 
 # ======================
 # 🔐 Environment Variables
@@ -20,7 +20,6 @@ yarn-error.log*
 # ======================
 logs/
 *.log
-*.log.*
 
 # ======================
 # 🧪 Test Coverage
@@ -70,6 +69,6 @@ Thumbs.db
 desktop.ini
 
 # ======================
-# 🛑 Render-specific or Deployment artifacts (optional)
+# 🛑 Render / Deployment
 # ======================
 render.yaml

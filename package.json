@@ -39,5 +39,13 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Manshuk829/smart-building"
+  },
+  "bugs": {
+    "url": "https://github.com/Manshuk829/smart-building/issues"
+  },
+  "homepage": "https://smart-building.onrender.com"
 }
