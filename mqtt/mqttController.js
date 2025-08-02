@@ -1,8 +1,6 @@
-// mqtt/mqttController.js
-
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
-const Alert = require('../models/Alert'); // ✅ New import
+const Alert = require('../models/Alert');
 
 module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
@@ -39,93 +37,100 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const sensorEntries = [];
 
-    // Add individual sensor values if valid
-    const sensors = {
-      temp: toNumber(data.temp),
-      humidity: toNumber(data.humidity),
-      gas: toNumber(data.gas),
-      vibration: toNumber(data.vibration),
-      flame: parseBool(data.flame),
-      motion: parseBool(data.motion),
-    };
+    // Handle iot/sensors topic
+    if (topic === 'iot/sensors') {
+      const sensors = {
+        temp: toNumber(data.temp),
+        humidity: toNumber(data.humidity),
+        gas: toNumber(data.gas),
+        vibration: toNumber(data.vibration),
+        flame: parseBool(data.flame),
+        motion: parseBool(data.motion),
+      };
 
-    for (const [type, value] of Object.entries(sensors)) {
-      if (value !== undefined) {
+      for (const [type, value] of Object.entries(sensors)) {
+        if (value !== undefined) {
+          sensorEntries.push({
+            topic,
+            floor: floorStr,
+            type,
+            payload: value,
+            source: 'sensor'
+          });
+        }
+      }
+
+      if (intruderImage) {
         sensorEntries.push({
           topic,
           floor: floorStr,
-          type,
-          payload: value,
+          type: 'intruderImage',
+          payload: intruderImage,
           source: 'sensor'
         });
       }
-    }
 
-    // If intruder image is present
-    if (intruderImage) {
-      sensorEntries.push({
-        topic,
-        floor: floorStr,
-        type: 'intruderImage',
-        payload: intruderImage,
-        source: 'sensor'
-      });
-    }
+      if (sensorEntries.length > 0) {
+        await SensorData.insertMany(sensorEntries);
+        console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
+      }
 
-    // 🚨 If ML prediction is abnormal
-    if (prediction !== 'normal') {
-      sensorEntries.push({
-        topic,
-        floor: floorStr,
-        type: 'ml-alert',
-        payload: prediction,
-        source: 'ml'
-      });
-
-      // ✅ Save as alert in Alert model
-      await Alert.create({
-        message: `${prediction.toUpperCase()} detected by ML`,
+      io.emit('sensorUpdate', {
         floor,
-        severity: prediction === 'critical' ? 'critical' : 'warning',
-        alertType: 'ml'
+        temp: sensors.temp ?? null,
+        humidity: sensors.humidity ?? null,
+        gas: sensors.gas ?? null,
+        vibration: sensors.vibration ?? null,
+        flame: sensors.flame,
+        motion: sensors.motion,
+        intruderImage
       });
-
-      // Log in Audit
-      await AuditLog.create({
-        action: `🚨 ${prediction.toUpperCase()} detected via ML`,
-        floor,
-        performedBy: 'ML-Pipeline'
-      });
-
-      // Emit ML alert to frontend
-      io.emit('ml-alert', {
-        type: prediction,
-        time: new Date(),
-        floor
-      });
-
-      console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);
-    } else {
-      io.emit('ml-normal', { time: new Date(), floor });
     }
 
-    // Save sensor entries
-    if (sensorEntries.length > 0) {
-      await SensorData.insertMany(sensorEntries);
+    // Handle iot/predictions topic
+    else if (topic === 'iot/predictions') {
+      // Save ML alert only if abnormal
+      if (prediction !== 'normal') {
+        const mlEntry = {
+          topic,
+          floor: floorStr,
+          type: 'ml-alert',
+          payload: prediction,
+          source: 'ml'
+        };
+
+        await SensorData.create(mlEntry);
+
+        await Alert.create({
+          message: `${prediction.toUpperCase()} detected by ML`,
+          floor,
+          severity: prediction === 'critical' ? 'critical' : 'warning',
+          alertType: 'ml'
+        });
+
+        await AuditLog.create({
+          action: `🚨 ${prediction.toUpperCase()} detected via ML`,
+          floor,
+          performedBy: 'ML-Pipeline'
+        });
+
+        io.emit('ml-alert', {
+          type: prediction,
+          time: new Date(),
+          floor
+        });
+
+        console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);
+      } else {
+        io.emit('ml-normal', { time: new Date(), floor });
+        console.log(`✅ ML prediction: normal for Floor ${floor}`);
+      }
     }
 
-    // Emit sensor data to clients
-    io.emit('sensorUpdate', {
-      floor,
-      temp: sensors.temp ?? null,
-      humidity: sensors.humidity ?? null,
-      gas: sensors.gas ?? null,
-      vibration: sensors.vibration ?? null,
-      flame: sensors.flame,
-      motion: sensors.motion,
-      intruderImage,
-      prediction
-    });
+    // Unrecognized topic (for safety)
+    else {
+      console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
+    }
 
   } catch (err) {
     console.error('❌ MQTT Message Handler Error:', err.message);
