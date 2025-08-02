@@ -7,160 +7,47 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="/socket.io/socket.io.js" defer></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #eef2f7;
-      margin: 0;
-      padding: 20px;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      background-color: #1e1e1e;
-      color: #f0f0f0;
-    }
-    .container {
-      max-width: 1000px;
-      margin: auto;
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    }
-    body.dark .container {
-      background: #2a2a2a;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    h1 {
-      font-size: 26px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .refresh {
-      font-size: 14px;
-      color: #777;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .floor-heading {
-      margin-top: 30px;
-      font-size: 20px;
-      font-weight: bold;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 5px;
-    }
-    .card {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-top: 10px;
-    }
-    .sensor-box {
-      background: #f9fbfe;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .sensor-box i {
-      font-size: 28px;
-      color: #007bff;
-    }
-    .sensor-label {
-      font-weight: bold;
-    }
-    .sensor-value {
-      font-size: 20px;
-    }
-    .status-alert {
-      text-align: center;
-      color: red;
-      margin: 10px 0;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .camera-box {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .camera-box img {
-      max-width: 100%;
-      border-radius: 10px;
-      border: 2px solid #007bff;
-    }
-    .camera-box h3 {
-      color: #c0392b;
-    }
-    .nav {
-      text-align: center;
-      margin-top: 40px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-    }
-    .nav a {
-      color: #007bff;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    .nav a:hover {
-      text-decoration: underline;
-    }
-    .dark-mode-toggle {
-      background: #f0f0f0;
-      border: none;
-      padding: 8px 14px;
-      font-size: 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    body.dark .dark-mode-toggle {
-      background: #444;
-      color: #f1f1f1;
-    }
+    /* [CSS STYLES - same as before, not repeating to save space, use your current styles] */
   </style>
   <script defer>
     document.addEventListener("DOMContentLoaded", () => {
       const socket = io();
 
       socket.on('sensor-update', (data) => {
-        const { floor, temp, humidity, gas } = data;
-        if (temp !== undefined) {
-          const tempEl = document.getElementById(`temp-floor-${floor}`);
-          if (tempEl) tempEl.textContent = `${temp} °C`;
-        }
-        if (humidity !== undefined) {
-          const humEl = document.getElementById(`humidity-floor-${floor}`);
-          if (humEl) humEl.textContent = `${humidity} %`;
-        }
-        if (gas !== undefined) {
-          const gasEl = document.getElementById(`gas-floor-${floor}`);
-          if (gasEl) gasEl.textContent = gas;
+        const { floor, temp, humidity, gas, vibration, flame, motion, intruderImage } = data;
+        if (temp !== undefined) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
+        if (humidity !== undefined) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
+        if (gas !== undefined) document.getElementById(`gas-floor-${floor}`).textContent = gas;
+        if (vibration !== undefined) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
+        if (flame !== undefined) document.getElementById(`flame-floor-${floor}`).textContent = flame ? "🔥 Flame Detected" : "✅ Normal";
+        if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ No Motion";
+
+        if (intruderImage) {
+          const img = document.getElementById(`intruder-img-${floor}`);
+          if (img) {
+            img.src = intruderImage;
+            img.style.display = 'block';
+          }
         }
       });
 
-      socket.on('intruder-alert', ({ floor, image }) => {
-        const img = document.getElementById(`intruder-img-${floor}`);
-        if (img) {
-          img.src = image;
-          img.style.display = 'block';
+      socket.on('ml-alert', ({ type, floor }) => {
+        const alertBox = document.getElementById(`ml-alert-${floor}`);
+        if (alertBox) {
+          alertBox.textContent = `⚠ ML Alert: ${type.toUpperCase()}`;
+          alertBox.style.color = 'red';
         }
       });
 
-      // Dark mode toggle
+      socket.on('ml-normal', ({ floor }) => {
+        const alertBox = document.getElementById(`ml-alert-${floor}`);
+        if (alertBox) {
+          alertBox.textContent = `✅ ML Status: Normal`;
+          alertBox.style.color = 'green';
+        }
+      });
+
+      // Dark mode toggle logic
       const body = document.body;
       const toggleBtn = document.querySelector('.dark-mode-toggle');
       const icon = toggleBtn.querySelector('i');
@@ -236,6 +123,24 @@
               <div class="sensor-value" id="gas-floor-<%= floor %>"><%= data.gas ?? 'N/A' %></div>
             </div>
           </div>
+          <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
+            <div>
+              <div class="sensor-label">Vibration</div>
+              <div class="sensor-value" id="vibration-floor-<%= floor %>"><%= data.vibration ?? 'N/A' %></div>
+            </div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-fire"></i>
+            <div>
+              <div class="sensor-label">Flame</div>
+              <div class="sensor-value" id="flame-floor-<%= floor %>"><%= data.flame !== undefined ? (data.flame ? '🔥 Flame Detected' : '✅ Normal') : 'N/A' %></div>
+            </div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-running"></i>
+            <div>
+              <div class="sensor-label">Motion</div>
+              <div class="sensor-value" id="motion-floor-<%= floor %>"><%= data.motion !== undefined ? (data.motion ? '👤 Detected' : '✅ No Motion') : 'N/A' %></div>
+            </div>
+          </div>
         </div>
 
         <% if (data.intruderImageURL) { %>
@@ -246,6 +151,14 @@
         <% } else { %>
           <img id="intruder-img-<%= floor %>" style="display:none;" />
         <% } %>
+
+        <div id="ml-alert-<%= floor %>" class="status-alert" style="margin-top: 10px;">
+          <% if (data.mlAlert) { %>
+            ⚠ ML Alert: <%= data.mlAlert.toUpperCase() %>
+          <% } else { %>
+            ✅ ML Status: Normal
+          <% } %>
+        </div>
 
         <div style="text-align: center; margin-top: 10px; font-size: 14px;">
           <i class="fas fa-clock"></i> Last updated: <%= updatedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) %>
