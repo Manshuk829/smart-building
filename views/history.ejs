@@ -126,17 +126,6 @@
       font-weight: bold;
     }
 
-    .intruder-image {
-      margin-top: 25px;
-      text-align: center;
-    }
-
-    .intruder-image img {
-      max-width: 100%;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
     .theme-toggle {
       position: fixed;
       top: 20px;
@@ -185,21 +174,15 @@
 
     <% if (record) { %>
       <div class="record">
-        <p><strong>📅 Timestamp:</strong> <%= new Date(record.createdAt).toLocaleString() %></p>
-        <p><strong>🌡 Temperature:</strong> <span class="<%= record.temperature > thresholds.temperature ? 'highlight' : '' %>"><%= record.temperature %> °C</span></p>
+        <p><strong>📅 Timestamp:</strong> <%= new Date(record.timestamp).toLocaleString() %></p>
+        <p><strong>🌡 Temperature:</strong> <span class="<%= record.temp > thresholds.temperature ? 'highlight' : '' %>"><%= record.temp %> °C</span></p>
         <p><strong>💧 Humidity:</strong> <span class="<%= record.humidity > thresholds.humidity ? 'highlight' : '' %>"><%= record.humidity %> %</span></p>
         <p><strong>🌫 Gas:</strong> <span class="<%= record.gas > thresholds.gas ? 'highlight' : '' %>"><%= record.gas %></span></p>
-        <p><strong>🔥 Flame:</strong> <%= record.flame ? "Yes" : "No" %></p>
-        <p><strong>🚶 Motion:</strong> <%= record.motion ? "Yes" : "No" %></p>
-        <p><strong>💥 Vibration:</strong> <span class="<%= (record.vibration ?? 0) > thresholds.vibration ? 'highlight' : '' %>"><%= record.vibration ?? 0.0 %></span></p>
+        <p><strong>🔥 Flame:</strong> <%= record.flame === true ? "Yes" : record.flame === false ? "No" : "N/A" %></p>
+        <p><strong>🚶 Motion:</strong> <%= record.motion === true ? "Yes" : record.motion === false ? "No" : "N/A" %></p>
+        <p><strong>💥 Vibration:</strong> <span class="<%= record.vibration > thresholds.vibration ? 'highlight' : '' %>"><%= record.vibration %></span></p>
+        <p><strong>🌎 Quake:</strong> <%= record.quake ?? 'N/A' %></p>
       </div>
-
-      <% if (record.intruderImage) { %>
-        <div class="intruder-image">
-          <h3>🚨 Intruder Image</h3>
-          <img src="<%= record.intruderImage %>" alt="Intruder Image">
-        </div>
-      <% } %>
 
       <div class="stats">
         <h3>📊 Sensor Summary:</h3>
@@ -220,7 +203,6 @@
   </div>
 
   <script>
-    // Theme toggle
     const themeBtn = document.getElementById('toggleTheme');
     const body = document.body;
 
