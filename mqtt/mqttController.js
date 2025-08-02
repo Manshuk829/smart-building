@@ -6,6 +6,12 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
     const str = message.toString();
 
+    // Ignore empty or null messages
+    if (!str || str.trim() === '{}' || str.trim() === '') {
+      console.warn('⚠️ Empty or blank MQTT message received, ignoring.');
+      return;
+    }
+
     let data;
     try {
       data = JSON.parse(str);
@@ -47,6 +53,13 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         flame: parseBool(data.flame),
         motion: parseBool(data.motion),
       };
+
+      // Only proceed if at least one sensor value is valid
+      const hasValidSensorData = Object.values(sensors).some((val) => val !== undefined) || !!intruderImage;
+      if (!hasValidSensorData) {
+        console.warn('⚠️ Received sensor topic with no valid data, ignoring.');
+        return;
+      }
 
       for (const [type, value] of Object.entries(sensors)) {
         if (value !== undefined) {
@@ -100,6 +113,11 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // 🔴 ML PREDICTION TOPIC HANDLER
     else if (topic === 'iot/predictions') {
+      if (!data.prediction) {
+        console.warn('⚠️ ML topic received without prediction field, ignoring.');
+        return;
+      }
+
       if (prediction !== 'normal') {
         const mlEntry = {
           topic,
@@ -123,7 +141,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           performedBy: 'ML-Pipeline'
         });
 
-        // 🔴 EMIT ML ALERT TO FRONTEND
         io.emit('ml-alert', {
           type: prediction,
           time: new Date(),
