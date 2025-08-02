@@ -7,34 +7,33 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    /* ... your CSS styles (unchanged) ... */
+    /* You can keep your existing styles.css file intact */
   </style>
 </head>
 <body data-theme="light">
+  <!-- Theme Toggle -->
   <div class="theme-toggle">
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
 
+  <!-- Title -->
   <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Alerts)</h1>
 
+  <!-- MQTT WebSocket Status -->
   <div class="mqtt-status" id="mqtt-status" style="text-align:center;">
     WebSocket Status: <span class="offline">🔴 Disconnected</span>
   </div>
 
-  <!-- ✅ ML Prediction Alert Banner -->
+  <!-- ML Prediction Alert Banner -->
   <div id="ml-alert-banner" class="prediction-alert"></div>
 
+  <!-- Floor Sections -->
   <% for (let floor = 1; floor <= 4; floor++) { %>
     <div class="floor-section" id="floor-<%= floor %>">
       <h2>🏢 Floor <%= floor %></h2>
 
-      <div class="status-line" id="status-<%= floor %>">
-        Status: <span class="offline">Offline</span>
-      </div>
-
-      <div class="last-updated" id="last-updated-<%= floor %>">
-        Last updated: --
-      </div>
+      <div class="status-line" id="status-<%= floor %>">Status: <span class="offline">Offline</span></div>
+      <div class="last-updated" id="last-updated-<%= floor %>">Last updated: --</div>
 
       <div class="sensor-data" id="sensor-data-<%= floor %>">
         <span id="temp-<%= floor %>">🌡️ Temp: --</span>
@@ -65,17 +64,19 @@
     </div>
   <% } %>
 
+  <!-- Navigation -->
   <div class="back">
     <a href="/charts"><i class="fas fa-chart-line"></i> View Charts</a>
     <a href="/"><i class="fas fa-home"></i> Back to Dashboard</a>
   </div>
 
+  <!-- Client-side Script -->
   <script>
-    // ✅ Theme toggle
+    // Theme Toggle
     const themeBtn = document.getElementById('toggleTheme');
     const body = document.body;
-    const saved = localStorage.getItem('theme') || 'light';
-    body.setAttribute('data-theme', saved);
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    body.setAttribute('data-theme', savedTheme);
 
     themeBtn.addEventListener('click', () => {
       const current = body.getAttribute('data-theme');
@@ -84,23 +85,21 @@
       localStorage.setItem('theme', next);
     });
 
-    // ✅ Socket.IO connection
+    // Socket.IO
     const socket = io();
     const mqttStatus = document.getElementById('mqtt-status').querySelector('span');
 
     socket.on('connect', () => {
       mqttStatus.innerHTML = '🟢 Connected';
-      mqttStatus.classList.remove('offline');
-      mqttStatus.classList.add('online');
+      mqttStatus.classList.replace('offline', 'online');
     });
 
     socket.on('disconnect', () => {
       mqttStatus.innerHTML = '🔴 Disconnected';
-      mqttStatus.classList.remove('online');
-      mqttStatus.classList.add('offline');
+      mqttStatus.classList.replace('online', 'offline');
     });
 
-    // ✅ ML Alert Banner
+    // ML Alert Banner
     socket.on('ml-alert', (message) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       alertBanner.textContent = `⚠️ ${message}`;
@@ -111,20 +110,21 @@
       }, 10000);
     });
 
-    // ✅ Live sensor update
+    // Live Sensor Updates
     socket.on('sensor-update', (data) => {
       const floor = data.floor;
       if (!floor) return;
 
-      document.getElementById(`status-${floor}`).innerHTML = `Status: <span class="online">Online</span>`;
-      document.getElementById(`last-updated-${floor}`).innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
-      document.getElementById(`temp-${floor}`).innerText = `🌡️ Temp: ${data.temp}`;
-      document.getElementById(`mq135-${floor}`).innerText = `🧪 Gas: ${data.mq135}`;
-      document.getElementById(`flame-${floor}`).innerText = `🔥 Flame: ${data.flame}`;
-      document.getElementById(`motion-${floor}`).innerText = `🏃 Motion: ${data.motion}`;
-      document.getElementById(`quake-${floor}`).innerText = `🌎 Quake: ${data.quake}`;
-      document.getElementById(`emergency-${floor}`).innerText = `🚨 Emergency: ${data.emergency}`;
+      document.getElementById(`status-${floor}`).innerHTML = 'Status: <span class="online">Online</span>';
+      document.getElementById(`last-updated-${floor}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+      document.getElementById(`temp-${floor}`).textContent = `🌡️ Temp: ${data.temp}`;
+      document.getElementById(`mq135-${floor}`).textContent = `🧪 Gas: ${data.mq135}`;
+      document.getElementById(`flame-${floor}`).textContent = `🔥 Flame: ${data.flame}`;
+      document.getElementById(`motion-${floor}`).textContent = `🏃 Motion: ${data.motion}`;
+      document.getElementById(`quake-${floor}`).textContent = `🌎 Quake: ${data.quake}`;
+      document.getElementById(`emergency-${floor}`).textContent = `🚨 Emergency: ${data.emergency}`;
     });
   </script>
 </body>
-</html> 
+</html>
