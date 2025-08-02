@@ -1,5 +1,3 @@
-// mqtt/mqttController.js
-
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 const Alert = require('../models/Alert');
@@ -39,6 +37,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const sensorEntries = [];
 
+    // 🟢 SENSOR TOPIC HANDLER
     if (topic === 'iot/sensors') {
       const sensors = {
         temp: toNumber(data.temp),
@@ -69,6 +68,14 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           payload: intruderImage,
           source: 'sensor'
         });
+
+        // 🔴 Emit intruder image separately to frontend
+        io.emit('intruder-alert', {
+          floor,
+          image: intruderImage
+        });
+
+        console.log(`📸 intruder-alert emitted for Floor ${floor}`);
       }
 
       if (sensorEntries.length > 0) {
@@ -76,7 +83,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
       }
 
-      // 🔧 FIXED: Event name matches frontend
+      // 🟢 EMIT SENSOR DATA TO FRONTEND
       io.emit('sensor-update', {
         floor,
         temp: sensors.temp ?? null,
@@ -87,8 +94,11 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         motion: sensors.motion,
         intruderImage
       });
+
+      console.log(`📡 sensor-update emitted for floor ${floor}`);
     }
 
+    // 🔴 ML PREDICTION TOPIC HANDLER
     else if (topic === 'iot/predictions') {
       if (prediction !== 'normal') {
         const mlEntry = {
@@ -113,6 +123,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           performedBy: 'ML-Pipeline'
         });
 
+        // 🔴 EMIT ML ALERT TO FRONTEND
         io.emit('ml-alert', {
           type: prediction,
           time: new Date(),
@@ -126,6 +137,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       }
     }
 
+    // ⚠️ UNHANDLED TOPIC
     else {
       console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
     }
