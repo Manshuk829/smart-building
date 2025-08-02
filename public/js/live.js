@@ -6,15 +6,15 @@ const socket = io({
 
 const floorCount = 4;
 const lastUpdateTimes = {};
-
 const mqttStatus = document.getElementById('mqtt-status');
 const alertBanner = document.getElementById('ml-alert-banner');
 let mlAlertTimeout = null;
 
+// Utility Functions
 const nowTS = () => Date.now();
 const fmt = (v, unit = '') => (v === null || v === undefined ? 'N/A' : `${v}${unit}`);
 
-// ---------- MQTT WebSocket status ----------
+// Update MQTT WebSocket Connection Status
 function updateConnectionStatus(connected) {
   mqttStatus.innerHTML = `WebSocket Status:
     <span class="${connected ? 'online' : 'offline'}" title="${connected ? 'Connected to server' : 'Disconnected'}">
@@ -24,7 +24,7 @@ function updateConnectionStatus(connected) {
 socket.on('connect', () => updateConnectionStatus(true));
 socket.on('disconnect', () => updateConnectionStatus(false));
 
-// ---------- Button listeners for each floor ----------
+// Setup Button Event Listeners for Each Floor
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
@@ -57,19 +57,20 @@ for (let floor = 1; floor <= floorCount; floor++) {
     });
 }
 
-// ---------- Real-time sensor data handler ----------
+// Handle Incoming Real-Time Sensor Data
 socket.on('sensorUpdate', data => {
-  console.log('[client] Received sensor data:', data); // ✅ Debug log
-
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
+  // Update status and last updated time
   document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
   document.getElementById(`last-updated-${floor}`)?.textContent = 'Last updated: just now';
 
+  // Update camera snapshot
   const cam = document.getElementById(`cam-${floor}`);
   if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
+  // Update sensor values
   document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
   document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
   document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
@@ -78,6 +79,7 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
+  // Show intruder image if available
   if (data.intruderImage) {
     const box = document.getElementById(`intruder-${floor}`);
     const img = document.getElementById(`intruder-img-${floor}`);
@@ -90,12 +92,12 @@ socket.on('sensorUpdate', data => {
         box.style.transition = 'opacity 1s ease';
         box.style.opacity = '0';
         setTimeout(() => box.style.display = 'none', 1000);
-      }, 30_000);
+      }, 30_000); // 30 seconds visibility
     }
   }
 });
 
-// ---------- Offline status checker ----------
+// Offline Status Checker for Each Floor
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {
@@ -113,9 +115,9 @@ setInterval(() => {
       updated.textContent = `Last updated: ${secs} s ago`;
     }
   }
-}, 1000);
+}, 1000); // Run every second
 
-// ---------- ML Alert Notification ----------
+// ML Alert Handler
 socket.on('ml-alert', ({ type, time, floor }) => {
   if (!type || !time || !floor) return;
 
@@ -134,9 +136,10 @@ socket.on('ml-alert', ({ type, time, floor }) => {
 
   mlAlertTimeout = setTimeout(() => {
     alertBanner.classList.remove('active');
-  }, 10_000);
+  }, 10_000); // Visible for 10 seconds
 });
 
+// ML Alert Reset
 socket.on('ml-normal', () => {
   clearTimeout(mlAlertTimeout);
   alertBanner.classList.remove('active');
