@@ -92,6 +92,13 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
       if (sensorEntries.length > 0) {
         await SensorData.insertMany(sensorEntries);
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
+
+        // 🟨 Emit chart-update event for real-time charts
+        io.emit('chart-update', {
+          floor,
+          data: sensors,
+          timestamp: new Date()
+        });
       }
 
       io.emit('sensor-update', {
@@ -142,6 +149,13 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           type: prediction,
           time: new Date(),
           floor
+        });
+
+        // 🟨 Emit ml-line for chart ML overlay
+        io.emit('ml-line', {
+          floor,
+          prediction,
+          timestamp: new Date()
         });
 
         console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);

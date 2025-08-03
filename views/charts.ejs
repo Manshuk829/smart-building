@@ -10,7 +10,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-
   <style>
     :root {
       --bg: #f4f6f9;
@@ -24,7 +23,6 @@
       --heading: #f0f0f0;
       --card-bg: #1e1e1e;
     }
-
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: var(--bg);
@@ -32,12 +30,10 @@
       padding: 20px;
       transition: background 0.3s ease;
     }
-
     h1 {
       text-align: center;
       color: var(--heading);
     }
-
     .filters {
       max-width: 1000px;
       margin: 20px auto;
@@ -46,7 +42,6 @@
       gap: 12px;
       justify-content: center;
     }
-
     .filters select,
     .filters input[type="checkbox"],
     .filters button {
@@ -55,7 +50,6 @@
       border-radius: 6px;
       border: 1px solid #ccc;
     }
-
     .chart-section {
       max-width: 1000px;
       margin: 30px auto;
@@ -64,18 +58,15 @@
       border-radius: 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-
     .chart-section h2 {
       text-align: center;
       margin-bottom: 10px;
       color: var(--heading);
     }
-
     canvas {
       max-height: 350px;
       width: 100%;
     }
-
     .controls {
       display: flex;
       justify-content: center;
@@ -83,7 +74,6 @@
       margin-top: 10px;
       flex-wrap: wrap;
     }
-
     .controls button {
       padding: 6px 12px;
       border: none;
@@ -93,32 +83,27 @@
       cursor: pointer;
       font-size: 13px;
     }
-
     .no-data {
       text-align: center;
       font-size: 18px;
       color: #888;
       margin-top: 60px;
     }
-
     .back {
       text-align: center;
       margin-top: 40px;
     }
-
     .back a {
       text-decoration: none;
       font-weight: bold;
       color: #007bff;
       margin: 0 10px;
     }
-
     .theme-toggle {
       position: fixed;
       top: 20px;
       right: 20px;
     }
-
     .theme-toggle button {
       padding: 8px 12px;
       background: #007bff;
@@ -133,29 +118,24 @@
   <div class="theme-toggle">
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
-
   <h1>📈 Smart Building Charts</h1>
-
   <form class="filters" method="GET" action="/charts">
     <select name="floor">
       <% for (let i = 1; i <= 4; i++) { %>
         <option value="<%= i %>" <%= parseInt(query.floor) === i ? 'selected' : '' %>>🏢 Floor <%= i %></option>
       <% } %>
     </select>
-
     <select name="range">
       <option value="">📅 All Time</option>
       <option value="1h" <%= query.range === '1h' ? 'selected' : '' %>>⏱ Last 1 Hour</option>
       <option value="24h" <%= query.range === '24h' ? 'selected' : '' %>>🕒 Last 24 Hours</option>
       <option value="7d" <%= query.range === '7d' ? 'selected' : '' %>>📆 Last 7 Days</option>
     </select>
-
     <label>
       <input type="checkbox" name="intruder" value="true" <%= query.intruder === 'true' ? 'checked' : '' %>> 🚨 Intruders Only
     </label>
     <button type="submit">🔍 Apply</button>
   </form>
-
   <% if (records.length === 0) { %>
     <div class="no-data">No records found for selected filters.</div>
   <% } else { %>
@@ -170,7 +150,6 @@
         vibration: r.vibration ?? 0
       }))) %>;
     </script>
-
     <% const sensors = [
       { id: 'tempChart', label: '🌡 Temperature (°C)', key: 'temperature' },
       { id: 'humidityChart', label: '💧 Humidity (%)', key: 'humidity' },
@@ -179,32 +158,27 @@
       { id: 'motionChart', label: '🚶 Motion', key: 'motion' },
       { id: 'vibrationChart', label: '💥 Vibration', key: 'vibration' }
     ]; %>
-
     <% sensors.forEach(sensor => { %>
       <div class="chart-section">
         <h2><%= sensor.label %></h2>
         <canvas id="<%= sensor.id %>"></canvas>
         <div class="controls">
           <button onclick="toggleChartType('<%= sensor.id %>', '<%= sensor.key %>', '<%= sensor.label %>')">🔄 Toggle Type</button>
-          <button onclick="exportChart('<%= sensor.id %>')">💾 Export</button>
-          <button onclick="printChart('<%= sensor.id %>')">🖨 Print</button>
+          <button onclick="exportChart('<%= sensor.id %>')">📀 Export</button>
+          <button onclick="printChart('<%= sensor.id %>')">🖸 Print</button>
           <button onclick="resetZoom('<%= sensor.id %>')">🔍 Reset Zoom</button>
         </div>
       </div>
     <% }) %>
-
     <script src="/js/charts.js"></script>
   <% } %>
-
   <div class="back">
     <a href="/">← Back to Dashboard</a>
     <a href="/live">📷 View ESP32-CAM</a>
   </div>
-
   <script>
     const theme = localStorage.getItem("theme") || "light";
     document.body.setAttribute("data-theme", theme);
-
     const toggleBtn = document.getElementById("toggleTheme");
     toggleBtn.addEventListener("click", () => {
       const newTheme = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";

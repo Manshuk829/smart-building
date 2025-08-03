@@ -1,17 +1,33 @@
-// public/js/charts.js
+let chartRefs = {};
+let chartTypes = {};
+let mlOverlays = {};
+let sensorData = [];
 
-let chartRefs = {}; // store chart references
-let chartTypes = {}; // store per-chart type (line or bar)
-
-function createChart(ctx, label, data, color, type = 'line') {
+// -------------------- Chart Creation --------------------
+function createChart(ctx, label, data, color, type = 'line', mlOverlayTimes = []) {
   const avg = (data.reduce((acc, d) => acc + d.value, 0) / data.length).toFixed(2);
   const min = Math.min(...data.map(d => d.value));
   const max = Math.max(...data.map(d => d.value));
+  const timestamps = data.map(d => new Date(d.createdAt).toLocaleString());
+
+  const annotations = mlOverlayTimes.map(ts => ({
+    type: 'line',
+    mode: 'vertical',
+    scaleID: 'x',
+    value: new Date(ts).toLocaleString(),
+    borderColor: '#ff0000',
+    borderWidth: 2,
+    label: {
+      content: 'ML Alert',
+      enabled: true,
+      position: 'top'
+    }
+  }));
 
   const chart = new Chart(ctx, {
     type,
     data: {
-      labels: data.map(d => new Date(d.createdAt).toLocaleString()),
+      labels: timestamps,
       datasets: [
         {
           label,
@@ -24,7 +40,7 @@ function createChart(ctx, label, data, color, type = 'line') {
         },
         {
           label: 'Avg',
-          data: new Array(data.length).fill(avg),
+          data: Array(data.length).fill(avg),
           borderColor: '#aaa',
           borderDash: [5, 5],
           pointRadius: 0,
@@ -32,7 +48,7 @@ function createChart(ctx, label, data, color, type = 'line') {
         },
         {
           label: 'Min',
-          data: new Array(data.length).fill(min),
+          data: Array(data.length).fill(min),
           borderColor: '#2ecc71',
           borderDash: [5, 5],
           pointRadius: 0,
@@ -40,7 +56,7 @@ function createChart(ctx, label, data, color, type = 'line') {
         },
         {
           label: 'Max',
-          data: new Array(data.length).fill(max),
+          data: Array(data.length).fill(max),
           borderColor: '#e74c3c',
           borderDash: [5, 5],
           pointRadius: 0,
@@ -51,10 +67,7 @@ function createChart(ctx, label, data, color, type = 'line') {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
-        duration: 1000,
-        easing: 'easeOutQuart'
-      },
+      animation: { duration: 500 },
       plugins: {
         legend: {
           labels: {
@@ -65,6 +78,9 @@ function createChart(ctx, label, data, color, type = 'line') {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}`
           }
+        },
+        annotation: {
+          annotations
         },
         zoom: {
           pan: { enabled: true, mode: 'x' },
@@ -102,22 +118,57 @@ function createChart(ctx, label, data, color, type = 'line') {
   return chart;
 }
 
+// -------------------- Rendering --------------------
 function renderCharts() {
   if (!sensorData || sensorData.length === 0) return;
 
-  const prepareData = key => sensorData.map(d => ({ value: d[key], createdAt: d.createdAt }));
+  const prepareData = key => sensorData.map(d => ({
+    value: d[key],
+    createdAt: d.createdAt
+  })).filter(d => d.value !== undefined && d.value !== null);
 
-  createChart(document.getElementById('tempChart'), 'Temperature (°C)', prepareData('temperature'), '#e74c3c', chartTypes['tempChart'] || 'line');
-  createChart(document.getElementById('humidityChart'), 'Humidity (%)', prepareData('humidity'), '#3498db', chartTypes['humidityChart'] || 'line');
-  createChart(document.getElementById('gasChart'), 'Gas (ppm)', prepareData('gas'), '#9b59b6', chartTypes['gasChart'] || 'line');
-  createChart(document.getElementById('flameChart'), 'Flame', prepareData('flame'), '#f39c12', chartTypes['flameChart'] || 'line');
-  createChart(document.getElementById('motionChart'), 'Motion', prepareData('motion'), '#2ecc71', chartTypes['motionChart'] || 'line');
-  createChart(document.getElementById('vibrationChart'), 'Vibration', prepareData('vibration'), '#8e44ad', chartTypes['vibrationChart'] || 'line');
+  const chartDefs = [
+    { id: 'tempChart', key: 'temperature', label: 'Temperature (°C)', color: '#e74c3c' },
+    { id: 'humidityChart', key: 'humidity', label: 'Humidity (%)', color: '#3498db' },
+    { id: 'gasChart', key: 'gas', label: 'Gas (ppm)', color: '#9b59b6' },
+    { id: 'flameChart', key: 'flame', label: 'Flame', color: '#f39c12' },
+    { id: 'motionChart', key: 'motion', label: 'Motion', color: '#2ecc71' },
+    { id: 'vibrationChart', key: 'vibration', label: 'Vibration', color: '#8e44ad' }
+  ];
+
+  chartDefs.forEach(({ id, key, label, color }) => {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const type = chartTypes[id] || 'line';
+    const mlLines = mlOverlays[id] || [];
+    if (chartRefs[id]) chartRefs[id].destroy();
+    createChart(canvas, label, prepareData(key), color, type, mlLines);
+  });
 }
 
+// -------------------- Socket.IO Updates --------------------
+const socket = io();
+
+socket.on('sensor-update', newData => {
+  if (!sensorData) sensorData = [];
+  newData.createdAt = new Date();
+  sensorData.push(newData);
+  renderCharts();
+});
+
+socket.on('ml-line', ({ floor, prediction, timestamp }) => {
+  const affectedTypes = ['tempChart', 'humidityChart', 'gasChart', 'vibrationChart', 'motionChart', 'flameChart'];
+  affectedTypes.forEach(chartId => {
+    if (!mlOverlays[chartId]) mlOverlays[chartId] = [];
+    mlOverlays[chartId].push(timestamp);
+  });
+  renderCharts();
+});
+
+// -------------------- Tools --------------------
 function toggleChartType(chartId, key, label) {
-  const oldType = chartTypes[chartId] || 'line';
-  const newType = oldType === 'line' ? 'bar' : 'line';
+  const current = chartTypes[chartId] || 'line';
+  const newType = current === 'line' ? 'bar' : 'line';
   chartTypes[chartId] = newType;
 
   if (chartRefs[chartId]) {
@@ -131,8 +182,11 @@ function toggleChartType(chartId, key, label) {
       motionChart: '#2ecc71',
       vibrationChart: '#8e44ad'
     };
-    const data = sensorData.map(d => ({ value: d[key], createdAt: d.createdAt }));
-    createChart(canvas, label, data, colorMap[chartId] || '#007bff', newType);
+    const data = sensorData.map(d => ({
+      value: d[key],
+      createdAt: d.createdAt
+    }));
+    createChart(canvas, label, data, colorMap[chartId], newType, mlOverlays[chartId] || []);
   }
 }
 
@@ -152,9 +206,7 @@ function printChart(chartId) {
 }
 
 function resetZoom(chartId) {
-  if (chartRefs[chartId]) {
-    chartRefs[chartId].resetZoom();
-  }
+  if (chartRefs[chartId]) chartRefs[chartId].resetZoom();
 }
 
 function applyDarkModeToCharts() {
@@ -162,18 +214,8 @@ function applyDarkModeToCharts() {
   renderCharts();
 }
 
-// WebSocket live updates
-const socket = io();
-socket.on('sensorUpdate', newData => {
-  if (sensorData) {
-    sensorData.push(newData);
-    renderCharts();
-  }
-});
-
 window.addEventListener('DOMContentLoaded', () => {
   renderCharts();
-
   const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
   darkModeMedia.addEventListener('change', applyDarkModeToCharts);
 });
