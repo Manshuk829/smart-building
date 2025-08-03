@@ -179,6 +179,13 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
       await SensorData.create(entry);
 
+      // 🔄 Emit to update live.ejs immediately
+      io.emit('sensor-update', {
+        floor,
+        intruderImage,
+        name: personName ?? 'Unknown'
+      });
+
       io.emit('intruder-alert', {
         floor,
         image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
