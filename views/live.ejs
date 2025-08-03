@@ -2,13 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>📡 Live Sensor Monitoring</title>
+  <title>📡 Live Monitoring</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
-  <style>
-    /* You can keep your existing styles.css file intact */
-  </style>
 </head>
 <body data-theme="light">
   <!-- Theme Toggle -->
@@ -16,18 +13,18 @@
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
 
-  <!-- Title -->
-  <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Alerts)</h1>
+  <!-- Page Title -->
+  <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Intruder Alerts)</h1>
 
-  <!-- MQTT WebSocket Status -->
-  <div class="mqtt-status" id="mqtt-status" style="text-align:center;">
+  <!-- MQTT Status -->
+  <div id="mqtt-status" style="text-align:center;">
     WebSocket Status: <span class="offline">🔴 Disconnected</span>
   </div>
 
-  <!-- ML Prediction Alert Banner -->
+  <!-- ML Alert Banner -->
   <div id="ml-alert-banner" class="prediction-alert"></div>
 
-  <!-- Floor Sections -->
+  <!-- Floor-wise Display -->
   <% for (let floor = 1; floor <= 4; floor++) { %>
     <div class="floor-section" id="floor-<%= floor %>">
       <h2>🏢 Floor <%= floor %></h2>
@@ -35,15 +32,7 @@
       <div class="status-line" id="status-<%= floor %>">Status: <span class="offline">Offline</span></div>
       <div class="last-updated" id="last-updated-<%= floor %>">Last updated: --</div>
 
-      <div class="sensor-data" id="sensor-data-<%= floor %>">
-        <span id="temp-<%= floor %>">🌡️ Temp: --</span>
-        <span id="mq135-<%= floor %>">🧪 Gas: --</span>
-        <span id="flame-<%= floor %>">🔥 Flame: --</span>
-        <span id="motion-<%= floor %>">🏃 Motion: --</span>
-        <span id="quake-<%= floor %>">🌎 Quake: --</span>
-        <span id="emergency-<%= floor %>">🚨 Emergency: --</span>
-      </div>
-
+      <!-- ESP32-CAM Snapshot -->
       <div class="esp32-cam">
         <h3>📷 ESP32-CAM Feed</h3>
         <img id="cam-<%= floor %>" src="/snapshot/<%= floor %>.jpg?ts=<%= Date.now() %>" alt="Live Camera Snapshot" />
@@ -57,6 +46,7 @@
         </div>
       </div>
 
+      <!-- Intruder Alert Image -->
       <div class="intruder-box" id="intruder-<%= floor %>" style="display: none;">
         <h3><i class="fas fa-user-secret"></i> Intruder Detected!</h3>
         <img id="intruder-img-<%= floor %>" src="" alt="Intruder Image" />
@@ -77,7 +67,6 @@
     const body = document.body;
     const savedTheme = localStorage.getItem('theme') || 'light';
     body.setAttribute('data-theme', savedTheme);
-
     themeBtn.addEventListener('click', () => {
       const current = body.getAttribute('data-theme');
       const next = current === 'light' ? 'dark' : 'light';
@@ -99,7 +88,7 @@
       mqttStatus.classList.replace('online', 'offline');
     });
 
-    // ML Alert Banner
+    // ML Alert
     socket.on('ml-alert', (message) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       alertBanner.textContent = `⚠️ ${message}`;
@@ -110,20 +99,23 @@
       }, 10000);
     });
 
-    // Live Sensor Updates
+    // Sensor (status) update
     socket.on('sensor-update', (data) => {
       const floor = data.floor;
       if (!floor) return;
-
       document.getElementById(`status-${floor}`).innerHTML = 'Status: <span class="online">Online</span>';
       document.getElementById(`last-updated-${floor}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    });
 
-      document.getElementById(`temp-${floor}`).textContent = `🌡️ Temp: ${data.temp}`;
-      document.getElementById(`mq135-${floor}`).textContent = `🧪 Gas: ${data.mq135}`;
-      document.getElementById(`flame-${floor}`).textContent = `🔥 Flame: ${data.flame}`;
-      document.getElementById(`motion-${floor}`).textContent = `🏃 Motion: ${data.motion}`;
-      document.getElementById(`quake-${floor}`).textContent = `🌎 Quake: ${data.quake}`;
-      document.getElementById(`emergency-${floor}`).textContent = `🚨 Emergency: ${data.emergency}`;
+    // Intruder Image Update
+    socket.on('intruder-detected', (data) => {
+      const { floor, image } = data;
+      if (floor && image) {
+        const box = document.getElementById(`intruder-${floor}`);
+        const img = document.getElementById(`intruder-img-${floor}`);
+        img.src = `data:image/jpeg;base64,${image}`;
+        box.style.display = 'block';
+      }
     });
   </script>
 </body>

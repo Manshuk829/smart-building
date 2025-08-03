@@ -60,6 +60,7 @@ dump/
 # ======================
 uploads/
 images/
+public/uploads/         # ←✅ Added in case ESP32-CAM images are stored for viewing
 
 # ======================
 # ⚙️ System Files

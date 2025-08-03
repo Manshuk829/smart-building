@@ -5,7 +5,9 @@ const handleMQTTMessage = require('./mqttController');
 
 module.exports = function (io) {
   const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
-  const topics = ['iot/predictions', 'iot/sensors'];
+
+  // ✅ Added 'iot/esp32cam' topic here
+  const topics = ['iot/predictions', 'iot/sensors', 'iot/esp32cam'];
 
   if (!process.env.MQTT_BROKER_URL) {
     console.warn('⚠️ MQTT_BROKER_URL not set in .env — using default localhost.');
@@ -33,7 +35,7 @@ module.exports = function (io) {
   client.on('message', async (receivedTopic, message) => {
     try {
       console.log(`📡 MQTT message received on topic ${receivedTopic}: ${message.toString()}`);
-      await handleMQTTMessage(receivedTopic, message, io); // Make sure this emits to Socket.IO
+      await handleMQTTMessage(receivedTopic, message, io);
     } catch (err) {
       console.error('❌ Error handling MQTT message:', err.message);
     }

@@ -1,4 +1,3 @@
-// app.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,7 +8,7 @@ const MongoStore = require('connect-mongo');
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const pageRoutes = require('./routes/pageRoutes'); // ✅ new
+const pageRoutes = require('./routes/pageRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 
@@ -28,15 +27,16 @@ app.set('thresholds', {
   vibration: 5.0,
 });
 
-// Middleware: Serve static assets
+// ✅ View Engine Setup
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views')); // Ensure compatibility on Render
+
+// ✅ Static Assets Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 
-// View Engine Setup
-app.set('view engine', 'ejs');
-
-// Body Parsers
+// ✅ Body Parsers
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' })); // In case ESP32-CAM sends base64 image
 
 // ✅ Session Configuration
 app.use(
@@ -46,25 +46,27 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding',
-      ttl: 24 * 60 * 60, // 1 day
+      ttl: 86400, // 1 day in seconds
     }),
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
   })
 );
 
-// Middleware: Log user session & set res.locals.user
+// ✅ Session User Logging
 app.use((req, res, next) => {
-  console.log('🔍 Session user:', req.session.authUser);
+  if (req.session.authUser) {
+    console.log('🔍 Session user:', req.session.authUser.username);
+  }
   res.locals.user = req.session.authUser || null;
   next();
 });
 
-// MongoDB Connection
+// ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding')
   .then(() => console.log('✅ MongoDB connected'))
@@ -75,7 +77,7 @@ mongoose
 
 // ✅ Route Handlers
 app.use('/', authRoutes);
-app.use('/', pageRoutes); // ✅ updated to pageRoutes
+app.use('/', pageRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);

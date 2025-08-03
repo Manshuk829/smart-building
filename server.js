@@ -1,4 +1,5 @@
-// server.js
+'use strict';
+
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
@@ -14,10 +15,18 @@ const io = new Server(server, {
   }
 });
 
-// Make Socket.IO instance available in app
+// Make Socket.IO instance available throughout the app
 app.set('io', io);
 
-// Start MQTT listener and attach to Socket.IO
+// Optional: Log when a client connects
+io.on('connection', (socket) => {
+  console.log(`🔌 Client connected: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+  });
+});
+
+// Start MQTT listener
 try {
   require('./mqtt/mqttClient')(io);
   console.log('📡 MQTT listener initialized');
@@ -39,7 +48,7 @@ server.listen(PORT, () => {
   process.exit(1);
 });
 
-// Graceful shutdown on Ctrl+C
+// Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Gracefully shutting down server...');
   server.close(() => {

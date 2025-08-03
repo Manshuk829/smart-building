@@ -6,7 +6,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
     const str = message.toString();
 
-    // Ignore empty or null messages
     if (!str || str.trim() === '{}' || str.trim() === '') {
       console.warn('⚠️ Empty or blank MQTT message received, ignoring.');
       return;
@@ -54,7 +53,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         motion: parseBool(data.motion),
       };
 
-      // Only proceed if at least one sensor value is valid
       const hasValidSensorData = Object.values(sensors).some((val) => val !== undefined) || !!intruderImage;
       if (!hasValidSensorData) {
         console.warn('⚠️ Received sensor topic with no valid data, ignoring.');
@@ -82,7 +80,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           source: 'sensor'
         });
 
-        // 🔴 Emit intruder image separately to frontend
         io.emit('intruder-alert', {
           floor,
           image: intruderImage
@@ -96,7 +93,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
       }
 
-      // 🟢 EMIT SENSOR DATA TO FRONTEND
       io.emit('sensor-update', {
         floor,
         temp: sensors.temp ?? null,
@@ -152,6 +148,31 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         io.emit('ml-normal', { time: new Date(), floor });
         console.log(`✅ ML prediction: normal for Floor ${floor}`);
       }
+    }
+
+    // 📸 ESP32-CAM IMAGE TOPIC HANDLER
+    else if (topic === 'iot/esp32cam') {
+      if (!intruderImage) {
+        console.warn('⚠️ esp32cam topic received without image data');
+        return;
+      }
+
+      const camEntry = {
+        topic,
+        floor: floorStr,
+        type: 'intruderImage',
+        payload: intruderImage,
+        source: 'esp32cam'
+      };
+
+      await SensorData.create(camEntry);
+
+      io.emit('intruder-alert', {
+        floor,
+        image: intruderImage
+      });
+
+      console.log(`📸 ESP32-CAM intruder image saved and emitted for Floor ${floor}`);
     }
 
     // ⚠️ UNHANDLED TOPIC
