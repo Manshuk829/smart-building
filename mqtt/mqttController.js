@@ -1,12 +1,14 @@
+// mqttController.js
+
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 const Alert = require('../models/Alert');
 
 module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
-    const str = message.toString();
+    const str = message.toString().trim();
 
-    if (!str || str.trim() === '{}' || str.trim() === '') {
+    if (!str || str === '{}' || str === '') {
       console.warn('⚠️ Empty or blank MQTT message received, ignoring.');
       return;
     }
@@ -14,7 +16,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     let data;
     try {
       data = JSON.parse(str);
-    } catch (parseErr) {
+    } catch {
       console.warn('⚠️ Invalid JSON received:', str);
       return;
     }
@@ -43,7 +45,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const sensorEntries = [];
 
-    // 🟢 SENSOR TOPIC HANDLER
+    // ======================== SENSOR DATA HANDLER ========================
     if (topic === 'iot/sensors') {
       const sensors = {
         temp: toNumber(data.temp),
@@ -67,7 +69,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
             floor: floorStr,
             type,
             payload: value,
-            source: 'sensor'
+            source: 'sensor',
           });
         }
       }
@@ -78,14 +80,10 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           floor: floorStr,
           type: 'intruderImage',
           payload: intruderImage,
-          source: 'sensor'
+          source: 'sensor',
         });
 
-        io.emit('intruder-alert', {
-          floor,
-          image: intruderImage
-        });
-
+        io.emit('intruder-alert', { floor, image: intruderImage });
         console.log(`📸 intruder-alert emitted for Floor ${floor}`);
       }
 
@@ -93,7 +91,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         await SensorData.insertMany(sensorEntries);
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
 
-        // 🟨 Emit chart-update event for real-time charts
+        // 📊 Real-time chart update
         io.emit('chart-update', {
           floor,
           data: sensors,
@@ -101,21 +99,17 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         });
       }
 
+      // 📟 Send data to live.ejs or dashboard
       io.emit('sensor-update', {
         floor,
-        temp: sensors.temp ?? null,
-        humidity: sensors.humidity ?? null,
-        gas: sensors.gas ?? null,
-        vibration: sensors.vibration ?? null,
-        flame: sensors.flame,
-        motion: sensors.motion,
+        ...sensors,
         intruderImage
       });
 
       console.log(`📡 sensor-update emitted for floor ${floor}`);
     }
 
-    // 🔴 ML PREDICTION TOPIC HANDLER
+    // ======================== ML PREDICTION HANDLER ========================
     else if (topic === 'iot/predictions') {
       if (!data.prediction) {
         console.warn('⚠️ ML topic received without prediction field, ignoring.');
@@ -132,6 +126,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         };
 
         await SensorData.create(mlEntry);
+
         await Alert.create({
           message: `${prediction.toUpperCase()} detected by ML`,
           floor,
@@ -147,11 +142,11 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
         io.emit('ml-alert', {
           type: prediction,
-          time: new Date(),
-          floor
+          floor,
+          time: new Date()
         });
 
-        // 🟨 Emit ml-line for chart ML overlay
+        // 📉 ML alert overlay for chart
         io.emit('ml-line', {
           floor,
           prediction,
@@ -160,12 +155,12 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
         console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);
       } else {
-        io.emit('ml-normal', { time: new Date(), floor });
+        io.emit('ml-normal', { floor, time: new Date() });
         console.log(`✅ ML prediction: normal for Floor ${floor}`);
       }
     }
 
-    // 📸 ESP32-CAM IMAGE TOPIC HANDLER
+    // ======================== ESP32-CAM HANDLER ========================
     else if (topic === 'iot/esp32cam') {
       if (!personName && !intruderImage) {
         console.warn('⚠️ esp32cam topic received without image or name');
@@ -179,21 +174,21 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         source: 'esp32cam',
         payload: personName && personName.toLowerCase() !== 'intruder'
           ? personName
-          : intruderImage // save image only if person is unknown
+          : intruderImage
       };
 
       await SensorData.create(entry);
 
       io.emit('intruder-alert', {
         floor,
-        image: personName && personName.toLowerCase() !== 'intruder' ? null : intruderImage,
+        image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
         name: personName ?? 'Unknown'
       });
 
-      console.log(`📸 ESP32-CAM alert for Floor ${floor} — ${personName || 'Intruder'} (${entry.payload.length} chars)`);
+      console.log(`📸 ESP32-CAM alert for Floor ${floor} — ${personName || 'Intruder'}`);
     }
 
-    // ⚠️ UNHANDLED TOPIC
+    // ======================== UNKNOWN TOPIC ========================
     else {
       console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
     }

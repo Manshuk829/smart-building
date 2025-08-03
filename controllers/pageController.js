@@ -1,3 +1,5 @@
+// controllers/pageController.js
+
 const SensorData = require('../models/SensorData');
 const Alert = require('../models/Alert');
 
@@ -12,12 +14,16 @@ exports.showDashboard = async (req, res) => {
     const alerts = {};
 
     for (const floor of floors) {
+      const entries = await SensorData.find({ floor: String(floor) })
+        .sort({ createdAt: -1 })
+        .limit(sensorTypes.length)
+        .lean();
+
       const sensorData = {};
-      for (const type of sensorTypes) {
-        const entry = await SensorData.findOne({ floor: String(floor), type })
-          .sort({ createdAt: -1 })
-          .lean();
-        if (entry) sensorData[type] = entry.payload;
+      for (const entry of entries) {
+        if (!sensorData[entry.type]) {
+          sensorData[entry.type] = entry.payload;
+        }
       }
       dataByFloor[floor] = sensorData;
 
@@ -38,12 +44,16 @@ exports.showLive = async (req, res) => {
     const alerts = {};
 
     for (const floor of floors) {
+      const entries = await SensorData.find({ floor: String(floor) })
+        .sort({ createdAt: -1 })
+        .limit(sensorTypes.length)
+        .lean();
+
       const sensorData = {};
-      for (const type of sensorTypes) {
-        const entry = await SensorData.findOne({ floor: String(floor), type })
-          .sort({ createdAt: -1 })
-          .lean();
-        if (entry) sensorData[type] = entry.payload;
+      for (const entry of entries) {
+        if (!sensorData[entry.type]) {
+          sensorData[entry.type] = entry.payload;
+        }
       }
       dataByFloor[floor] = sensorData;
 
@@ -57,13 +67,12 @@ exports.showLive = async (req, res) => {
   }
 };
 
-// 📜 History Page (Rewritten)
+// 📜 History Page
 exports.showHistory = async (req, res) => {
   try {
     const floor = req.query.floor || '1';
     const index = parseInt(req.query.index) || 0;
 
-    // Step 1: Fetch recent 10 records per type
     const recentData = {};
     for (const type of sensorTypes) {
       recentData[type] = await SensorData.find({ floor, type })
@@ -72,7 +81,6 @@ exports.showHistory = async (req, res) => {
         .lean();
     }
 
-    // Step 2: Combine records by index
     const combined = [];
     for (let i = 0; i < 10; i++) {
       combined.push({
@@ -83,13 +91,14 @@ exports.showHistory = async (req, res) => {
         flame: recentData.flame[i]?.payload ?? 'N/A',
         motion: recentData.motion[i]?.payload ?? 'N/A',
         quake: recentData.quake[i]?.payload ?? 'N/A',
-        timestamp: recentData.temp[i]?.createdAt ||
-                   recentData.humidity[i]?.createdAt ||
-                   recentData.gas[i]?.createdAt || new Date()
+        timestamp:
+          recentData.temp[i]?.createdAt ||
+          recentData.humidity[i]?.createdAt ||
+          recentData.gas[i]?.createdAt ||
+          new Date(),
       });
     }
 
-    // Step 3: Stats
     const calcAvg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : 'N/A';
     const extract = type => recentData[type].map(d => typeof d.payload === 'number' ? d.payload : 0);
 
@@ -119,24 +128,34 @@ exports.showHistory = async (req, res) => {
   }
 };
 
-// 📈 Charts Page
+// 📈 Charts Page with ML overlay support
 exports.showCharts = async (req, res) => {
   try {
     const floor = req.query.floor || '1';
-    const type = req.query.type || 'temp'; // You might need this
+    const type = req.query.type || 'temp';
     const range = req.query.range;
     const now = new Date();
 
     const query = { floor, type };
-
     if (range === '1h') query.createdAt = { $gte: new Date(now - 3600000) };
     else if (range === '24h') query.createdAt = { $gte: new Date(now - 86400000) };
     else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };
 
-    const records = await SensorData.find(query).sort({ createdAt: 1 }).limit(100).lean();
+    // Fetch sensor data (source = 'sensor')
+    const records = await SensorData.find({ ...query, source: 'sensor' })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean();
+
+    // Fetch ML predictions (source = 'ml') for same type & floor
+    const mlAlerts = await SensorData.find({ ...query, source: 'ml' })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean();
 
     res.render('charts', {
-      records: records || [],
+      records,
+      mlAlerts,
       query: req.query,
       thresholds,
     });

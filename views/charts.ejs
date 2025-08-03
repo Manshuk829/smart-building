@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -118,7 +118,9 @@
   <div class="theme-toggle">
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
+
   <h1>📈 Smart Building Charts</h1>
+
   <form class="filters" method="GET" action="/charts">
     <select name="floor">
       <% for (let i = 1; i <= 4; i++) { %>
@@ -136,6 +138,7 @@
     </label>
     <button type="submit">🔍 Apply</button>
   </form>
+
   <% if (records.length === 0) { %>
     <div class="no-data">No records found for selected filters.</div>
   <% } else { %>
@@ -147,9 +150,11 @@
         gas: r.gas,
         flame: r.flame ? 1 : 0,
         motion: r.motion ? 1 : 0,
-        vibration: r.vibration ?? 0
+        vibration: r.vibration ?? 0,
+        mlPrediction: r.mlPrediction ?? null
       }))) %>;
     </script>
+
     <% const sensors = [
       { id: 'tempChart', label: '🌡 Temperature (°C)', key: 'temperature' },
       { id: 'humidityChart', label: '💧 Humidity (%)', key: 'humidity' },
@@ -158,6 +163,7 @@
       { id: 'motionChart', label: '🚶 Motion', key: 'motion' },
       { id: 'vibrationChart', label: '💥 Vibration', key: 'vibration' }
     ]; %>
+
     <% sensors.forEach(sensor => { %>
       <div class="chart-section">
         <h2><%= sensor.label %></h2>
@@ -169,18 +175,20 @@
           <button onclick="resetZoom('<%= sensor.id %>')">🔍 Reset Zoom</button>
         </div>
       </div>
-    <% }) %>
+    <% }); %>
+
     <script src="/js/charts.js"></script>
   <% } %>
+
   <div class="back">
     <a href="/">← Back to Dashboard</a>
     <a href="/live">📷 View ESP32-CAM</a>
   </div>
+
   <script>
     const theme = localStorage.getItem("theme") || "light";
     document.body.setAttribute("data-theme", theme);
-    const toggleBtn = document.getElementById("toggleTheme");
-    toggleBtn.addEventListener("click", () => {
+    document.getElementById("toggleTheme").addEventListener("click", () => {
       const newTheme = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";
       document.body.setAttribute("data-theme", newTheme);
       localStorage.setItem("theme", newTheme);
