@@ -25,7 +25,6 @@ socket.on('disconnect', () => updateConnectionStatus(false));
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
-  // Download snapshot button
   document.querySelector(`[data-floor="${floor}"].download-snapshot`)?.addEventListener('click', () => {
     const link = document.createElement('a');
     link.href = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
@@ -33,7 +32,6 @@ for (let floor = 1; floor <= floorCount; floor++) {
     link.click();
   });
 
-  // Trigger manual alert
   document.querySelector(`[data-floor="${floor}"].trigger-alert`)?.addEventListener('click', () => {
     fetch('/api/alert', {
       method: 'POST',
@@ -55,15 +53,12 @@ socket.on('sensorUpdate', data => {
   const { floor } = data;
   lastUpdateTimes[floor] = nowTS();
 
-  // Update status
   document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
   document.getElementById(`last-updated-${floor}`)?.textContent = 'Last updated: just now';
 
-  // Snapshot refresh
   const cam = document.getElementById(`cam-${floor}`);
   if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
-  // Update sensor readings
   document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
   document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
   document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
@@ -72,25 +67,35 @@ socket.on('sensorUpdate', data => {
   document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
   document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
 
-  // Show intruder image alert
-  if (data.intruderImage) {
+  // Show intruder or known person alert
+  if (data.name || data.intruderImage) {
     const imgBox = document.getElementById(`intruder-${floor}`);
     const imgEl = document.getElementById(`intruder-img-${floor}`);
-    if (imgBox && imgEl) {
-      imgEl.src = `${data.intruderImage}?ts=${nowTS()}`;
+    const nameEl = document.getElementById(`intruder-name-${floor}`);
+
+    if (imgBox && imgEl && nameEl) {
       imgBox.style.display = 'block';
       imgBox.style.opacity = '1';
+
+      if (data.name && data.name.toLowerCase() !== 'intruder') {
+        nameEl.textContent = `✅ Known Person: ${data.name}`;
+        imgEl.style.display = 'none';
+      } else if (data.intruderImage) {
+        nameEl.textContent = '🚨 Intruder Detected!';
+        imgEl.src = `data:image/jpeg;base64,${data.intruderImage}`;
+        imgEl.style.display = 'block';
+      }
 
       setTimeout(() => {
         imgBox.style.transition = 'opacity 1s ease';
         imgBox.style.opacity = '0';
         setTimeout(() => imgBox.style.display = 'none', 1000);
-      }, 30_000); // Display for 30s
+      }, 30_000);
     }
   }
 });
 
-// Offline checker — run every second
+// Offline checker
 setInterval(() => {
   const now = nowTS();
   for (let floor = 1; floor <= floorCount; floor++) {

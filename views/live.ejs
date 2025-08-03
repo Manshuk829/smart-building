@@ -2,67 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>📡 Live Monitoring</title>
+  <title>📁 Live Monitoring</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .esp32-cam img {
+      max-width: 300px;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .intruder-box {
+      margin-top: 1rem;
+      border: 2px dashed #cc0000;
+      padding: 10px;
+      background: #ffeaea;
+      text-align: center;
+    }
+    .esp32-cam {
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .esp32-cam button {
+      margin: 0.25rem;
+    }
+  </style>
 </head>
 <body data-theme="light">
-  <!-- Theme Toggle -->
   <div class="theme-toggle">
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
   </div>
-
-  <!-- Page Title -->
   <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Intruder Alerts)</h1>
-
-  <!-- MQTT Status -->
   <div id="mqtt-status" style="text-align:center;">
     WebSocket Status: <span class="offline">🔴 Disconnected</span>
   </div>
-
-  <!-- ML Alert Banner -->
   <div id="ml-alert-banner" class="prediction-alert"></div>
 
-  <!-- Floor-wise Display -->
   <% for (let floor = 1; floor <= 4; floor++) { %>
     <div class="floor-section" id="floor-<%= floor %>">
       <h2>🏢 Floor <%= floor %></h2>
-
-      <div class="status-line" id="status-<%= floor %>">Status: <span class="offline">Offline</span></div>
+      <div class="status-line" id="status-<%= floor %>">Status: <span class="offline">⛔ Offline</span></div>
       <div class="last-updated" id="last-updated-<%= floor %>">Last updated: --</div>
 
-      <!-- ESP32-CAM Snapshot -->
       <div class="esp32-cam">
         <h3>📷 ESP32-CAM Feed</h3>
         <img id="cam-<%= floor %>" src="/snapshot/<%= floor %>.jpg?ts=<%= Date.now() %>" alt="Live Camera Snapshot" />
         <div>
-          <button class="download-snapshot" data-floor="<%= floor %>">
-            <i class="fas fa-download"></i> Download Snapshot
-          </button>
-          <button class="trigger-alert" data-floor="<%= floor %>">
-            <i class="fas fa-bell"></i> Trigger Alert
-          </button>
+          <button class="download-snapshot" data-floor="<%= floor %>"><i class="fas fa-download"></i> Download Snapshot</button>
+          <button class="trigger-alert" data-floor="<%= floor %>"><i class="fas fa-bell"></i> Trigger Alert</button>
         </div>
       </div>
 
-      <!-- Intruder Alert Image -->
       <div class="intruder-box" id="intruder-<%= floor %>" style="display: none;">
-        <h3><i class="fas fa-user-secret"></i> Intruder Detected!</h3>
-        <img id="intruder-img-<%= floor %>" src="" alt="Intruder Image" />
+        <h3><i class="fas fa-user-secret"></i> Alert</h3>
+        <p id="intruder-name-<%= floor %>"></p>
+        <img id="intruder-img-<%= floor %>" src="" alt="Intruder Image" style="display: none;" />
       </div>
     </div>
   <% } %>
 
-  <!-- Navigation -->
   <div class="back">
     <a href="/charts"><i class="fas fa-chart-line"></i> View Charts</a>
     <a href="/"><i class="fas fa-home"></i> Back to Dashboard</a>
   </div>
 
-  <!-- Client-side Script -->
   <script>
-    // Theme Toggle
     const themeBtn = document.getElementById('toggleTheme');
     const body = document.body;
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -74,8 +78,7 @@
       localStorage.setItem('theme', next);
     });
 
-    // Socket.IO
-    const socket = io();
+    const socket = io({ transports: ['websocket'], upgrade: false });
     const mqttStatus = document.getElementById('mqtt-status').querySelector('span');
 
     socket.on('connect', () => {
@@ -88,10 +91,10 @@
       mqttStatus.classList.replace('online', 'offline');
     });
 
-    // ML Alert
-    socket.on('ml-alert', (message) => {
+    socket.on('ml-alert', ({ type, floor, time }) => {
       const alertBanner = document.getElementById('ml-alert-banner');
-      alertBanner.textContent = `⚠️ ${message}`;
+      const timeStr = new Date(time).toLocaleTimeString('en-IN', { hour12: true });
+      alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected on Floor ${floor} at ${timeStr}`;
       alertBanner.classList.add('active');
       setTimeout(() => {
         alertBanner.classList.remove('active');
@@ -99,22 +102,28 @@
       }, 10000);
     });
 
-    // Sensor (status) update
-    socket.on('sensor-update', (data) => {
-      const floor = data.floor;
-      if (!floor) return;
-      document.getElementById(`status-${floor}`).innerHTML = 'Status: <span class="online">Online</span>';
+    socket.on('sensor-update', ({ floor }) => {
+      document.getElementById(`status-${floor}`).innerHTML = 'Status: <span class="online">🟢 Online</span>';
       document.getElementById(`last-updated-${floor}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+      const cam = document.getElementById(`cam-${floor}`);
+      if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${Date.now()}`;
     });
 
-    // Intruder Image Update
-    socket.on('intruder-detected', (data) => {
-      const { floor, image } = data;
-      if (floor && image) {
-        const box = document.getElementById(`intruder-${floor}`);
-        const img = document.getElementById(`intruder-img-${floor}`);
+    socket.on('intruder-alert', ({ floor, image, name }) => {
+      const box = document.getElementById(`intruder-${floor}`);
+      const img = document.getElementById(`intruder-img-${floor}`);
+      const nameTag = document.getElementById(`intruder-name-${floor}`);
+      box.style.display = 'block';
+      if (name && name.toLowerCase() !== 'intruder') {
+        nameTag.textContent = `✅ Known Person: ${name}`;
+        img.style.display = 'none';
+      } else if (image) {
+        nameTag.textContent = '🚨 Intruder Detected!';
         img.src = `data:image/jpeg;base64,${image}`;
-        box.style.display = 'block';
+        img.style.display = 'block';
+      } else {
+        nameTag.textContent = '🚨 Unknown movement detected.';
+        img.style.display = 'none';
       }
     });
   </script>

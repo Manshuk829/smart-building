@@ -39,6 +39,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     const floorStr = floor.toString();
     const prediction = (typeof data.prediction === 'string' ? data.prediction : 'normal').toLowerCase();
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
+    const personName = typeof data.name === 'string' ? data.name : undefined;
 
     const sensorEntries = [];
 
@@ -152,27 +153,30 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // 📸 ESP32-CAM IMAGE TOPIC HANDLER
     else if (topic === 'iot/esp32cam') {
-      if (!intruderImage) {
-        console.warn('⚠️ esp32cam topic received without image data');
+      if (!personName && !intruderImage) {
+        console.warn('⚠️ esp32cam topic received without image or name');
         return;
       }
 
-      const camEntry = {
+      const entry = {
         topic,
         floor: floorStr,
         type: 'intruderImage',
-        payload: intruderImage,
-        source: 'esp32cam'
+        source: 'esp32cam',
+        payload: personName && personName.toLowerCase() !== 'intruder'
+          ? personName
+          : intruderImage // save image only if person is unknown
       };
 
-      await SensorData.create(camEntry);
+      await SensorData.create(entry);
 
       io.emit('intruder-alert', {
         floor,
-        image: intruderImage
+        image: personName && personName.toLowerCase() !== 'intruder' ? null : intruderImage,
+        name: personName ?? 'Unknown'
       });
 
-      console.log(`📸 ESP32-CAM intruder image saved and emitted for Floor ${floor}`);
+      console.log(`📸 ESP32-CAM alert for Floor ${floor} — ${personName || 'Intruder'} (${entry.payload.length} chars)`);
     }
 
     // ⚠️ UNHANDLED TOPIC
