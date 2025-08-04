@@ -1,12 +1,9 @@
-<%- include('partials/header') %> <!-- Optional: If you use layout system -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <%- include('partials/head') %> <!-- Loads meta, styles, charts, socket.io -->
   <title>🏢 Smart Building Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <script src="/socket.io/socket.io.js" defer></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -210,6 +207,7 @@
   </script>
 </head>
 <body>
+  <%- include('partials/navbar') %> <!-- Optional: load top nav bar -->
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-building"></i> Smart Building Dashboard</h1>
@@ -235,9 +233,24 @@
         <% } %>
 
         <div class="card">
-          <!-- Repeat for each sensor as before -->
-          <!-- (Temperature, Humidity, Gas, Vibration, Flame, Motion) -->
-          <!-- ... already correctly written ... -->
+          <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
+            <div><div class="sensor-label">Temperature</div><div class="sensor-value" id="temp-floor-<%= floor %>"><%= data.temp ?? 'N/A' %> °C</div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-tint"></i>
+            <div><div class="sensor-label">Humidity</div><div class="sensor-value" id="humidity-floor-<%= floor %>"><%= data.humidity ?? 'N/A' %> %</div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-smog"></i>
+            <div><div class="sensor-label">Gas</div><div class="sensor-value" id="gas-floor-<%= floor %>"><%= data.gas ?? 'N/A' %></div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
+            <div><div class="sensor-label">Vibration</div><div class="sensor-value" id="vibration-floor-<%= floor %>"><%= data.vibration ?? 'N/A' %></div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-fire"></i>
+            <div><div class="sensor-label">Flame</div><div class="sensor-value" id="flame-floor-<%= floor %>"><%= data.flame !== undefined ? (data.flame ? '🔥 Flame Detected' : '✅ Normal') : 'N/A' %></div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-running"></i>
+            <div><div class="sensor-label">Motion</div><div class="sensor-value" id="motion-floor-<%= floor %>"><%= data.motion !== undefined ? (data.motion ? '👤 Detected' : '✅ None') : 'N/A' %></div></div>
+          </div>
         </div>
 
         <% if (data.intruderImageURL) { %>
