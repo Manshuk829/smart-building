@@ -6,26 +6,57 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 2rem;
     }
 
     .alert-card {
-      border-left: 8px solid #d00;
-      background-color: #ffe6e6;
+      border-left: 8px solid #d9534f;
+      background-color: #fff1f1;
       padding: 1rem 1.5rem;
       margin-bottom: 1rem;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       animation: fadeIn 0.4s ease-in-out;
+      transition: background 0.3s;
+    }
+
+    .alert-card.critical {
+      border-left-color: #d9534f;
+      background-color: #ffe6e6;
+    }
+
+    .alert-card.warning {
+      border-left-color: #f0ad4e;
+      background-color: #fff7e6;
+    }
+
+    .alert-card.normal {
+      border-left-color: #5cb85c;
+      background-color: #ecf8ec;
     }
 
     .alert-card h5 {
-      margin: 0 0 5px;
-      color: #b30000;
+      margin: 0 0 8px;
+      font-size: 1.1rem;
       font-weight: bold;
+      color: #b30000;
     }
 
     .alert-card p {
-      margin: 0.25rem 0 0;
+      margin: 0.3rem 0 0;
+      font-size: 0.95rem;
     }
 
     .timestamp {
@@ -49,15 +80,15 @@
 <body>
   <%- include('partials/navbar') %>
 
-  <main class="container mt-5">
-    <h2 class="mb-4 text-center">🚨 Machine Learning Alerts</h2>
-
+  <main class="container">
+    <h2>🚨 Machine Learning Alerts</h2>
     <div id="alert-container" aria-live="polite">
       <p class="no-alert-msg">✅ No alerts received yet.</p>
     </div>
   </main>
 
   <%- include('partials/scripts') %>
+
   <script>
     const socket = io({ transports: ['websocket'], upgrade: false });
     const alertContainer = document.getElementById('alert-container');
@@ -76,19 +107,22 @@
         timeZone: 'Asia/Kolkata'
       });
 
-      const type = (data.type || 'UNKNOWN').toUpperCase();
+      const type = (data.type || 'unknown').toLowerCase();
       const floor = data.floor;
-      const message = data.message || '';  // Optional additional message
+      const message = data.message || '';
+      const severity = type.includes('critical') ? 'critical' : (type.includes('warning') ? 'warning' : 'normal');
 
-      const icon = type.includes('FIRE') ? '🔥' :
-                   type.includes('INTRUSION') ? '🕵️' :
-                   type.includes('GAS') ? '🧪' : '⚠️';
+      const icon = type.includes('fire') ? '🔥' :
+                   type.includes('intrusion') ? '🕵️' :
+                   type.includes('gas') ? '🧪' :
+                   type.includes('quake') ? '🌋' :
+                   severity === 'critical' ? '🚨' : '⚠️';
 
       const div = document.createElement('div');
-      div.className = 'alert-card';
+      div.className = `alert-card ${severity}`;
       div.innerHTML = `
-        <h5>${icon} ${type} detected (Floor ${floor})</h5>
-        <p class="timestamp">Time: ${timestamp}</p>
+        <h5>${icon} ${type.toUpperCase()} detected (Floor ${floor})</h5>
+        <p class="timestamp">🕒 ${timestamp}</p>
         ${message ? `<p>${message}</p>` : ''}
       `;
 
