@@ -1,5 +1,3 @@
-// controllers/pageController.js
-
 const SensorData = require('../models/SensorData');
 const Alert = require('../models/Alert');
 
@@ -20,11 +18,18 @@ exports.showDashboard = async (req, res) => {
         .lean();
 
       const sensorData = {};
+      let latestTimestamp = null;
+
       for (const entry of entries) {
         if (!sensorData[entry.type]) {
           sensorData[entry.type] = entry.payload;
+          if (!latestTimestamp || entry.createdAt > latestTimestamp) {
+            latestTimestamp = entry.createdAt;
+          }
         }
       }
+
+      sensorData.createdAt = latestTimestamp;
       dataByFloor[floor] = sensorData;
 
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
@@ -37,27 +42,35 @@ exports.showDashboard = async (req, res) => {
   }
 };
 
-// 📺 Live View Page
+// 📺 Live View Page (Gate-based)
 exports.showLive = async (req, res) => {
   try {
+    const gates = ['gate1', 'gate2'];
     const dataByFloor = {};
     const alerts = {};
 
-    for (const floor of floors) {
-      const entries = await SensorData.find({ floor: String(floor) })
+    for (const gate of gates) {
+      const entries = await SensorData.find({ floor: gate })
         .sort({ createdAt: -1 })
         .limit(sensorTypes.length)
         .lean();
 
       const sensorData = {};
+      let latestTimestamp = null;
+
       for (const entry of entries) {
         if (!sensorData[entry.type]) {
           sensorData[entry.type] = entry.payload;
+          if (!latestTimestamp || entry.createdAt > latestTimestamp) {
+            latestTimestamp = entry.createdAt;
+          }
         }
       }
-      dataByFloor[floor] = sensorData;
 
-      alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
+      sensorData.createdAt = latestTimestamp;
+      dataByFloor[gate] = sensorData;
+
+      alerts[gate] = await Alert.findOne({ floor: gate }).sort({ createdAt: -1 }).lean();
     }
 
     res.render('live', { dataByFloor, thresholds, alerts });
@@ -120,7 +133,7 @@ exports.showHistory = async (req, res) => {
       stats,
       thresholds,
       floor,
-      intruder: false
+      intruder: false,
     });
   } catch (err) {
     console.error('❌ History page error:', err.message);
@@ -141,13 +154,11 @@ exports.showCharts = async (req, res) => {
     else if (range === '24h') query.createdAt = { $gte: new Date(now - 86400000) };
     else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };
 
-    // Fetch sensor data (source = 'sensor')
     const records = await SensorData.find({ ...query, source: 'sensor' })
       .sort({ createdAt: 1 })
       .limit(100)
       .lean();
 
-    // Fetch ML predictions (source = 'ml') for same type & floor
     const mlAlerts = await SensorData.find({ ...query, source: 'ml' })
       .sort({ createdAt: 1 })
       .limit(100)

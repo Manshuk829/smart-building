@@ -18,10 +18,10 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     const toNumber = val => isNaN(parseFloat(val)) ? undefined : parseFloat(val);
     const parseBool = val => (typeof val === 'boolean') ? val : (val?.toLowerCase?.() === 'true');
 
-    const floor = toNumber(data.floor); // Gate 1 => floor = 1
+    const floor = toNumber(data.floor);
     if (floor === undefined) return;
 
-    const floorStr = floor.toString(); // Used for DB consistency
+    const floorStr = floor.toString();
     const prediction = (data.prediction || 'normal').toLowerCase();
     const predictedLabel = (data.label || 'normal').toLowerCase();
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
@@ -117,7 +117,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     else if (topic === 'iot/esp32cam') {
       if (!personName && !intruderImage) return;
 
-      // 🔒 Only store in DB if it's an intruder (to save space in free MongoDB)
       if (personName?.toLowerCase() === 'intruder' && intruderImage) {
         await SensorData.create({
           topic,
@@ -128,7 +127,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         });
       }
 
-      // Send data to frontend for live.ejs
       io.emit('sensor-update', {
         floor,
         intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
@@ -148,6 +146,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     else {
       console.warn(`⚠️ Unknown topic: ${topic}`);
     }
+
   } catch (err) {
     console.error('❌ MQTT Handler Error:', err.message);
   }
