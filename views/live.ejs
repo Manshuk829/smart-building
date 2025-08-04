@@ -32,11 +32,30 @@
       color: #2c3e50;
     }
 
-    .status-line,
-    .last-updated {
-      margin: 0.5rem 0;
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 0.95rem;
       color: #555;
+    }
+
+    .led-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: red;
+    }
+
+    .led-indicator.online {
+      background-color: green;
+    }
+
+    .last-updated {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 0.25rem;
     }
 
     .esp32-cam img {
@@ -109,14 +128,6 @@
       font-weight: bold;
     }
 
-    .online {
-      color: green;
-    }
-
-    .offline {
-      color: red;
-    }
-
     .theme-toggle {
       position: absolute;
       top: 10px;
@@ -150,14 +161,17 @@
   <% gates.forEach(gate => { %>
     <div class="gate-section" id="gate-<%= gate %>">
       <h2>🚪 Gate <%= gate %></h2>
-      <div class="status-line" id="status-<%= gate %>">Status: <span class="offline">🔴 Offline</span></div>
-      <div class="last-updated" id="last-updated-<%= gate %>">Last updated: --</div>
+      <div class="status-line" id="status-line-<%= gate %>">
+        <span class="led-indicator offline" id="led-gate-<%= gate %>"></span>
+        <span>Status: <span class="status-text offline" id="status-text-<%= gate %>">Offline</span></span>
+      </div>
+      <div class="last-updated" id="last-updated-<%= gate %>">Last seen: --</div>
 
       <div class="esp32-cam">
         <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg?ts=<%= Date.now() %>" alt="Live Snapshot" />
         <div class="button-row">
-          <button class="download-snapshot" data-floor="<%= gate %>"><i class="fas fa-download"></i> Download</button>
-          <button class="trigger-alert" data-floor="<%= gate %>"><i class="fas fa-bell"></i> Trigger Alert</button>
+          <button class="download-snapshot" data-gate="<%= gate %>"><i class="fas fa-download"></i> Download</button>
+          <button class="trigger-alert" data-gate="<%= gate %>"><i class="fas fa-bell"></i> Trigger Alert</button>
         </div>
       </div>
 
@@ -189,6 +203,21 @@
     const socket = io({ transports: ['websocket'], upgrade: false });
     const mqttStatus = document.getElementById('mqtt-status').querySelector('span');
 
+    const lastSeenMap = { 1: null, 2: null };
+
+    function updateLastSeen() {
+      const now = Date.now();
+      for (let gate = 1; gate <= 2; gate++) {
+        const el = document.getElementById(`last-updated-${gate}`);
+        const last = lastSeenMap[gate];
+        if (!el || !last) continue;
+        const secs = Math.floor((now - last) / 1000);
+        el.textContent = `Last seen: ${secs}s ago`;
+      }
+    }
+
+    setInterval(updateLastSeen, 1000);
+
     socket.on('connect', () => {
       mqttStatus.innerHTML = '🟢 Connected';
       mqttStatus.classList.replace('offline', 'online');
@@ -211,8 +240,18 @@
     });
 
     socket.on('sensor-update', ({ floor }) => {
-      document.getElementById(`status-${floor}`).innerHTML = 'Status: <span class="online">🟢 Online</span>';
-      document.getElementById(`last-updated-${floor}`).textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+      lastSeenMap[floor] = Date.now();
+
+      const led = document.getElementById(`led-gate-${floor}`);
+      const statusText = document.getElementById(`status-text-${floor}`);
+      if (led && statusText) {
+        led.classList.remove('offline');
+        led.classList.add('online');
+        statusText.textContent = 'Online';
+        statusText.classList.remove('offline');
+        statusText.classList.add('online');
+      }
+
       const cam = document.getElementById(`cam-${floor}`);
       if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${Date.now()}`;
     });

@@ -1,15 +1,11 @@
 /* global io */
 const socket = io({ transports: ['websocket'], upgrade: false });
 
-const floorCount = 2; // since Gate 1 = Floor 1, Gate 2 = Floor 2
+const gateCount = 2; // Gate 1 and Gate 2
 const lastUpdateTimes = {};
 const mqttStatus = document.getElementById('mqtt-status');
 const alertBanner = document.getElementById('ml-alert-banner');
 let mlAlertTimeout = null;
-
-// Helpers
-const nowTS = () => Date.now();
-const fmt = (val, unit = '') => (val == null ? 'N/A' : `${val}${unit}`);
 
 // MQTT status
 function updateConnectionStatus(connected) {
@@ -21,25 +17,25 @@ function updateConnectionStatus(connected) {
 socket.on('connect', () => updateConnectionStatus(true));
 socket.on('disconnect', () => updateConnectionStatus(false));
 
-// Setup controls for each gate/floor
-for (let floor = 1; floor <= floorCount; floor++) {
-  lastUpdateTimes[floor] = null;
+// Initialize controls per gate
+for (let gate = 1; gate <= gateCount; gate++) {
+  lastUpdateTimes[gate] = null;
 
-  document.querySelector(`[data-floor="${floor}"].download-snapshot`)?.addEventListener('click', () => {
+  document.querySelector(`[data-gate="${gate}"].download-snapshot`)?.addEventListener('click', () => {
     const link = document.createElement('a');
-    link.href = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
-    link.download = `gate_${floor}_snapshot.jpg`;
+    link.href = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    link.download = `gate_${gate}_snapshot.jpg`;
     link.click();
   });
 
-  document.querySelector(`[data-floor="${floor}"].trigger-alert`)?.addEventListener('click', () => {
+  document.querySelector(`[data-gate="${gate}"].trigger-alert`)?.addEventListener('click', () => {
     fetch('/api/alert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ floor })
+      body: JSON.stringify({ floor: gate })  // floor is still used on server
     })
       .then(res => res.ok
-        ? alert(`✅ Alert triggered for Gate ${floor}`)
+        ? alert(`✅ Alert triggered for Gate ${gate}`)
         : alert('❌ Failed to trigger alert'))
       .catch(err => {
         console.error(err);
@@ -48,70 +44,88 @@ for (let floor = 1; floor <= floorCount; floor++) {
   });
 }
 
-// Handle sensor + intruder update
-socket.on('sensor-update', data => {
-  const { floor, intruderImage, name } = data;
+// Handle sensor-update
+socket.on('sensor-update', ({ floor }) => {
   if (!floor) return;
+  const gate = floor;
+  lastUpdateTimes[gate] = Date.now();
 
-  lastUpdateTimes[floor] = nowTS();
-
-  document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
-  document.getElementById(`last-updated-${floor}`)?.textContent = 'Last updated: just now';
-
-  const cam = document.getElementById(`cam-${floor}`);
-  if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
-
-  const imgBox = document.getElementById(`intruder-${floor}`);
-  const imgEl = document.getElementById(`intruder-img-${floor}`);
-  const nameEl = document.getElementById(`intruder-name-${floor}`);
-
-  if (name || intruderImage) {
-    if (imgBox && imgEl && nameEl) {
-      imgBox.style.display = 'block';
-      imgBox.style.opacity = '1';
-
-      if (name && name.toLowerCase() !== 'intruder') {
-        nameEl.textContent = `✅ Known Person: ${name}`;
-        imgEl.style.display = 'none';
-      } else if (intruderImage) {
-        nameEl.textContent = '🚨 Intruder Detected!';
-        imgEl.src = `data:image/jpeg;base64,${intruderImage}`;
-        imgEl.style.display = 'block';
-      }
-
-      setTimeout(() => {
-        imgBox.style.transition = 'opacity 1s ease';
-        imgBox.style.opacity = '0';
-        setTimeout(() => imgBox.style.display = 'none', 1000);
-      }, 30000);
-    }
+  const led = document.getElementById(`led-gate-${gate}`);
+  const statusText = document.getElementById(`status-text-${gate}`);
+  if (led && statusText) {
+    led.classList.remove('offline');
+    led.classList.add('online');
+    statusText.textContent = 'Online';
+    statusText.classList.remove('offline');
+    statusText.classList.add('online');
   }
+
+  const cam = document.getElementById(`cam-${gate}`);
+  if (cam) cam.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
 });
 
-// Offline checker
+// Update time since last seen
 setInterval(() => {
-  const now = nowTS();
-  for (let floor = 1; floor <= floorCount; floor++) {
-    const last = lastUpdateTimes[floor];
-    const status = document.getElementById(`status-${floor}`);
-    const updated = document.getElementById(`last-updated-${floor}`);
+  const now = Date.now();
+  for (let gate = 1; gate <= gateCount; gate++) {
+    const last = lastUpdateTimes[gate];
+    const updatedEl = document.getElementById(`last-updated-${gate}`);
+    const led = document.getElementById(`led-gate-${gate}`);
+    const statusText = document.getElementById(`status-text-${gate}`);
+
+    if (!updatedEl || !led || !statusText) continue;
 
     if (!last || now - last > 15000) {
-      status && (status.innerHTML = 'Status: <span class="offline">🔴 Offline</span>');
-      updated && (updated.textContent = 'Last updated: more than 15 seconds ago');
-    } else if (updated) {
-      const secs = Math.round((now - last) / 1000);
-      updated.textContent = `Last updated: ${secs} s ago`;
+      // Offline
+      led.classList.remove('online');
+      led.classList.add('offline');
+      statusText.textContent = 'Offline';
+      statusText.classList.remove('online');
+      statusText.classList.add('offline');
+      updatedEl.textContent = 'Last seen: more than 15 seconds ago';
+    } else {
+      const secs = Math.floor((now - last) / 1000);
+      updatedEl.textContent = `Last seen: ${secs}s ago`;
     }
   }
 }, 1000);
 
-// ML alerts
+// Intruder alert
+socket.on('intruder-alert', ({ floor, image, name }) => {
+  const gate = floor;
+  const box = document.getElementById(`intruder-${gate}`);
+  const img = document.getElementById(`intruder-img-${gate}`);
+  const nameTag = document.getElementById(`intruder-name-${gate}`);
+
+  if (!box || !img || !nameTag) return;
+
+  if (name && name.toLowerCase() !== 'intruder') {
+    nameTag.textContent = `✅ Known Person: ${name}`;
+    img.style.display = 'none';
+  } else if (image) {
+    nameTag.textContent = '🚨 Intruder Detected!';
+    img.src = `data:image/jpeg;base64,${image}`;
+    img.style.display = 'block';
+  } else {
+    nameTag.textContent = '🚨 Unknown movement detected.';
+    img.style.display = 'none';
+  }
+
+  box.style.display = 'block';
+  box.style.opacity = '1';
+
+  setTimeout(() => {
+    box.style.transition = 'opacity 1s ease';
+    box.style.opacity = '0';
+    setTimeout(() => box.style.display = 'none', 1000);
+  }, 30000);
+});
+
+// ML alert banner
 socket.on('ml-alert', ({ type, time, floor }) => {
   if (!type || !time || !floor) return;
 
   clearTimeout(mlAlertTimeout);
-
   const tStr = new Date(time).toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',

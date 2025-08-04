@@ -11,17 +11,17 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     try {
       data = JSON.parse(str);
     } catch {
-      console.warn('⚠️ Invalid JSON:', str);
+      console.warn('⚠️ Invalid JSON received:', str);
       return;
     }
 
     const toNumber = val => isNaN(parseFloat(val)) ? undefined : parseFloat(val);
     const parseBool = val => (typeof val === 'boolean') ? val : (val?.toLowerCase?.() === 'true');
 
-    const floor = toNumber(data.floor);
+    const floor = toNumber(data.floor); // Gate 1 => floor = 1
     if (floor === undefined) return;
 
-    const floorStr = floor.toString();
+    const floorStr = floor.toString(); // Used for DB consistency
     const prediction = (data.prediction || 'normal').toLowerCase();
     const predictedLabel = (data.label || 'normal').toLowerCase();
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
@@ -58,8 +58,8 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           source: 'sensor',
         });
 
-        io.emit('intruder-alert', { floor, image: intruderImage });
-        console.log(`📸 Intruder alert emitted (sensor) — Floor ${floor}`);
+        io.emit('intruder-alert', { floor, image: intruderImage, name: 'Intruder' });
+        console.log(`📸 Intruder (sensor) — Floor ${floor}`);
       }
 
       if (sensorEntries.length) {
@@ -117,32 +117,31 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
     else if (topic === 'iot/esp32cam') {
       if (!personName && !intruderImage) return;
 
-      const gate = floorStr === '1' ? 'Gate 1' : (floorStr === '2' ? 'Gate 2' : `Gate ${floorStr}`);
-
-      // 🔒 Save only if intruder or unknown
+      // 🔒 Only store in DB if it's an intruder (to save space in free MongoDB)
       if (personName?.toLowerCase() === 'intruder' && intruderImage) {
         await SensorData.create({
           topic,
-          floor: gate,
+          floor: floorStr,
           type: 'intruderImage',
           source: 'esp32cam',
           payload: intruderImage
         });
       }
 
+      // Send data to frontend for live.ejs
       io.emit('sensor-update', {
-        floor: gate,
+        floor,
         intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
         name: personName ?? 'Unknown'
       });
 
       io.emit('intruder-alert', {
-        floor: gate,
+        floor,
         image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
         name: personName ?? 'Unknown'
       });
 
-      console.log(`📸 ESP32-CAM Alert — ${personName ?? 'Unknown'} at ${gate}`);
+      console.log(`📸 ESP32-CAM Alert — ${personName ?? 'Unknown'} at Gate ${floor}`);
     }
 
     // ======================== UNKNOWN TOPIC ========================
