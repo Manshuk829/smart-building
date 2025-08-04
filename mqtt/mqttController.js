@@ -1,5 +1,3 @@
-// mqttController.js
-
 const SensorData = require('../models/SensorData');
 const AuditLog = require('../models/AuditLog');
 const Alert = require('../models/Alert');
@@ -40,9 +38,9 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     const floorStr = floor.toString();
     const prediction = (typeof data.prediction === 'string' ? data.prediction : 'normal').toLowerCase();
+    const predictedLabel = (typeof data.label === 'string' ? data.label : 'normal').toLowerCase(); // NEW
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
     const personName = typeof data.name === 'string' ? data.name : undefined;
-
     const sensorEntries = [];
 
     // ======================== SENSOR DATA HANDLER ========================
@@ -91,7 +89,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         await SensorData.insertMany(sensorEntries);
         console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
 
-        // 📊 Real-time chart update
         io.emit('chart-update', {
           floor,
           data: sensors,
@@ -99,7 +96,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         });
       }
 
-      // 📟 Send data to live.ejs or dashboard
       io.emit('sensor-update', {
         floor,
         ...sensors,
@@ -111,51 +107,48 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // ======================== ML PREDICTION HANDLER ========================
     else if (topic === 'iot/predictions') {
-      if (!data.prediction) {
-        console.warn('⚠️ ML topic received without prediction field, ignoring.');
-        return;
-      }
+      const label = predictedLabel; // uses 'label' from ML script
+      const timestamp = new Date(data.timestamp || Date.now());
 
-      if (prediction !== 'normal') {
+      if (label !== 'normal') {
         const mlEntry = {
           topic,
           floor: floorStr,
           type: 'ml-alert',
-          payload: prediction,
+          payload: label,
           source: 'ml'
         };
 
         await SensorData.create(mlEntry);
 
         await Alert.create({
-          message: `${prediction.toUpperCase()} detected by ML`,
+          message: `${label.toUpperCase()} detected by ML`,
           floor,
-          severity: prediction === 'critical' ? 'critical' : 'warning',
+          severity: label === 'critical' ? 'critical' : 'warning',
           alertType: 'ml'
         });
 
         await AuditLog.create({
-          action: `🚨 ${prediction.toUpperCase()} detected via ML`,
+          action: `🚨 ${label.toUpperCase()} detected via ML`,
           floor,
           performedBy: 'ML-Pipeline'
         });
 
         io.emit('ml-alert', {
-          type: prediction,
+          type: label,
           floor,
-          time: new Date()
+          time: timestamp
         });
 
-        // 📉 ML alert overlay for chart
         io.emit('ml-line', {
           floor,
-          prediction,
-          timestamp: new Date()
+          prediction: label,
+          timestamp
         });
 
-        console.log(`⚠️ ALERT: ${prediction.toUpperCase()} detected on Floor ${floor}`);
+        console.log(`⚠️ ALERT: ${label.toUpperCase()} detected on Floor ${floor}`);
       } else {
-        io.emit('ml-normal', { floor, time: new Date() });
+        io.emit('ml-normal', { floor, time: timestamp });
         console.log(`✅ ML prediction: normal for Floor ${floor}`);
       }
     }
@@ -179,7 +172,6 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
       await SensorData.create(entry);
 
-      // 🔄 Emit to update live.ejs immediately
       io.emit('sensor-update', {
         floor,
         intruderImage,
