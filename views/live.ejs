@@ -2,64 +2,172 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>📁 Live Monitoring</title>
+  <title>📹 Live ESP32-CAM Monitoring</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    .esp32-cam img {
-      max-width: 300px;
-      display: block;
-      margin-bottom: 0.5rem;
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: #f9f9f9;
     }
+
+    h1 {
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .gate-section {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      background-color: #fff;
+    }
+
+    .gate-section h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+
+    .status-line,
+    .last-updated {
+      margin: 0.5rem 0;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .esp32-cam img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .button-row {
+      margin-top: 0.5rem;
+    }
+
+    .button-row button {
+      margin-right: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+    }
+
+    .button-row button:hover {
+      background-color: #2980b9;
+    }
+
     .intruder-box {
       margin-top: 1rem;
       border: 2px dashed #cc0000;
-      padding: 10px;
+      padding: 1rem;
       background: #ffeaea;
       text-align: center;
+      border-radius: 10px;
+      display: none;
+      transition: opacity 0.5s ease;
     }
-    .esp32-cam {
-      margin-top: 1rem;
+
+    .intruder-box img {
+      max-width: 90%;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+    }
+
+    .prediction-alert {
       text-align: center;
+      padding: 0.75rem;
+      margin: 1rem;
+      font-weight: bold;
+      color: white;
+      background-color: #e74c3c;
+      border-radius: 8px;
+      display: none;
     }
-    .esp32-cam button {
-      margin: 0.25rem;
+
+    .prediction-alert.active {
+      display: block;
+    }
+
+    .back {
+      text-align: center;
+      margin: 2rem;
+    }
+
+    .back a {
+      margin: 0 1rem;
+      color: #2c3e50;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .online {
+      color: green;
+    }
+
+    .offline {
+      color: red;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+    }
+
+    .theme-toggle button {
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
   </style>
 </head>
-<body data-theme="light">
+<body>
   <div class="theme-toggle">
-    <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
+    <button id="toggleTheme"><i class="fas fa-adjust"></i></button>
   </div>
-  <h1 style="text-align:center;"><i class="fas fa-satellite-dish"></i> Live Monitoring (ESP32-CAM & Intruder Alerts)</h1>
-  <div id="mqtt-status" style="text-align:center;">
+
+  <h1><i class="fas fa-video"></i> ESP32-CAM Live Monitoring</h1>
+
+  <div id="mqtt-status" style="text-align:center; margin-top: -1rem;">
     WebSocket Status: <span class="offline">🔴 Disconnected</span>
   </div>
+
   <div id="ml-alert-banner" class="prediction-alert"></div>
 
-  <% for (let floor = 1; floor <= 4; floor++) { %>
-    <div class="floor-section" id="floor-<%= floor %>">
-      <h2>🏢 Floor <%= floor %></h2>
-      <div class="status-line" id="status-<%= floor %>">Status: <span class="offline">⛔ Offline</span></div>
-      <div class="last-updated" id="last-updated-<%= floor %>">Last updated: --</div>
+  <% const gates = [1, 2]; %>
+  <% gates.forEach(gate => { %>
+    <div class="gate-section" id="gate-<%= gate %>">
+      <h2>🚪 Gate <%= gate %></h2>
+      <div class="status-line" id="status-<%= gate %>">Status: <span class="offline">🔴 Offline</span></div>
+      <div class="last-updated" id="last-updated-<%= gate %>">Last updated: --</div>
 
       <div class="esp32-cam">
-        <h3>📷 ESP32-CAM Feed</h3>
-        <img id="cam-<%= floor %>" src="/snapshot/<%= floor %>.jpg?ts=<%= Date.now() %>" alt="Live Camera Snapshot" />
-        <div>
-          <button class="download-snapshot" data-floor="<%= floor %>"><i class="fas fa-download"></i> Download Snapshot</button>
-          <button class="trigger-alert" data-floor="<%= floor %>"><i class="fas fa-bell"></i> Trigger Alert</button>
+        <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg?ts=<%= Date.now() %>" alt="Live Snapshot" />
+        <div class="button-row">
+          <button class="download-snapshot" data-floor="<%= gate %>"><i class="fas fa-download"></i> Download</button>
+          <button class="trigger-alert" data-floor="<%= gate %>"><i class="fas fa-bell"></i> Trigger Alert</button>
         </div>
       </div>
 
-      <div class="intruder-box" id="intruder-<%= floor %>" style="display: none;">
-        <h3><i class="fas fa-user-secret"></i> Alert</h3>
-        <p id="intruder-name-<%= floor %>"></p>
-        <img id="intruder-img-<%= floor %>" src="" alt="Intruder Image" style="display: none;" />
+      <div class="intruder-box" id="intruder-<%= gate %>">
+        <h3><i class="fas fa-user-secret"></i> Intruder Alert</h3>
+        <p id="intruder-name-<%= gate %>"></p>
+        <img id="intruder-img-<%= gate %>" src="" alt="Intruder Snapshot" />
       </div>
     </div>
-  <% } %>
+  <% }) %>
 
   <div class="back">
     <a href="/charts"><i class="fas fa-chart-line"></i> View Charts</a>
@@ -94,7 +202,7 @@
     socket.on('ml-alert', ({ type, floor, time }) => {
       const alertBanner = document.getElementById('ml-alert-banner');
       const timeStr = new Date(time).toLocaleTimeString('en-IN', { hour12: true });
-      alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected on Floor ${floor} at ${timeStr}`;
+      alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected on Gate ${floor} at ${timeStr}`;
       alertBanner.classList.add('active');
       setTimeout(() => {
         alertBanner.classList.remove('active');
@@ -113,7 +221,7 @@
       const box = document.getElementById(`intruder-${floor}`);
       const img = document.getElementById(`intruder-img-${floor}`);
       const nameTag = document.getElementById(`intruder-name-${floor}`);
-      box.style.display = 'block';
+
       if (name && name.toLowerCase() !== 'intruder') {
         nameTag.textContent = `✅ Known Person: ${name}`;
         img.style.display = 'none';
@@ -125,6 +233,15 @@
         nameTag.textContent = '🚨 Unknown movement detected.';
         img.style.display = 'none';
       }
+
+      box.style.display = 'block';
+      box.style.opacity = '1';
+
+      setTimeout(() => {
+        box.style.transition = 'opacity 1s ease';
+        box.style.opacity = '0';
+        setTimeout(() => box.style.display = 'none', 1000);
+      }, 30000);
     });
   </script>
 </body>

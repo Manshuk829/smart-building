@@ -1,17 +1,17 @@
 /* global io */
 const socket = io({ transports: ['websocket'], upgrade: false });
 
-const floorCount = 4;
+const floorCount = 2; // since Gate 1 = Floor 1, Gate 2 = Floor 2
 const lastUpdateTimes = {};
 const mqttStatus = document.getElementById('mqtt-status');
 const alertBanner = document.getElementById('ml-alert-banner');
 let mlAlertTimeout = null;
 
-// Time and formatting helpers
+// Helpers
 const nowTS = () => Date.now();
 const fmt = (val, unit = '') => (val == null ? 'N/A' : `${val}${unit}`);
 
-// WebSocket connection status indicator
+// MQTT status
 function updateConnectionStatus(connected) {
   mqttStatus.innerHTML = `WebSocket Status:
     <span class="${connected ? 'online' : 'offline'}" title="${connected ? 'Connected' : 'Disconnected'}">
@@ -21,14 +21,14 @@ function updateConnectionStatus(connected) {
 socket.on('connect', () => updateConnectionStatus(true));
 socket.on('disconnect', () => updateConnectionStatus(false));
 
-// Setup controls for each floor
+// Setup controls for each gate/floor
 for (let floor = 1; floor <= floorCount; floor++) {
   lastUpdateTimes[floor] = null;
 
   document.querySelector(`[data-floor="${floor}"].download-snapshot`)?.addEventListener('click', () => {
     const link = document.createElement('a');
     link.href = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
-    link.download = `floor_${floor}_snapshot.jpg`;
+    link.download = `gate_${floor}_snapshot.jpg`;
     link.click();
   });
 
@@ -39,7 +39,7 @@ for (let floor = 1; floor <= floorCount; floor++) {
       body: JSON.stringify({ floor })
     })
       .then(res => res.ok
-        ? alert(`✅ Alert triggered for Floor ${floor}`)
+        ? alert(`✅ Alert triggered for Gate ${floor}`)
         : alert('❌ Failed to trigger alert'))
       .catch(err => {
         console.error(err);
@@ -48,9 +48,11 @@ for (let floor = 1; floor <= floorCount; floor++) {
   });
 }
 
-// Incoming real-time sensor data handler
-socket.on('sensorUpdate', data => {
-  const { floor } = data;
+// Handle sensor + intruder update
+socket.on('sensor-update', data => {
+  const { floor, intruderImage, name } = data;
+  if (!floor) return;
+
   lastUpdateTimes[floor] = nowTS();
 
   document.getElementById(`status-${floor}`)?.innerHTML = 'Status: <span class="online">🟢 Online</span>';
@@ -59,30 +61,21 @@ socket.on('sensorUpdate', data => {
   const cam = document.getElementById(`cam-${floor}`);
   if (cam) cam.src = `/snapshot/${floor}.jpg?ts=${nowTS()}`;
 
-  document.getElementById(`temp-${floor}`)?.textContent = `🌡️ Temp: ${fmt(data.temp, '°C')}`;
-  document.getElementById(`hum-${floor}`)?.textContent = `💧 Humidity: ${fmt(data.humidity, '%')}`;
-  document.getElementById(`mq135-${floor}`)?.textContent = `🧪 Gas: ${fmt(data.gas, ' ppm')}`;
-  document.getElementById(`flame-${floor}`)?.textContent = `🔥 Flame: ${data.flame ? '❌ Detected' : '✅ Safe'}`;
-  document.getElementById(`motion-${floor}`)?.textContent = `🏃 Motion: ${data.motion ? '❌ Detected' : '✅ None'}`;
-  document.getElementById(`quake-${floor}`)?.textContent = `🌎 Quake: ${fmt(data.vibration)}`;
-  document.getElementById(`emergency-${floor}`)?.textContent = `🚨 Emergency: ${data.prediction?.toUpperCase() || 'Normal'}`;
+  const imgBox = document.getElementById(`intruder-${floor}`);
+  const imgEl = document.getElementById(`intruder-img-${floor}`);
+  const nameEl = document.getElementById(`intruder-name-${floor}`);
 
-  // Show intruder or known person alert
-  if (data.name || data.intruderImage) {
-    const imgBox = document.getElementById(`intruder-${floor}`);
-    const imgEl = document.getElementById(`intruder-img-${floor}`);
-    const nameEl = document.getElementById(`intruder-name-${floor}`);
-
+  if (name || intruderImage) {
     if (imgBox && imgEl && nameEl) {
       imgBox.style.display = 'block';
       imgBox.style.opacity = '1';
 
-      if (data.name && data.name.toLowerCase() !== 'intruder') {
-        nameEl.textContent = `✅ Known Person: ${data.name}`;
+      if (name && name.toLowerCase() !== 'intruder') {
+        nameEl.textContent = `✅ Known Person: ${name}`;
         imgEl.style.display = 'none';
-      } else if (data.intruderImage) {
+      } else if (intruderImage) {
         nameEl.textContent = '🚨 Intruder Detected!';
-        imgEl.src = `data:image/jpeg;base64,${data.intruderImage}`;
+        imgEl.src = `data:image/jpeg;base64,${intruderImage}`;
         imgEl.style.display = 'block';
       }
 
@@ -90,7 +83,7 @@ socket.on('sensorUpdate', data => {
         imgBox.style.transition = 'opacity 1s ease';
         imgBox.style.opacity = '0';
         setTimeout(() => imgBox.style.display = 'none', 1000);
-      }, 30_000);
+      }, 30000);
     }
   }
 });
@@ -103,7 +96,7 @@ setInterval(() => {
     const status = document.getElementById(`status-${floor}`);
     const updated = document.getElementById(`last-updated-${floor}`);
 
-    if (!last || now - last > 15_000) {
+    if (!last || now - last > 15000) {
       status && (status.innerHTML = 'Status: <span class="offline">🔴 Offline</span>');
       updated && (updated.textContent = 'Last updated: more than 15 seconds ago');
     } else if (updated) {
@@ -113,7 +106,7 @@ setInterval(() => {
   }
 }, 1000);
 
-// ML alert handler
+// ML alerts
 socket.on('ml-alert', ({ type, time, floor }) => {
   if (!type || !time || !floor) return;
 
@@ -127,12 +120,12 @@ socket.on('ml-alert', ({ type, time, floor }) => {
     timeZone: 'Asia/Kolkata'
   });
 
-  alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected on Floor ${floor} at ${tStr}`;
+  alertBanner.textContent = `⚠️ ML Alert: ${type.toUpperCase()} detected at Gate ${floor} at ${tStr}`;
   alertBanner.classList.add('active');
 
   mlAlertTimeout = setTimeout(() => {
     alertBanner.classList.remove('active');
-  }, 10_000);
+  }, 10000);
 });
 
 // Clear ML alert

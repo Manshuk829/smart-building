@@ -5,45 +5,31 @@ const Alert = require('../models/Alert');
 module.exports = async function handleMQTTMessage(topic, message, io) {
   try {
     const str = message.toString().trim();
-
-    if (!str || str === '{}' || str === '') {
-      console.warn('⚠️ Empty or blank MQTT message received, ignoring.');
-      return;
-    }
+    if (!str || str === '{}' || str === '') return;
 
     let data;
     try {
       data = JSON.parse(str);
     } catch {
-      console.warn('⚠️ Invalid JSON received:', str);
+      console.warn('⚠️ Invalid JSON:', str);
       return;
     }
 
-    const toNumber = (val) => {
-      const num = parseFloat(val);
-      return isNaN(num) ? undefined : num;
-    };
-
-    const parseBool = (val) => {
-      if (typeof val === 'boolean') return val;
-      if (typeof val === 'string') return val.toLowerCase() === 'true';
-      return undefined;
-    };
+    const toNumber = val => isNaN(parseFloat(val)) ? undefined : parseFloat(val);
+    const parseBool = val => (typeof val === 'boolean') ? val : (val?.toLowerCase?.() === 'true');
 
     const floor = toNumber(data.floor);
-    if (floor === undefined) {
-      console.warn('⚠️ Missing or invalid floor value:', data.floor);
-      return;
-    }
+    if (floor === undefined) return;
 
     const floorStr = floor.toString();
-    const prediction = (typeof data.prediction === 'string' ? data.prediction : 'normal').toLowerCase();
-    const predictedLabel = (typeof data.label === 'string' ? data.label : 'normal').toLowerCase(); // NEW
+    const prediction = (data.prediction || 'normal').toLowerCase();
+    const predictedLabel = (data.label || 'normal').toLowerCase();
     const intruderImage = typeof data.intruderImage === 'string' ? data.intruderImage : undefined;
     const personName = typeof data.name === 'string' ? data.name : undefined;
+
     const sensorEntries = [];
 
-    // ======================== SENSOR DATA HANDLER ========================
+    // ======================== SENSOR DATA ========================
     if (topic === 'iot/sensors') {
       const sensors = {
         temp: toNumber(data.temp),
@@ -54,25 +40,16 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         motion: parseBool(data.motion),
       };
 
-      const hasValidSensorData = Object.values(sensors).some((val) => val !== undefined) || !!intruderImage;
-      if (!hasValidSensorData) {
-        console.warn('⚠️ Received sensor topic with no valid data, ignoring.');
-        return;
-      }
+      const hasValidData = Object.values(sensors).some(val => val !== undefined) || !!intruderImage;
+      if (!hasValidData) return;
 
       for (const [type, value] of Object.entries(sensors)) {
         if (value !== undefined) {
-          sensorEntries.push({
-            topic,
-            floor: floorStr,
-            type,
-            payload: value,
-            source: 'sensor',
-          });
+          sensorEntries.push({ topic, floor: floorStr, type, payload: value, source: 'sensor' });
         }
       }
 
-      if (intruderImage) {
+      if (intruderImage && (!personName || personName.toLowerCase() === 'intruder')) {
         sensorEntries.push({
           topic,
           floor: floorStr,
@@ -82,44 +59,36 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         });
 
         io.emit('intruder-alert', { floor, image: intruderImage });
-        console.log(`📸 intruder-alert emitted for Floor ${floor}`);
+        console.log(`📸 Intruder alert emitted (sensor) — Floor ${floor}`);
       }
 
-      if (sensorEntries.length > 0) {
+      if (sensorEntries.length) {
         await SensorData.insertMany(sensorEntries);
-        console.log(`✅ Sensor data saved for Floor ${floor}:`, sensorEntries.length, 'entries');
-
-        io.emit('chart-update', {
-          floor,
-          data: sensors,
-          timestamp: new Date()
-        });
+        io.emit('chart-update', { floor, data: sensors, timestamp: new Date() });
+        console.log(`✅ Sensor data saved — Floor ${floor}`);
       }
 
       io.emit('sensor-update', {
         floor,
         ...sensors,
-        intruderImage
+        intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
+        name: personName ?? undefined
       });
-
-      console.log(`📡 sensor-update emitted for floor ${floor}`);
     }
 
-    // ======================== ML PREDICTION HANDLER ========================
+    // ======================== ML PREDICTIONS ========================
     else if (topic === 'iot/predictions') {
-      const label = predictedLabel; // uses 'label' from ML script
+      const label = predictedLabel;
       const timestamp = new Date(data.timestamp || Date.now());
 
       if (label !== 'normal') {
-        const mlEntry = {
+        await SensorData.create({
           topic,
           floor: floorStr,
           type: 'ml-alert',
           payload: label,
-          source: 'ml'
-        };
-
-        await SensorData.create(mlEntry);
+          source: 'ml',
+        });
 
         await Alert.create({
           message: `${label.toUpperCase()} detected by ML`,
@@ -134,65 +103,53 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
           performedBy: 'ML-Pipeline'
         });
 
-        io.emit('ml-alert', {
-          type: label,
-          floor,
-          time: timestamp
-        });
+        io.emit('ml-alert', { type: label, floor, time: timestamp });
+        io.emit('ml-line', { floor, prediction: label, timestamp });
 
-        io.emit('ml-line', {
-          floor,
-          prediction: label,
-          timestamp
-        });
-
-        console.log(`⚠️ ALERT: ${label.toUpperCase()} detected on Floor ${floor}`);
+        console.log(`⚠️ ML ALERT: ${label.toUpperCase()} — Floor ${floor}`);
       } else {
         io.emit('ml-normal', { floor, time: timestamp });
-        console.log(`✅ ML prediction: normal for Floor ${floor}`);
+        console.log(`✅ ML Prediction: Normal — Floor ${floor}`);
       }
     }
 
-    // ======================== ESP32-CAM HANDLER ========================
+    // ======================== ESP32-CAM (Gate 1 & 2) ========================
     else if (topic === 'iot/esp32cam') {
-      if (!personName && !intruderImage) {
-        console.warn('⚠️ esp32cam topic received without image or name');
-        return;
+      if (!personName && !intruderImage) return;
+
+      const gate = floorStr === '1' ? 'Gate 1' : (floorStr === '2' ? 'Gate 2' : `Gate ${floorStr}`);
+
+      // 🔒 Save only if intruder or unknown
+      if (personName?.toLowerCase() === 'intruder' && intruderImage) {
+        await SensorData.create({
+          topic,
+          floor: gate,
+          type: 'intruderImage',
+          source: 'esp32cam',
+          payload: intruderImage
+        });
       }
 
-      const entry = {
-        topic,
-        floor: floorStr,
-        type: 'intruderImage',
-        source: 'esp32cam',
-        payload: personName && personName.toLowerCase() !== 'intruder'
-          ? personName
-          : intruderImage
-      };
-
-      await SensorData.create(entry);
-
       io.emit('sensor-update', {
-        floor,
-        intruderImage,
+        floor: gate,
+        intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
         name: personName ?? 'Unknown'
       });
 
       io.emit('intruder-alert', {
-        floor,
+        floor: gate,
         image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
         name: personName ?? 'Unknown'
       });
 
-      console.log(`📸 ESP32-CAM alert for Floor ${floor} — ${personName || 'Intruder'}`);
+      console.log(`📸 ESP32-CAM Alert — ${personName ?? 'Unknown'} at ${gate}`);
     }
 
     // ======================== UNKNOWN TOPIC ========================
     else {
-      console.warn(`⚠️ Received message on unhandled topic: ${topic}`);
+      console.warn(`⚠️ Unknown topic: ${topic}`);
     }
-
   } catch (err) {
-    console.error('❌ MQTT Message Handler Error:', err.message);
+    console.error('❌ MQTT Handler Error:', err.message);
   }
 };
