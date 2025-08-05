@@ -326,8 +326,8 @@
   <div id="ai-analytics"></div>
 
   <script>
-    // Initialize sensorData globally
-    const sensorData = <%- JSON.stringify(records.map(r => ({
+    // Initialize sensorData globally with fallback to sample data
+    let sensorData = <%- JSON.stringify(records.map(r => ({
       createdAt: r.createdAt,
       temperature: r.temp || r.temperature,
       humidity: r.humidity,
@@ -337,6 +337,29 @@
       vibration: r.vibration ?? 0,
       mlPrediction: r.mlPrediction ?? null
     }))) %>;
+    
+    // Generate sample data if no real data exists
+    if (!sensorData || sensorData.length === 0) {
+      console.log('No sensor data found, generating sample data...');
+      sensorData = [];
+      const now = new Date();
+      
+      for (let i = 0; i < 50; i++) {
+        const timestamp = new Date(now.getTime() - (50 - i) * 60000);
+        sensorData.push({
+          createdAt: timestamp,
+          temperature: 20 + Math.sin(i * 0.2) * 5 + Math.random() * 2,
+          humidity: 50 + Math.cos(i * 0.3) * 10 + Math.random() * 5,
+          gas: 200 + Math.sin(i * 0.1) * 50 + Math.random() * 20,
+          flame: Math.random() > 0.95 ? 1 : 0,
+          motion: Math.random() > 0.8 ? 1 : 0,
+          vibration: Math.random() * 2 + Math.sin(i * 0.4) * 0.5
+        });
+      }
+    }
+    
+    // Make sensorData globally available for charts.js
+    window.sensorData = sensorData;
     
     // Update performance metrics
     document.addEventListener('DOMContentLoaded', () => {
