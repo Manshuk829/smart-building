@@ -325,44 +325,45 @@
   <!-- AI Analytics Dashboard -->
   <div id="ai-analytics"></div>
 
+  <script>
+    // Initialize sensorData globally
+    const sensorData = <%- JSON.stringify(records.map(r => ({
+      createdAt: r.createdAt,
+      temperature: r.temp || r.temperature,
+      humidity: r.humidity,
+      gas: r.gas,
+      flame: r.flame ? 1 : 0,
+      motion: r.motion ? 1 : 0,
+      vibration: r.vibration ?? 0,
+      mlPrediction: r.mlPrediction ?? null
+    }))) %>;
+    
+    // Update performance metrics
+    document.addEventListener('DOMContentLoaded', () => {
+      if (sensorData && sensorData.length > 0) {
+        document.getElementById('dataPoints').textContent = sensorData.length;
+        
+        // Calculate trend direction
+        const values = sensorData.map(d => d.temperature || d.humidity || d.gas || 0);
+        const trend = values[values.length - 1] > values[0] ? '↗️ Rising' : 
+                     values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
+        document.getElementById('trendDirection').textContent = trend;
+        
+        // Calculate anomalies (simplified)
+        const mean = values.reduce((a, b) => a + b, 0) / values.length;
+        const anomalies = values.filter(v => Math.abs(v - mean) > mean * 0.3).length;
+        document.getElementById('anomalyCount').textContent = anomalies;
+        
+        // AI confidence based on data quality
+        const confidence = Math.min(95, Math.max(60, 100 - (anomalies / values.length * 100)));
+        document.getElementById('aiConfidence').textContent = `${confidence.toFixed(1)}%`;
+      }
+    });
+  </script>
+
   <% if (records.length === 0) { %>
     <div class="no-data">No records found for selected filters.</div>
   <% } else { %>
-    <script>
-      const sensorData = <%- JSON.stringify(records.map(r => ({
-        createdAt: r.createdAt,
-        temperature: r.temp || r.temperature,
-        humidity: r.humidity,
-        gas: r.gas,
-        flame: r.flame ? 1 : 0,
-        motion: r.motion ? 1 : 0,
-        vibration: r.vibration ?? 0,
-        mlPrediction: r.mlPrediction ?? null
-      }))) %>;
-      
-      // Update performance metrics
-      document.addEventListener('DOMContentLoaded', () => {
-        if (sensorData && sensorData.length > 0) {
-          document.getElementById('dataPoints').textContent = sensorData.length;
-          
-          // Calculate trend direction
-          const values = sensorData.map(d => d.temperature || d.humidity || d.gas || 0);
-          const trend = values[values.length - 1] > values[0] ? '↗️ Rising' : 
-                       values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
-          document.getElementById('trendDirection').textContent = trend;
-          
-          // Calculate anomalies (simplified)
-          const mean = values.reduce((a, b) => a + b, 0) / values.length;
-          const anomalies = values.filter(v => Math.abs(v - mean) > mean * 0.3).length;
-          document.getElementById('anomalyCount').textContent = anomalies;
-          
-          // AI confidence based on data quality
-          const confidence = Math.min(95, Math.max(60, 100 - (anomalies / values.length * 100)));
-          document.getElementById('aiConfidence').textContent = `${confidence.toFixed(1)}%`;
-        }
-      });
-    </script>
-
     <% const sensors = [
       { id: 'tempChart', label: '🌡 Temperature (°C)', key: 'temperature' },
       { id: 'humidityChart', label: '💧 Humidity (%)', key: 'humidity' },
