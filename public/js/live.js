@@ -342,7 +342,7 @@ socket.on('sensor-update', (data) => {
   
   const gate = floor;
   lastUpdateTimes[gate] = Date.now();
-  
+
   // Update connection status
   const led = document.getElementById(`led-gate-${gate}`);
   const statusText = document.getElementById(`status-text-${gate}`);
