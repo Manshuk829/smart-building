@@ -98,6 +98,14 @@ function generateSampleData() {
 
 // -------------------- Enhanced Chart Creation --------------------
 function createChart(ctx, label, data, color, type = 'line', mlOverlayTimes = []) {
+  // Ensure we have data to work with
+  if (!data || data.length === 0) {
+    console.log(`No data available for ${label}, using sample data`);
+    data = generateSampleData().map(d => ({
+      createdAt: d.createdAt,
+      value: d[label.toLowerCase()] || d.temperature || Math.random() * 100
+    }));
+  }
   if (!data || data.length === 0) {
     console.warn(`No data available for ${label}`);
     return null;
@@ -326,11 +334,15 @@ function getChartLabel(chartId) {
 
 // -------------------- Enhanced Rendering --------------------
 function renderCharts() {
+  console.log('Starting chart rendering...');
+  
   // If no sensor data, generate sample data for testing
   if (!sensorData || sensorData.length === 0) {
     console.log('No sensor data found, generating sample data for testing...');
     sensorData = generateSampleData();
   }
+  
+  console.log('Sensor data available:', sensorData.length, 'records');
 
   const prepareData = key => sensorData.map(d => ({
     value: d[key],

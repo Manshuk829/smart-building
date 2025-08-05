@@ -417,8 +417,26 @@ socket.on('sensor-update', (data) => {
   
   // Update camera feed
   const cam = document.getElementById(`cam-${gate}`);
-  if (cam) {
+  const placeholder = document.getElementById(`placeholder-${gate}`);
+  
+  if (cam && placeholder) {
+    // Show camera image and hide placeholder
+    cam.style.display = 'block';
+    placeholder.style.display = 'none';
     cam.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    
+    // Handle image load error
+    cam.onerror = function() {
+      this.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.innerHTML = '<i class="fas fa-exclamation-triangle"></i><div>Camera Offline</div>';
+    };
+    
+    // Handle image load success
+    cam.onload = function() {
+      this.style.display = 'block';
+      placeholder.style.display = 'none';
+    };
   }
   
   // Handle motion detection

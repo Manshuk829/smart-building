@@ -225,13 +225,43 @@
       overflow: hidden;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
       margin-bottom: 20px;
+      background: #f0f0f0;
+      min-height: 300px;
+    }
+
+    .esp32-cam {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     .esp32-cam img {
       width: 100%;
-      height: 300px;
+      height: 100%;
       object-fit: cover;
       transition: transform 0.3s ease;
+      z-index: 1;
+    }
+
+    .camera-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      z-index: 0;
+    }
+
+    .camera-placeholder i {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      color: #999;
     }
 
     .camera-overlay {
@@ -526,7 +556,11 @@
               <i class="fas fa-running"></i> Motion Detected
             </div>
             <div class="esp32-cam">
-              <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg" alt="Gate <%= gate %> Camera" />
+              <div class="camera-placeholder" id="placeholder-<%= gate %>">
+                <i class="fas fa-camera"></i>
+                <div>Camera Initializing...</div>
+              </div>
+              <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg" alt="Gate <%= gate %> Camera" style="display: none;" />
             </div>
           </div>
 
