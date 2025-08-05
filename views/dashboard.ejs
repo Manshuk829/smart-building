@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <%- include('partials/head') %>
+  <%- include('partials/head') %> <!-- Loads meta, styles, charts, socket.io -->
   <title>🏢 Smart Building Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
@@ -107,18 +107,6 @@
       0%, 100% { background-color: transparent; }
       50% { background-color: yellow; }
     }
-    .camera-box {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .camera-box img {
-      max-width: 100%;
-      border-radius: 10px;
-      border: 2px solid #007bff;
-    }
-    .camera-box h3 {
-      color: #c0392b;
-    }
     .nav {
       text-align: center;
       margin-top: 40px;
@@ -139,22 +127,17 @@
   <script defer>
     document.addEventListener("DOMContentLoaded", () => {
       const socket = io();
+
       socket.on('sensor-update', (data) => {
-        const { floor, temp, humidity, gas, vibration, flame, motion, intruderImage } = data;
+        const { floor, temp, humidity, gas, vibration, flame, motion } = data;
         if (temp !== undefined) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
         if (humidity !== undefined) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
         if (gas !== undefined) document.getElementById(`gas-floor-${floor}`).textContent = gas;
         if (vibration !== undefined) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
         if (flame !== undefined) document.getElementById(`flame-floor-${floor}`).textContent = flame ? "🔥 Flame Detected" : "✅ Normal";
         if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ No Motion";
-        if (intruderImage) {
-          const img = document.getElementById(`intruder-img-${floor}`);
-          if (img) {
-            img.src = intruderImage;
-            img.style.display = 'block';
-          }
-        }
       });
+
       socket.on('ml-alert', ({ type, floor }) => {
         const alertBox = document.getElementById(`ml-alert-${floor}`);
         if (alertBox) {
@@ -164,6 +147,7 @@
           setTimeout(() => alertBox.classList.remove('highlight'), 1500);
         }
       });
+
       socket.on('ml-normal', ({ floor }) => {
         const alertBox = document.getElementById(`ml-alert-${floor}`);
         if (alertBox) {
@@ -173,10 +157,12 @@
           setTimeout(() => alertBox.classList.remove('highlight'), 1500);
         }
       });
+
       const body = document.body;
       const toggleBtn = document.querySelector('.dark-mode-toggle');
       const icon = toggleBtn.querySelector('i');
       const label = toggleBtn.querySelector('.mode-label');
+
       function setMode(mode) {
         if (mode === 'enabled') {
           body.classList.add('dark');
@@ -188,8 +174,10 @@
           label.textContent = 'Dark Mode';
         }
       }
+
       const saved = localStorage.getItem('darkMode') || 'disabled';
       setMode(saved);
+
       toggleBtn.addEventListener('click', () => {
         const isEnabled = body.classList.contains('dark');
         const newMode = isEnabled ? 'disabled' : 'enabled';
@@ -200,54 +188,100 @@
   </script>
 </head>
 <body>
-  <%- include('partials/navbar') %>
+  <%- include('partials/navbar') %> <!-- Optional: load top nav bar -->
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-building"></i> Smart Building Dashboard</h1>
       <span class="refresh"><i class="fas fa-sync-alt"></i> Auto-refreshing</span>
       <button class="dark-mode-toggle"><i class="fas fa-moon"></i> <span class="mode-label">Dark Mode</span></button>
     </div>
+
     <% const now = new Date(); %>
     <% for (let floor = 1; floor <= 4; floor++) {
       const data = dataByFloor[floor];
-      const updatedAt = data && data.createdAt ? new Date(data.createdAt) : null;
-      const diff = updatedAt ? Math.floor((now - updatedAt) / 1000) : null;
+      const updatedAt = data ? new Date(data.createdAt) : null;
+      const diff = data ? Math.floor((now - updatedAt) / 1000) : null;
       const days = diff ? Math.floor(diff / 86400) : 0;
       const hrs = diff ? Math.floor((diff % 86400) / 3600) : 0;
       const mins = diff ? Math.floor((diff % 3600) / 60) : 0;
       const secs = diff ? diff % 60 : 0;
     %>
       <div class="floor-heading">🏢 Floor <%= floor %></div>
+
       <% if (data) { %>
         <% if (diff > 30) { %>
           <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m <%= secs %>s</div>
         <% } %>
+
         <div class="card">
-          <!-- same card layout unchanged -->
-        </div>
-        <% if (data.intruderImageURL) { %>
-          <div class="camera-box">
-            <h3><i class="fas fa-user-secret"></i> Intruder Detected (Floor <%= floor %>)</h3>
-            <img id="intruder-img-<%= floor %>" src="<%= data.intruderImageURL %>" alt="Intruder Image" loading="lazy">
+          <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
+            <div><div class="sensor-label">Temperature</div><div class="sensor-value" id="temp-floor-<%= floor %>">
+              <% if (data['temp'] !== undefined) { %>
+                <%= data['temp'] %> °C
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
           </div>
-        <% } else { %>
-          <img id="intruder-img-<%= floor %>" style="display:none;" />
-        <% } %>
+          <div class="sensor-box"><i class="fas fa-tint"></i>
+            <div><div class="sensor-label">Humidity</div><div class="sensor-value" id="humidity-floor-<%= floor %>">
+              <% if (data['humidity'] !== undefined) { %>
+                <%= data['humidity'] %> %
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-smog"></i>
+            <div><div class="sensor-label">Gas</div><div class="sensor-value" id="gas-floor-<%= floor %>">
+              <% if (data['gas'] !== undefined) { %>
+                <%= data['gas'] %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
+            <div><div class="sensor-label">Vibration</div><div class="sensor-value" id="vibration-floor-<%= floor %>">
+              <% if (data['vibration'] !== undefined) { %>
+                <%= data['vibration'] %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-fire"></i>
+            <div><div class="sensor-label">Flame</div><div class="sensor-value" id="flame-floor-<%= floor %>">
+              <% if (data['flame'] !== undefined) { %>
+                <%= data['flame'] ? '🔥 Flame Detected' : '✅ Normal' %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
+          </div>
+          <div class="sensor-box"><i class="fas fa-running"></i>
+            <div><div class="sensor-label">Motion</div><div class="sensor-value" id="motion-floor-<%= floor %>">
+              <% if (data['motion'] !== undefined) { %>
+                <%= data['motion'] ? '👤 Detected' : '✅ None' %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </div></div>
+          </div>
+        </div>
+
         <div id="ml-alert-<%= floor %>" class="status-alert" style="margin-top: 10px; color: <%= data.mlAlert ? 'red' : 'green' %>;">
           <%= data.mlAlert ? `⚠ ML Alert: ${data.mlAlert.toUpperCase()}` : '✅ ML Status: Normal' %>
         </div>
+
         <div style="text-align: center; margin-top: 10px; font-size: 14px;">
-          <i class="fas fa-clock"></i> Last updated:
-          <% if (updatedAt) { %>
-            <%= updatedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) %>
-          <% } else { %>
-            N/A
-          <% } %>
+          <i class="fas fa-clock"></i> Last updated: <%= updatedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) %>
         </div>
       <% } else { %>
         <p style="text-align: center; color: #888;">No data available for Floor <%= floor %></p>
       <% } %>
     <% } %>
+
     <div class="nav">
       <a href="/history">📜 View History</a>
       <a href="/charts">📈 View Charts</a>
@@ -255,4 +289,4 @@
     </div>
   </div>
 </body>
-</html>
+</html> 
