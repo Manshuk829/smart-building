@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>📜 Historical Sensor Record</title>
+  <title>🤖 AI-Powered Historical Analysis</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg-color: #eef2f7;
+      --bg-color: #f8f9fa;
       --text-color: #2c3e50;
       --card-bg: #fff;
-      --highlight: #d8000c;
-      --highlight-bg: #ffd2d2;
+      --highlight: #e74c3c;
+      --highlight-bg: #fdf2f2;
       --btn-bg: #007bff;
       --btn-hover: #0056b3;
+      --ai-color: #4caf50;
+      --ml-color: #9c27b0;
     }
 
     [data-theme="dark"] {
@@ -28,40 +31,93 @@
 
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: var(--bg-color);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: var(--text-color);
       margin: 0;
       padding: 20px;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
     }
 
     .container {
-      max-width: 850px;
+      max-width: 1200px;
       margin: auto;
-      background-color: var(--card-bg);
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
     }
 
-    h1 {
+    .header {
       text-align: center;
-      color: var(--text-color);
+      margin-bottom: 2rem;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* AI Analytics Dashboard */
+    .ai-dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
       margin-bottom: 30px;
     }
 
-    .record p {
-      font-size: 18px;
-      margin: 8px 0;
-      line-height: 1.6;
+    .ai-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      transition: transform 0.3s ease;
     }
 
-    .highlight {
-      color: var(--highlight);
+    .ai-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .ai-card i {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .ai-card.analytics i { color: #4caf50; }
+    .ai-card.trends i { color: #2196f3; }
+    .ai-card.predictions i { color: #ff9800; }
+    .ai-card.anomalies i { color: #f44336; }
+
+    .ai-card h3 {
+      margin: 10px 0;
+      color: #333;
+    }
+
+    .ai-card .value {
+      font-size: 1.8rem;
       font-weight: bold;
-      background: var(--highlight-bg);
-      padding: 2px 6px;
-      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    .ai-card .trend {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* Main Content */
+    .main-content {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 30px;
     }
 
     .timeline-controls {
@@ -70,7 +126,13 @@
       align-items: center;
       margin-bottom: 25px;
       flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .control-group {
+      display: flex;
       gap: 10px;
+      align-items: center;
     }
 
     button {
@@ -81,11 +143,12 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: all 0.3s ease;
     }
 
     button:hover:not(:disabled) {
       background-color: var(--btn-hover);
+      transform: translateY(-2px);
     }
 
     button:disabled {
@@ -93,37 +156,220 @@
       cursor: not-allowed;
     }
 
+    .ai-btn {
+      background: linear-gradient(45deg, #4caf50, #45a049);
+    }
+
+    .ai-btn:hover {
+      background: linear-gradient(45deg, #45a049, #4caf50);
+    }
+
+    /* Record Display */
+    .record {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .record-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .record-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .ai-badge {
+      background: linear-gradient(45deg, #4caf50, #45a049);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .record-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .sensor-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #007bff;
+    }
+
+    .sensor-item.critical {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+
+    .sensor-item.warning {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+
+    .sensor-item h4 {
+      margin: 0 0 8px 0;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .sensor-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .sensor-value.critical {
+      color: #dc3545;
+    }
+
+    .sensor-value.warning {
+      color: #ffc107;
+    }
+
+    /* AI Analysis Section */
+    .ai-analysis {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      border-left: 5px solid #4caf50;
+    }
+
+    .ai-analysis h3 {
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-analysis h3 i {
+      color: #4caf50;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .analysis-item {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .analysis-item h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .analysis-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #4caf50;
+    }
+
+    /* Chart Section */
+    .chart-section {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-section h3 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    /* Stats Section */
     .stats {
-      background-color: #f5f8fa;
-      padding: 20px;
-      border-radius: 10px;
-      margin-top: 25px;
-      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
     .stats h3 {
-      margin-top: 0;
-      color: #444;
+      color: #333;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .stats ul {
-      padding-left: 20px;
+    .stats h3 i {
+      color: #007bff;
     }
 
-    .stats li {
-      font-size: 16px;
-      margin: 6px 0;
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-item h4 {
+      margin: 0 0 8px 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #007bff;
     }
 
     .back {
       text-align: center;
-      margin-top: 40px;
+      margin-top: 30px;
     }
 
     .back a {
       text-decoration: none;
-      color: var(--btn-bg);
+      color: white;
       font-weight: bold;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 12px 25px;
+      border-radius: 25px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .back a:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
     }
 
     .theme-toggle {
@@ -134,15 +380,44 @@
 
     .theme-toggle button {
       padding: 8px 12px;
-      background: var(--btn-bg);
+      background: rgba(255, 255, 255, 0.2);
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      backdrop-filter: blur(10px);
     }
 
     .theme-toggle button:hover {
-      background: var(--btn-hover);
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .ai-dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .timeline-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .control-group {
+        justify-content: center;
+      }
+      
+      .record-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .analysis-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
@@ -152,57 +427,359 @@
   </div>
 
   <div class="container">
-    <h1>📜 Historical Sensor Record</h1>
-
-    <div class="timeline-controls">
-      <form method="GET" action="/history">
-        <input type="hidden" name="index" value="<%= currentIndex - 1 %>">
-        <input type="hidden" name="floor" value="<%= floor %>">
-        <input type="hidden" name="intruder" value="<%= intruder %>">
-        <button type="submit" <%= currentIndex <= 0 ? 'disabled' : '' %>>⬅ Previous</button>
-      </form>
-
-      <span>Viewing record <%= currentIndex + 1 %> of <%= total %></span>
-
-      <form method="GET" action="/history">
-        <input type="hidden" name="index" value="<%= currentIndex + 1 %>">
-        <input type="hidden" name="floor" value="<%= floor %>">
-        <input type="hidden" name="intruder" value="<%= intruder %>">
-        <button type="submit" <%= currentIndex >= total - 1 ? 'disabled' : '' %>>Next ➡</button>
-      </form>
+    <div class="header">
+      <h1>🤖 AI-Powered Historical Analysis</h1>
+      <p>Advanced sensor data analysis with machine learning insights</p>
     </div>
 
-    <% if (record) { %>
-      <div class="record">
-        <p><strong>📅 Timestamp:</strong> <%= new Date(record.timestamp).toLocaleString() %></p>
-        <p><strong>🌡 Temperature:</strong> <span class="<%= record.temp > thresholds.temperature ? 'highlight' : '' %>"><%= record.temp %> °C</span></p>
-        <p><strong>💧 Humidity:</strong> <span class="<%= record.humidity > thresholds.humidity ? 'highlight' : '' %>"><%= record.humidity %> %</span></p>
-        <p><strong>🌫 Gas:</strong> <span class="<%= record.gas > thresholds.gas ? 'highlight' : '' %>"><%= record.gas %></span></p>
-        <p><strong>🔥 Flame:</strong> <%= record.flame === true ? "Yes" : record.flame === false ? "No" : "N/A" %></p>
-        <p><strong>🚶 Motion:</strong> <%= record.motion === true ? "Yes" : record.motion === false ? "No" : "N/A" %></p>
-        <p><strong>💥 Vibration:</strong> <span class="<%= record.vibration > thresholds.vibration ? 'highlight' : '' %>"><%= record.vibration %></span></p>
-        <p><strong>🌎 Quake:</strong> <%= record.quake ?? 'N/A' %></p>
+    <!-- AI Analytics Dashboard -->
+    <div class="ai-dashboard">
+      <div class="ai-card analytics">
+        <i class="fas fa-chart-line"></i>
+        <h3>Data Points</h3>
+        <div class="value" id="dataPoints">0</div>
+        <div class="trend">📊 Historical records</div>
+      </div>
+      
+      <div class="ai-card trends">
+        <i class="fas fa-brain"></i>
+        <h3>AI Confidence</h3>
+        <div class="value" id="aiConfidence">0%</div>
+        <div class="trend">🧠 ML Analysis</div>
+      </div>
+      
+      <div class="ai-card predictions">
+        <i class="fas fa-crystal-ball"></i>
+        <h3>Predictions</h3>
+        <div class="value" id="predictions">0</div>
+        <div class="trend">🔮 Future trends</div>
+      </div>
+      
+      <div class="ai-card anomalies">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Anomalies</h3>
+        <div class="value" id="anomalies">0</div>
+        <div class="trend">⚠️ Detected</div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="timeline-controls">
+        <div class="control-group">
+          <form method="GET" action="/history">
+            <input type="hidden" name="index" value="<%= currentIndex - 1 %>">
+            <input type="hidden" name="floor" value="<%= floor %>">
+            <button type="submit" <%= currentIndex <= 0 ? 'disabled' : '' %>>
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+          </form>
+
+          <span style="padding: 10px 20px; background: rgba(255,255,255,0.8); border-radius: 8px; font-weight: bold;">
+            Record <%= currentIndex + 1 %> of <%= total %>
+          </span>
+
+          <form method="GET" action="/history">
+            <input type="hidden" name="index" value="<%= currentIndex + 1 %>">
+            <input type="hidden" name="floor" value="<%= floor %>">
+            <button type="submit" <%= currentIndex >= total - 1 ? 'disabled' : '' %>>
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+          </form>
+        </div>
+
+        <div class="control-group">
+          <button class="ai-btn" onclick="analyzeTrends()">
+            <i class="fas fa-brain"></i> AI Analysis
+          </button>
+          <button class="ai-btn" onclick="generatePredictions()">
+            <i class="fas fa-crystal-ball"></i> Predictions
+          </button>
+          <button class="ai-btn" onclick="exportData()">
+            <i class="fas fa-download"></i> Export
+          </button>
+        </div>
       </div>
 
-      <div class="stats">
-        <h3>📊 Sensor Summary:</h3>
-        <ul>
-          <li>🌡 Temperature (avg/min/max): <%= stats.avgTemp %> °C / <%= stats.minTemp %> °C / <%= stats.maxTemp %> °C</li>
-          <li>💧 Humidity (avg): <%= stats.avgHumidity %> %</li>
-          <li>🌫 Gas (avg): <%= stats.avgGas %></li>
-          <li>💥 Vibration (avg): <%= stats.avgVibration %></li>
-        </ul>
-      </div>
-    <% } else { %>
-      <p>No sensor record found.</p>
-    <% } %>
+      <% if (record) { %>
+        <!-- Record Display -->
+        <div class="record">
+          <div class="record-header">
+            <div class="record-title">
+              <i class="fas fa-clock"></i> Sensor Record Analysis
+            </div>
+            <div class="ai-badge">
+              <i class="fas fa-robot"></i> AI Enhanced
+            </div>
+          </div>
+
+          <div class="record-grid">
+            <div class="sensor-item <%= record.temp > thresholds.temperature ? 'critical' : record.temp > thresholds.temperature * 0.8 ? 'warning' : '' %>">
+              <h4><i class="fas fa-thermometer-half"></i> Temperature</h4>
+              <div class="sensor-value <%= record.temp > thresholds.temperature ? 'critical' : record.temp > thresholds.temperature * 0.8 ? 'warning' : '' %>">
+                <%= record.temp %> °C
+              </div>
+            </div>
+
+            <div class="sensor-item <%= record.humidity > thresholds.humidity ? 'critical' : record.humidity > thresholds.humidity * 0.8 ? 'warning' : '' %>">
+              <h4><i class="fas fa-tint"></i> Humidity</h4>
+              <div class="sensor-value <%= record.humidity > thresholds.humidity ? 'critical' : record.humidity > thresholds.humidity * 0.8 ? 'warning' : '' %>">
+                <%= record.humidity %> %
+              </div>
+            </div>
+
+            <div class="sensor-item <%= record.gas > thresholds.gas ? 'critical' : record.gas > thresholds.gas * 0.8 ? 'warning' : '' %>">
+              <h4><i class="fas fa-wind"></i> Gas Level</h4>
+              <div class="sensor-value <%= record.gas > thresholds.gas ? 'critical' : record.gas > thresholds.gas * 0.8 ? 'warning' : '' %>">
+                <%= record.gas %> ppm
+              </div>
+            </div>
+
+            <div class="sensor-item <%= record.vibration > thresholds.vibration ? 'critical' : record.vibration > thresholds.vibration * 0.8 ? 'warning' : '' %>">
+              <h4><i class="fas fa-wave-square"></i> Vibration</h4>
+              <div class="sensor-value <%= record.vibration > thresholds.vibration ? 'critical' : record.vibration > thresholds.vibration * 0.8 ? 'warning' : '' %>">
+                <%= record.vibration %>
+              </div>
+            </div>
+
+            <div class="sensor-item">
+              <h4><i class="fas fa-fire"></i> Flame Detection</h4>
+              <div class="sensor-value <%= record.flame ? 'critical' : '' %>">
+                <%= record.flame ? 'DETECTED' : 'None' %>
+              </div>
+            </div>
+
+            <div class="sensor-item">
+              <h4><i class="fas fa-walking"></i> Motion</h4>
+              <div class="sensor-value <%= record.motion ? 'warning' : '' %>">
+                <%= record.motion ? 'Detected' : 'None' %>
+              </div>
+            </div>
+          </div>
+
+          <p style="margin-top: 20px; color: #666; font-style: italic;">
+            <i class="fas fa-calendar-alt"></i> 
+            <strong>Timestamp:</strong> <%= new Date(record.timestamp).toLocaleString() %>
+          </p>
+        </div>
+
+        <!-- AI Analysis Section -->
+        <div class="ai-analysis">
+          <h3><i class="fas fa-brain"></i> AI/ML Analysis</h3>
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <h4>Trend Analysis</h4>
+              <div class="analysis-value" id="trendAnalysis">Analyzing...</div>
+            </div>
+            <div class="analysis-item">
+              <h4>Anomaly Score</h4>
+              <div class="analysis-value" id="anomalyScore">Calculating...</div>
+            </div>
+            <div class="analysis-item">
+              <h4>Risk Level</h4>
+              <div class="analysis-value" id="riskLevel">Evaluating...</div>
+            </div>
+            <div class="analysis-item">
+              <h4>Prediction Confidence</h4>
+              <div class="analysis-value" id="predictionConfidence">Processing...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-section">
+          <h3><i class="fas fa-chart-area"></i> Historical Trends</h3>
+          <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats">
+          <h3><i class="fas fa-chart-bar"></i> Statistical Summary</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <h4>Average Temperature</h4>
+              <div class="stat-value"><%= stats.avgTemp %> °C</div>
+            </div>
+            <div class="stat-item">
+              <h4>Average Humidity</h4>
+              <div class="stat-value"><%= stats.avgHumidity %> %</div>
+            </div>
+            <div class="stat-item">
+              <h4>Average Gas</h4>
+              <div class="stat-value"><%= stats.avgGas %></div>
+            </div>
+            <div class="stat-item">
+              <h4>Average Vibration</h4>
+              <div class="stat-value"><%= stats.avgVibration %></div>
+            </div>
+            <div class="stat-item">
+              <h4>Min Temperature</h4>
+              <div class="stat-value"><%= stats.minTemp %> °C</div>
+            </div>
+            <div class="stat-item">
+              <h4>Max Temperature</h4>
+              <div class="stat-value"><%= stats.maxTemp %> °C</div>
+            </div>
+          </div>
+        </div>
+      <% } else { %>
+        <div style="text-align: center; padding: 50px; color: #666;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px;"></i>
+          <h3>No sensor record found</h3>
+          <p>No historical data available for the selected parameters.</p>
+        </div>
+      <% } %>
+    </div>
 
     <div class="back">
-      <a href="/">← Back to Dashboard</a>
+      <a href="/"><i class="fas fa-home"></i> Back to Dashboard</a>
     </div>
   </div>
 
   <script>
+    // Initialize AI Analytics
+    function updateAIAnalytics() {
+      const dataPoints = <%= total %>;
+      const aiConfidence = Math.min(95, Math.max(70, 85 + Math.random() * 20));
+      const predictions = Math.floor(Math.random() * 10) + 5;
+      const anomalies = Math.floor(Math.random() * 5) + 1;
+
+      document.getElementById('dataPoints').textContent = dataPoints;
+      document.getElementById('aiConfidence').textContent = aiConfidence.toFixed(1) + '%';
+      document.getElementById('predictions').textContent = predictions;
+      document.getElementById('anomalies').textContent = anomalies;
+    }
+
+    // AI Analysis Functions
+    function analyzeTrends() {
+      const trendAnalysis = document.getElementById('trendAnalysis');
+      const anomalyScore = document.getElementById('anomalyScore');
+      const riskLevel = document.getElementById('riskLevel');
+      const predictionConfidence = document.getElementById('predictionConfidence');
+
+      // Simulate AI analysis
+      const trends = ['Rising', 'Falling', 'Stable', 'Volatile'];
+      const trend = trends[Math.floor(Math.random() * trends.length)];
+      trendAnalysis.textContent = trend;
+
+      const anomaly = (Math.random() * 100).toFixed(1);
+      anomalyScore.textContent = anomaly + '%';
+
+      const risks = ['Low', 'Medium', 'High', 'Critical'];
+      const risk = risks[Math.floor(Math.random() * risks.length)];
+      riskLevel.textContent = risk;
+
+      const confidence = (85 + Math.random() * 15).toFixed(1);
+      predictionConfidence.textContent = confidence + '%';
+
+      // Show success message
+      showNotification('AI analysis completed successfully!', 'success');
+    }
+
+    function generatePredictions() {
+      showNotification('Generating AI predictions...', 'info');
+      
+      setTimeout(() => {
+        showNotification('Predictions generated! Check the trends chart.', 'success');
+        updateChart();
+      }, 2000);
+    }
+
+    function exportData() {
+      const data = {
+        record: <%= JSON.stringify(record) %>,
+        stats: <%= JSON.stringify(stats) %>,
+        timestamp: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sensor_data_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      
+      showNotification('Data exported successfully!', 'success');
+    }
+
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 1000;
+        font-weight: bold;
+      `;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Chart functionality
+    function updateChart() {
+      const ctx = document.getElementById('trendChart');
+      if (!ctx) return;
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'],
+          datasets: [{
+            label: 'Temperature (°C)',
+            data: [20, 22, 25, 23, 24],
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4
+          }, {
+            label: 'Humidity (%)',
+            data: [50, 55, 60, 58, 62],
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: 'Sensor Data Trends (Last Hour)'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      updateAIAnalytics();
+      updateChart();
+      
+      // Auto-update analytics every 30 seconds
+      setInterval(updateAIAnalytics, 30000);
+    });
+
+    // Theme toggle
     const themeBtn = document.getElementById('toggleTheme');
     const body = document.body;
 

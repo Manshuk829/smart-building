@@ -307,6 +307,59 @@ function handleIntruderDetection(gate, data) {
   updateAIAnalytics();
 }
 
+// Known Person Detection
+function handleKnownPersonDetection(gate, data) {
+  const box = document.getElementById(`known-person-${gate}`);
+  const img = document.getElementById(`known-person-img-${gate}`);
+  const nameEl = document.getElementById(`known-person-name-${gate}`);
+  const timeEl = document.getElementById(`known-person-time-${gate}`);
+  const confidenceEl = document.getElementById(`known-person-confidence-${gate}`);
+  const accessEl = document.getElementById(`known-person-access-${gate}`);
+  const lastSeenEl = document.getElementById(`known-person-last-${gate}`);
+  
+  if (!box || !img) return;
+  
+  // Known person data
+  const knownPersons = [
+    { name: 'John Smith', access: 'Admin', lastSeen: '1 hour ago' },
+    { name: 'Sarah Johnson', access: 'Staff', lastSeen: '30 minutes ago' },
+    { name: 'Mike Wilson', access: 'Security', lastSeen: '2 hours ago' },
+    { name: 'Emily Davis', access: 'Visitor', lastSeen: '15 minutes ago' },
+    { name: 'David Brown', access: 'Manager', lastSeen: '45 minutes ago' }
+  ];
+  
+  const person = knownPersons[Math.floor(Math.random() * knownPersons.length)];
+  const confidence = Math.floor(Math.random() * 15 + 85); // 85-100%
+  const currentTime = new Date().toLocaleTimeString();
+  
+  // Update known person details
+  if (nameEl) nameEl.textContent = person.name;
+  if (timeEl) timeEl.textContent = currentTime;
+  if (confidenceEl) confidenceEl.textContent = `Confidence: ${confidence}%`;
+  if (accessEl) accessEl.textContent = person.access;
+  if (lastSeenEl) lastSeenEl.textContent = person.lastSeen;
+  
+  // Set person image
+  if (data && data.personImage) {
+    img.src = `data:image/jpeg;base64,${data.personImage}`;
+  } else {
+    img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+  }
+  
+  // Show known person box
+  box.style.display = 'block';
+  
+  // Add smart alert
+  addSmartAlert('person', `${person.name} detected at Gate ${gate}`, 'info');
+  
+  // Auto-hide after 20 seconds
+  setTimeout(() => {
+    box.style.display = 'none';
+  }, 20000);
+  
+  updateAIAnalytics();
+}
+
 // Connection Status
 function updateConnectionStatus(connected) {
   const statusEl = document.querySelector('.header p');
@@ -376,6 +429,11 @@ socket.on('sensor-update', (data) => {
   // Handle intruder detection
   if (intruderImage) {
     handleIntruderDetection(gate, data);
+  }
+  
+  // Handle known person detection (random chance)
+  if (Math.random() > 0.7) { // 30% chance
+    handleKnownPersonDetection(gate, data);
   }
   
   // Update AI analytics

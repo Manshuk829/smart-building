@@ -534,7 +534,7 @@
           <div class="alert-content">
             <p><strong>Floor ${alert.floor}:</strong> ${alert.message}</p>
             ${alert.aiAnalysis ? `<p><em>🤖 AI Analysis:</em> ${alert.aiAnalysis}</p>` : ''}
-            ${alert.confidence > 0 ? `<p><em>🎯 Confidence:</em> ${alert.confidence}%</p>` : ''}
+                         ${alert.confidence > 0 ? `<p><em>🎯 Confidence:</em> ${alert.confidence.toFixed(2)}%</p>` : ''}
           </div>
           
           <div class="alert-meta">

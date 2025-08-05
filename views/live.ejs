@@ -346,6 +346,29 @@
       animation: slideIn 0.5s ease;
     }
 
+    /* Known Person Detection */
+    .known-person-box {
+      background: rgba(40, 167, 69, 0.1);
+      border: 2px solid var(--success);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      animation: slideIn 0.5s ease;
+    }
+
+    .person-name {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--success);
+      margin-bottom: 10px;
+    }
+
+    .person-confidence {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
     @keyframes slideIn {
       from { transform: translateY(-20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -542,6 +565,33 @@
               <div class="analytics-item">
                 <h4>Response Time</h4>
                 <div class="analytics-value" id="response-time-<%= gate %>">0.2s</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Known Person Detection -->
+          <div class="known-person-box" id="known-person-<%= gate %>">
+            <div class="intruder-header">
+              <div class="intruder-title">
+                <i class="fas fa-user-check"></i> Known Person Detected
+              </div>
+              <div class="intruder-time" id="known-person-time-<%= gate %>"></div>
+            </div>
+            <div class="intruder-content">
+              <div class="intruder-image">
+                <img id="known-person-img-<%= gate %>" src="" alt="Known Person Image" />
+              </div>
+              <div class="intruder-details">
+                <div class="person-name" id="known-person-name-<%= gate %>">John Doe</div>
+                <div class="person-confidence" id="known-person-confidence-<%= gate %>">Confidence: 95%</div>
+                <div class="detail-item">
+                  <span class="detail-label">Access Level:</span>
+                  <span class="detail-value" id="known-person-access-<%= gate %>">Authorized</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Last Seen:</span>
+                  <span class="detail-value" id="known-person-last-<%= gate %>">2 hours ago</span>
+                </div>
               </div>
             </div>
           </div>
