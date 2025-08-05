@@ -112,6 +112,91 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    
+    /* AI/ML Analytics Styles */
+    .ai-analytics {
+      max-width: 1000px;
+      margin: 30px auto;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #4caf50;
+    }
+    .ai-analytics h3 {
+      color: var(--heading);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .ai-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .ai-metric {
+      background: rgba(76, 175, 80, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 3px solid #4caf50;
+    }
+    .ai-metric h4 {
+      margin: 0 0 10px 0;
+      color: var(--heading);
+    }
+    .ai-metric p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .ai-alerts {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 1000;
+      max-width: 300px;
+    }
+    .ai-alert {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ai-alert-warning {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .ai-alert button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: inherit;
+    }
+    .ai-features {
+      max-width: 1000px;
+      margin: 20px auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .ai-feature {
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .ai-feature i {
+      font-size: 24px;
+      color: #4caf50;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body data-theme="light">
@@ -120,6 +205,26 @@
   </div>
 
   <h1>📈 Smart Building Charts</h1>
+
+  <!-- AI Features Overview -->
+  <div class="ai-features">
+    <div class="ai-feature">
+      <i class="fas fa-brain"></i>
+      <div>AI Predictions</div>
+    </div>
+    <div class="ai-feature">
+      <i class="fas fa-exclamation-triangle"></i>
+      <div>Anomaly Detection</div>
+    </div>
+    <div class="ai-feature">
+      <i class="fas fa-chart-line"></i>
+      <div>Trend Analysis</div>
+    </div>
+    <div class="ai-feature">
+      <i class="fas fa-bell"></i>
+      <div>Smart Alerts</div>
+    </div>
+  </div>
 
   <form class="filters" method="GET" action="/charts">
     <select name="floor">
@@ -139,13 +244,16 @@
     <button type="submit">🔍 Apply</button>
   </form>
 
+  <!-- AI Analytics Dashboard -->
+  <div id="ai-analytics"></div>
+
   <% if (records.length === 0) { %>
     <div class="no-data">No records found for selected filters.</div>
   <% } else { %>
     <script>
       const sensorData = <%- JSON.stringify(records.map(r => ({
         createdAt: r.createdAt,
-        temperature: r.temperature,
+        temperature: r.temp || r.temperature,
         humidity: r.humidity,
         gas: r.gas,
         flame: r.flame ? 1 : 0,

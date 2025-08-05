@@ -145,24 +145,64 @@ exports.showHistory = async (req, res) => {
 exports.showCharts = async (req, res) => {
   try {
     const floor = req.query.floor || '1';
-    const type = req.query.type || 'temp';
     const range = req.query.range;
     const now = new Date();
 
-    const query = { floor, type };
-    if (range === '1h') query.createdAt = { $gte: new Date(now - 3600000) };
-    else if (range === '24h') query.createdAt = { $gte: new Date(now - 86400000) };
-    else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };
+    // Get sensor data for all types
+    const sensorTypes = ['temp', 'humidity', 'gas', 'vibration', 'flame', 'motion'];
+    const allRecords = [];
 
-    const records = await SensorData.find({ ...query, source: 'sensor' })
+    for (const type of sensorTypes) {
+      const query = { floor: String(floor), type, source: 'sensor' };
+      if (range === '1h') query.createdAt = { $gte: new Date(now - 3600000) };
+      else if (range === '24h') query.createdAt = { $gte: new Date(now - 86400000) };
+      else if (range === '7d') query.createdAt = { $gte: new Date(now - 604800000) };
+
+      const records = await SensorData.find(query)
+        .sort({ createdAt: 1 })
+        .limit(100)
+        .lean();
+
+      // Transform records to match expected structure
+      records.forEach(record => {
+        allRecords.push({
+          createdAt: record.createdAt,
+          temp: record.type === 'temp' ? record.payload : undefined,
+          humidity: record.type === 'humidity' ? record.payload : undefined,
+          gas: record.type === 'gas' ? record.payload : undefined,
+          vibration: record.type === 'vibration' ? record.payload : undefined,
+          flame: record.type === 'flame' ? record.payload : undefined,
+          motion: record.type === 'motion' ? record.payload : undefined
+        });
+      });
+    }
+
+    // Get ML alerts
+    const mlQuery = { floor: String(floor), source: 'ml' };
+    if (range === '1h') mlQuery.createdAt = { $gte: new Date(now - 3600000) };
+    else if (range === '24h') mlQuery.createdAt = { $gte: new Date(now - 86400000) };
+    else if (range === '7d') mlQuery.createdAt = { $gte: new Date(now - 604800000) };
+
+    const mlAlerts = await SensorData.find(mlQuery)
       .sort({ createdAt: 1 })
       .limit(100)
       .lean();
 
-    const mlAlerts = await SensorData.find({ ...query, source: 'ml' })
-      .sort({ createdAt: 1 })
-      .limit(100)
-      .lean();
+    // Group records by timestamp to combine sensor data
+    const groupedRecords = {};
+    allRecords.forEach(record => {
+      const timestamp = record.createdAt.toISOString();
+      if (!groupedRecords[timestamp]) {
+        groupedRecords[timestamp] = { createdAt: record.createdAt };
+      }
+      Object.keys(record).forEach(key => {
+        if (key !== 'createdAt' && record[key] !== undefined) {
+          groupedRecords[timestamp][key] = record[key];
+        }
+      });
+    });
+
+    const records = Object.values(groupedRecords).sort((a, b) => a.createdAt - b.createdAt);
 
     res.render('charts', {
       records,
