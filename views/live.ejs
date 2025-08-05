@@ -388,10 +388,26 @@
     }
 
     .person-name {
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       font-weight: bold;
+      margin-bottom: 15px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    /* Known person name styling */
+    .known-person-box .person-name {
       color: var(--success);
-      margin-bottom: 10px;
+      background: rgba(40, 167, 69, 0.1);
+      border: 2px solid var(--success);
+    }
+
+    /* Intruder name styling */
+    .intruder-box .person-name {
+      color: var(--danger);
+      background: rgba(220, 53, 69, 0.1);
+      border: 2px solid var(--danger);
     }
 
     .person-confidence {
@@ -643,6 +659,7 @@
                 <img id="intruder-img-<%= gate %>" src="" alt="Intruder Image" />
               </div>
               <div class="intruder-details">
+                <div class="person-name" id="intruder-name-<%= gate %>">Intruder</div>
                 <div class="detail-item">
                   <span class="detail-label">Confidence:</span>
                   <span class="detail-value" id="intruder-confidence-<%= gate %>">95%</span>

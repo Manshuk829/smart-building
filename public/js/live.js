@@ -268,6 +268,7 @@ function handleIntruderDetection(gate, data) {
   
   const box = document.getElementById(`intruder-${gate}`);
   const img = document.getElementById(`intruder-img-${gate}`);
+  const nameEl = document.getElementById(`intruder-name-${gate}`);
   const timeEl = document.getElementById(`intruder-time-${gate}`);
   const confidenceEl = document.getElementById(`intruder-confidence-${gate}`);
   const threatEl = document.getElementById(`intruder-threat-${gate}`);
@@ -280,6 +281,8 @@ function handleIntruderDetection(gate, data) {
   const threatLevel = detectThreatLevel(gate, data);
   const currentTime = new Date().toLocaleTimeString();
   
+  // Set name as "Intruder" for unknown person
+  if (nameEl) nameEl.textContent = 'Intruder';
   if (timeEl) timeEl.textContent = currentTime;
   if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
   if (threatEl) threatEl.textContent = threatLevel;
@@ -325,14 +328,17 @@ function handleKnownPersonDetection(gate, data) {
     { name: 'Sarah Johnson', access: 'Staff', lastSeen: '30 minutes ago' },
     { name: 'Mike Wilson', access: 'Security', lastSeen: '2 hours ago' },
     { name: 'Emily Davis', access: 'Visitor', lastSeen: '15 minutes ago' },
-    { name: 'David Brown', access: 'Manager', lastSeen: '45 minutes ago' }
+    { name: 'David Brown', access: 'Manager', lastSeen: '45 minutes ago' },
+    { name: 'Lisa Anderson', access: 'Employee', lastSeen: '3 hours ago' },
+    { name: 'Robert Chen', access: 'Technician', lastSeen: '45 minutes ago' },
+    { name: 'Maria Garcia', access: 'Supervisor', lastSeen: '1 hour ago' }
   ];
   
   const person = knownPersons[Math.floor(Math.random() * knownPersons.length)];
   const confidence = Math.floor(Math.random() * 15 + 85); // 85-100%
   const currentTime = new Date().toLocaleTimeString();
   
-  // Update known person details
+  // Update known person details - Show the actual name
   if (nameEl) nameEl.textContent = person.name;
   if (timeEl) timeEl.textContent = currentTime;
   if (confidenceEl) confidenceEl.textContent = `Confidence: ${confidence}%`;
@@ -444,14 +450,16 @@ socket.on('sensor-update', (data) => {
     detectMotion(gate, sensorData);
   }
   
-  // Handle intruder detection
-  if (intruderImage) {
-    handleIntruderDetection(gate, data);
-  }
-  
-  // Handle known person detection (random chance)
-  if (Math.random() > 0.7) { // 30% chance
-    handleKnownPersonDetection(gate, data);
+  // Handle person detection (known vs unknown)
+  if (motion || intruderImage) {
+    // Check if it's a known person (70% chance for known, 30% for unknown)
+    const isKnownPerson = Math.random() > 0.3; // 70% chance for known person
+    
+    if (isKnownPerson) {
+      handleKnownPersonDetection(gate, data);
+    } else {
+      handleIntruderDetection(gate, data);
+    }
   }
   
   // Update AI analytics
