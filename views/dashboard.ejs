@@ -135,7 +135,12 @@
         if (gas !== undefined) document.getElementById(`gas-floor-${floor}`).textContent = gas;
         if (vibration !== undefined) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
         if (flame !== undefined) document.getElementById(`flame-floor-${floor}`).textContent = flame ? "🔥 Flame Detected" : "✅ Normal";
-        if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ No Motion";
+        if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ None";
+        // Set default motion value if not provided
+        if (motion === undefined) {
+          const motionElement = document.getElementById(`motion-floor-${floor}`);
+          if (motionElement) motionElement.textContent = "✅ None";
+        }
       });
 
       socket.on('ml-alert', ({ type, floor }) => {
@@ -264,7 +269,7 @@
               <% if (data['motion'] !== undefined) { %>
                 <%= data['motion'] ? '👤 Detected' : '✅ None' %>
               <% } else { %>
-                N/A
+                ✅ None
               <% } %>
             </div></div>
           </div>
