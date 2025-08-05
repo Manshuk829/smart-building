@@ -16,7 +16,11 @@ exports.saveSensorData = async (req, res) => {
     const floorMatch = topicParts.find(part => part.toLowerCase().startsWith('floor'));
     const type = topicParts.at(-1)?.toLowerCase() || 'unknown';
 
-    const floor = floorMatch ? parseInt(floorMatch.replace('floor', ''), 10) : 'unknown';
+    let floor = 'unknown';
+    if (floorMatch) {
+      const floorNumber = parseInt(floorMatch.replace('floor', ''), 10);
+      floor = isNaN(floorNumber) ? 'unknown' : floorNumber;
+    }
 
     const newData = new SensorData({
       topic,
@@ -33,7 +37,7 @@ exports.saveSensorData = async (req, res) => {
     io.emit('sensorUpdate', newData); // ✅ Real-time dashboard update
 
     // 🔔 Emit ML alert if applicable
-    if (source === 'ml' && topic.includes('alert')) {
+    if (source === 'ml' && topic.includes('alert') && typeof floor === 'number') {
       const alertEntry = await Alert.create({
         type: payload,
         floor,
@@ -65,23 +69,29 @@ exports.triggerAlert = async (req, res) => {
       return res.status(400).json({ error: '❌ "floor" and "message" are required' });
     }
 
+    // Ensure floor is a number
+    const floorNumber = parseInt(floor, 10);
+    if (isNaN(floorNumber)) {
+      return res.status(400).json({ error: '❌ "floor" must be a valid number' });
+    }
+
     const username = req.session.user?.username || 'Admin';
 
     await AuditLog.create({
       action: `🚨 Manual Alert: ${message}`,
-      floor,
+      floor: floorNumber,
       performedBy: username
     });
 
     const io = req.app.get('io');
     io.emit('manual-alert', {
-      floor,
+      floor: floorNumber,
       message,
       time: new Date()
     });
 
-    console.log(`⚠️ Manual alert sent → Floor ${floor}: ${message}`);
-    res.status(200).json({ success: true, message: `Alert triggered for Floor ${floor}` });
+    console.log(`⚠️ Manual alert sent → Floor ${floorNumber}: ${message}`);
+    res.status(200).json({ success: true, message: `Alert triggered for Floor ${floorNumber}` });
 
   } catch (err) {
     console.error('❌ Alert error:', err.message);

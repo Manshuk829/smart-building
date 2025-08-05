@@ -196,11 +196,14 @@ function stopRecording(gate) {
 function triggerAlert(gate) {
   addSmartAlert('threat', `Manual alert triggered for Gate ${gate}`, 'warning');
   
+  // Convert gate string to floor number (e.g., "gate1" -> 1)
+  const floorNumber = parseInt(gate.replace('gate', ''), 10);
+  
   // Send alert to server
   fetch('/api/alert', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ floor: gate, type: 'manual' })
+    body: JSON.stringify({ floor: floorNumber, type: 'manual' })
   }).catch(err => console.error('Alert error:', err));
 }
 

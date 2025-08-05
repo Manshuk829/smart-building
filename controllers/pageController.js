@@ -50,6 +50,9 @@ exports.showLive = async (req, res) => {
     const alerts = {};
 
     for (const gate of gates) {
+      // Convert gate string to floor number (e.g., "gate1" -> 1)
+      const floorNumber = parseInt(gate.replace('gate', ''), 10);
+      
       const entries = await SensorData.find({ floor: gate })
         .sort({ createdAt: -1 })
         .limit(sensorTypes.length)
@@ -70,7 +73,8 @@ exports.showLive = async (req, res) => {
       sensorData.createdAt = latestTimestamp;
       dataByFloor[gate] = sensorData;
 
-      alerts[gate] = await Alert.findOne({ floor: gate }).sort({ createdAt: -1 }).lean();
+      // Use floor number for Alert queries
+      alerts[gate] = await Alert.findOne({ floor: floorNumber }).sort({ createdAt: -1 }).lean();
     }
 
     res.render('live', { dataByFloor, thresholds, alerts });
