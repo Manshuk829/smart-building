@@ -197,6 +197,41 @@
       color: #4caf50;
       margin-bottom: 8px;
     }
+
+    /* Performance Metrics Styles */
+    .performance-metrics {
+      max-width: 1000px;
+      margin: 30px auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      justify-content: center;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .metric-card i {
+      font-size: 36px;
+      color: #4caf50;
+      margin-bottom: 10px;
+    }
+    .metric-card h4 {
+      color: var(--heading);
+      margin-bottom: 5px;
+    }
+    .metric-card p {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
   </style>
 </head>
 <body data-theme="light">
@@ -238,11 +273,54 @@
       <option value="24h" <%= query.range === '24h' ? 'selected' : '' %>>🕒 Last 24 Hours</option>
       <option value="7d" <%= query.range === '7d' ? 'selected' : '' %>>📆 Last 7 Days</option>
     </select>
+    <select name="chartType">
+      <option value="line">📈 Line Chart</option>
+      <option value="bar">📊 Bar Chart</option>
+      <option value="area">🟦 Area Chart</option>
+    </select>
+    <label>
+      <input type="checkbox" name="showPredictions" value="true" checked> 🧠 Show AI Predictions
+    </label>
+    <label>
+      <input type="checkbox" name="showAnomalies" value="true" checked> ⚠️ Show Anomalies
+    </label>
     <label>
       <input type="checkbox" name="intruder" value="true" <%= query.intruder === 'true' ? 'checked' : '' %>> 🚨 Intruders Only
     </label>
     <button type="submit">🔍 Apply</button>
   </form>
+
+  <!-- Performance Metrics -->
+  <div class="performance-metrics">
+    <div class="metric-card">
+      <i class="fas fa-clock"></i>
+      <div>
+        <h4>Data Points</h4>
+        <p id="dataPoints">Loading...</p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <i class="fas fa-chart-line"></i>
+      <div>
+        <h4>Trend Direction</h4>
+        <p id="trendDirection">Loading...</p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <i class="fas fa-exclamation-triangle"></i>
+      <div>
+        <h4>Anomalies Detected</h4>
+        <p id="anomalyCount">Loading...</p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <i class="fas fa-brain"></i>
+      <div>
+        <h4>AI Confidence</h4>
+        <p id="aiConfidence">Loading...</p>
+      </div>
+    </div>
+  </div>
 
   <!-- AI Analytics Dashboard -->
   <div id="ai-analytics"></div>
@@ -261,6 +339,28 @@
         vibration: r.vibration ?? 0,
         mlPrediction: r.mlPrediction ?? null
       }))) %>;
+      
+      // Update performance metrics
+      document.addEventListener('DOMContentLoaded', () => {
+        if (sensorData && sensorData.length > 0) {
+          document.getElementById('dataPoints').textContent = sensorData.length;
+          
+          // Calculate trend direction
+          const values = sensorData.map(d => d.temperature || d.humidity || d.gas || 0);
+          const trend = values[values.length - 1] > values[0] ? '↗️ Rising' : 
+                       values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
+          document.getElementById('trendDirection').textContent = trend;
+          
+          // Calculate anomalies (simplified)
+          const mean = values.reduce((a, b) => a + b, 0) / values.length;
+          const anomalies = values.filter(v => Math.abs(v - mean) > mean * 0.3).length;
+          document.getElementById('anomalyCount').textContent = anomalies;
+          
+          // AI confidence based on data quality
+          const confidence = Math.min(95, Math.max(60, 100 - (anomalies / values.length * 100)));
+          document.getElementById('aiConfidence').textContent = `${confidence.toFixed(1)}%`;
+        }
+      });
     </script>
 
     <% const sensors = [
