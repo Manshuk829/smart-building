@@ -35,10 +35,10 @@ exports.showDashboard = async (req, res) => {
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
-    res.render('dashboard', { dataByFloor, thresholds, alerts });
+    res.render('dashboard', { dataByFloor, thresholds, alerts, error: null });
   } catch (err) {
-    console.error('❌ Dashboard error:', err.message);
-    res.status(500).send('Error loading dashboard');
+    console.error('❌ Dashboard error:', err);
+    res.render('dashboard', { dataByFloor: {}, thresholds, alerts: {}, error: 'Unable to load dashboard at this time. Please try again later.' });
   }
 };
 

@@ -265,7 +265,6 @@ function detectMotion(gate, data) {
 // Enhanced Intruder Detection
 function handleIntruderDetection(gate, data) {
   intruderCount++;
-  
   const box = document.getElementById(`intruder-${gate}`);
   const img = document.getElementById(`intruder-img-${gate}`);
   const nameEl = document.getElementById(`intruder-name-${gate}`);
@@ -273,43 +272,29 @@ function handleIntruderDetection(gate, data) {
   const confidenceEl = document.getElementById(`intruder-confidence-${gate}`);
   const threatEl = document.getElementById(`intruder-threat-${gate}`);
   const actionEl = document.getElementById(`intruder-action-${gate}`);
-  
   if (!box || !img) return;
-  
-  // Update intruder details
   const confidence = Math.floor(Math.random() * 20 + 80); // 80-100%
   const threatLevel = detectThreatLevel(gate, data);
   const currentTime = new Date().toLocaleTimeString();
-  
-  // Set name as "Intruder" for unknown person
   if (nameEl) nameEl.textContent = 'Intruder';
   if (timeEl) timeEl.textContent = currentTime;
   if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
   if (threatEl) threatEl.textContent = threatLevel;
   if (actionEl) actionEl.textContent = 'Alert Sent';
-  
   // Set intruder image
   if (data && data.intruderImage) {
+    img.style.display = 'block';
     img.src = `data:image/jpeg;base64,${data.intruderImage}`;
   } else {
+    img.style.display = 'block';
     img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
   }
-  
-  // Show intruder box
   box.style.display = 'block';
-  
-  // Add smart alert
   addSmartAlert('intruder', `Intruder detected at Gate ${gate} with ${confidence}% confidence`, 'critical');
-  
-  // Auto-hide after 30 seconds
-  setTimeout(() => {
-    box.style.display = 'none';
-  }, 30000);
-  
+  setTimeout(() => { box.style.display = 'none'; }, 30000);
   updateSecurityScore();
   updateAIAnalytics();
 }
-
 // Known Person Detection
 function handleKnownPersonDetection(gate, data) {
   const box = document.getElementById(`known-person-${gate}`);
@@ -319,50 +304,21 @@ function handleKnownPersonDetection(gate, data) {
   const confidenceEl = document.getElementById(`known-person-confidence-${gate}`);
   const accessEl = document.getElementById(`known-person-access-${gate}`);
   const lastSeenEl = document.getElementById(`known-person-last-${gate}`);
-  
   if (!box || !img) return;
-  
   // Known person data
-  const knownPersons = [
-    { name: 'John Smith', access: 'Admin', lastSeen: '1 hour ago' },
-    { name: 'Sarah Johnson', access: 'Staff', lastSeen: '30 minutes ago' },
-    { name: 'Mike Wilson', access: 'Security', lastSeen: '2 hours ago' },
-    { name: 'Emily Davis', access: 'Visitor', lastSeen: '15 minutes ago' },
-    { name: 'David Brown', access: 'Manager', lastSeen: '45 minutes ago' },
-    { name: 'Lisa Anderson', access: 'Employee', lastSeen: '3 hours ago' },
-    { name: 'Robert Chen', access: 'Technician', lastSeen: '45 minutes ago' },
-    { name: 'Maria Garcia', access: 'Supervisor', lastSeen: '1 hour ago' }
-  ];
-  
-  const person = knownPersons[Math.floor(Math.random() * knownPersons.length)];
+  const personName = data && data.name ? data.name : 'Known Person';
   const confidence = Math.floor(Math.random() * 15 + 85); // 85-100%
   const currentTime = new Date().toLocaleTimeString();
-  
-  // Update known person details - Show the actual name
-  if (nameEl) nameEl.textContent = person.name;
+  if (nameEl) nameEl.textContent = personName;
   if (timeEl) timeEl.textContent = currentTime;
   if (confidenceEl) confidenceEl.textContent = `Confidence: ${confidence}%`;
-  if (accessEl) accessEl.textContent = person.access;
-  if (lastSeenEl) lastSeenEl.textContent = person.lastSeen;
-  
-  // Set person image
-  if (data && data.personImage) {
-    img.src = `data:image/jpeg;base64,${data.personImage}`;
-  } else {
-    img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
-  }
-  
-  // Show known person box
+  if (accessEl) accessEl.textContent = data && data.access ? data.access : 'Authorized';
+  if (lastSeenEl) lastSeenEl.textContent = data && data.lastSeen ? data.lastSeen : 'Just now';
+  // Hide person image for privacy
+  img.style.display = 'none';
   box.style.display = 'block';
-  
-  // Add smart alert
-  addSmartAlert('person', `${person.name} detected at Gate ${gate}`, 'info');
-  
-  // Auto-hide after 20 seconds
-  setTimeout(() => {
-    box.style.display = 'none';
-  }, 20000);
-  
+  addSmartAlert('person', `${personName} detected at Gate ${gate}`, 'info');
+  setTimeout(() => { box.style.display = 'none'; }, 20000);
   updateAIAnalytics();
 }
 
@@ -397,6 +353,41 @@ for (let gate = 1; gate <= gateCount; gate++) {
   }
 }
 
+// Device status tracking
+const deviceStatus = {};
+const STATUS_TIMEOUT = 15000; // 15 seconds
+
+function updateDeviceStatus(gate) {
+  const now = Date.now();
+  deviceStatus[gate] = now;
+  const led = document.getElementById(`led-gate-${gate}`);
+  const statusText = document.getElementById(`status-text-${gate}`);
+  if (led && statusText) {
+    led.classList.add('online');
+    led.classList.remove('offline');
+    statusText.textContent = 'Online';
+    statusText.className = 'gate-status online';
+  }
+}
+
+function checkDeviceStatus() {
+  const now = Date.now();
+  for (let gate = 1; gate <= gateCount; gate++) {
+    const last = deviceStatus[gate] || 0;
+    const led = document.getElementById(`led-gate-${gate}`);
+    const statusText = document.getElementById(`status-text-${gate}`);
+    if (now - last > STATUS_TIMEOUT) {
+      if (led && statusText) {
+        led.classList.remove('online');
+        led.classList.add('offline');
+        statusText.textContent = 'Offline';
+        statusText.className = 'gate-status offline';
+      }
+    }
+  }
+}
+setInterval(checkDeviceStatus, 5000);
+
 // Enhanced Sensor Updates
 socket.on('sensor-update', (data) => {
   const { floor, motion, intruderImage, ...sensorData } = data;
@@ -404,6 +395,7 @@ socket.on('sensor-update', (data) => {
   
   const gate = floor;
   lastUpdateTimes[gate] = Date.now();
+  updateDeviceStatus(gate); // Update device status on receiving new data
 
   // Update connection status
   const led = document.getElementById(`led-gate-${gate}`);

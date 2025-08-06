@@ -10,9 +10,9 @@ exports.getAlertsPage = async (req, res) => {
       .limit(50)                // Limit to 50 recent alerts
       .lean();                  // Return plain JS objects for performance
 
-    res.render('alerts', { alerts: alerts || [] });
+    res.render('alerts', { alerts: alerts || [], error: null });
   } catch (err) {
-    console.error('🔴 [alertsController] Error loading alerts:', err.message);
-    res.status(500).send('Error loading ML alerts page.');
+    console.error('🔴 [alertsController] Error loading alerts:', err);
+    res.render('alerts', { alerts: [], error: 'Unable to load alerts at this time. Please try again later.' });
   }
 };

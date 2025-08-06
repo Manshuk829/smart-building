@@ -55,8 +55,8 @@ exports.saveSensorData = async (req, res) => {
     res.status(200).json({ message: '✅ Sensor data saved', data: newData });
 
   } catch (err) {
-    console.error('❌ Sensor save error:', err.message);
-    res.status(500).json({ error: 'Sensor save failed' });
+    console.error('❌ Sensor save error:', err);
+    res.status(500).json({ error: 'Unable to save sensor data at this time. Please try again later.' });
   }
 };
 
@@ -96,5 +96,34 @@ exports.triggerAlert = async (req, res) => {
   } catch (err) {
     console.error('❌ Alert error:', err.message);
     res.status(500).json({ success: false, message: 'Alert failed' });
+  }
+};
+
+// POST /api/upload-image: Receive image and name from ESP32-CAM (no API key required)
+exports.uploadImage = async (req, res) => {
+  try {
+    const { floor, name, intruderImage } = req.body;
+    if (!floor || !intruderImage) {
+      return res.status(400).json({ error: '❌ "floor" and "intruderImage" are required' });
+    }
+    // Optionally save image to disk for /snapshot/<gate>.jpg
+    const fs = require('fs');
+    const path = require('path');
+    const matches = intruderImage.match(/^data:image\/(jpeg|jpg|png);base64,(.+)$/);
+    let base64Data = intruderImage;
+    if (matches) base64Data = matches[2];
+    const imgPath = path.join(__dirname, '../public/snapshot', `${floor}.jpg`);
+    fs.mkdirSync(path.dirname(imgPath), { recursive: true });
+    fs.writeFileSync(imgPath, Buffer.from(base64Data, 'base64'));
+
+    // Emit events to frontend
+    const io = req.app.get('io');
+    io.emit('sensor-update', { floor, intruderImage, name: name || 'Unknown' });
+    io.emit('intruder-alert', { floor, image: intruderImage, name: name || 'Unknown' });
+    console.log(`📸 HTTP ESP32-CAM Alert — ${name || 'Unknown'} at Gate ${floor}`);
+    res.status(200).json({ message: '✅ Image received and broadcasted' });
+  } catch (err) {
+    console.error('❌ Image upload error:', err);
+    res.status(500).json({ error: 'Unable to upload image at this time. Please try again later.' });
   }
 };

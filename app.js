@@ -82,4 +82,31 @@ app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
 
+// === Automatic Cleanup of Old Images in /public/snapshot ===
+const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
+
+const SNAPSHOT_DIR = path.join(__dirname, 'public', 'snapshot');
+const MAX_AGE_DAYS = 7;
+
+cron.schedule('0 3 * * *', () => { // Run daily at 3:00 AM
+  try {
+    if (!fs.existsSync(SNAPSHOT_DIR)) return;
+    const files = fs.readdirSync(SNAPSHOT_DIR);
+    const now = Date.now();
+    files.forEach(file => {
+      const filePath = path.join(SNAPSHOT_DIR, file);
+      const stats = fs.statSync(filePath);
+      const ageDays = (now - stats.mtimeMs) / (1000 * 60 * 60 * 24);
+      if (ageDays > MAX_AGE_DAYS) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️ Deleted old snapshot: ${file}`);
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error during snapshot cleanup:', err);
+  }
+});
+
 module.exports = app;

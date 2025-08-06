@@ -10,6 +10,9 @@ router.post('/sensor', apiController.saveSensorData);
 // 🔐 Admin API: Manually trigger emergency alert (used by control room)
 router.post('/alert', requireAdmin, apiController.triggerAlert);
 
+// POST endpoint for ESP32-CAM image upload
+router.post('/upload-image', apiController.uploadImage);
+
 // ✅ Developer sanity check (optional)
 if (process.env.NODE_ENV !== 'production') {
   if (typeof apiController.saveSensorData !== 'function') {
