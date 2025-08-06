@@ -85,7 +85,6 @@ app.use('/alerts', alertsRoutes);
 // === Automatic Cleanup of Old Images in /public/snapshot ===
 const cron = require('node-cron');
 const fs = require('fs');
-const path = require('path');
 
 const SNAPSHOT_DIR = path.join(__dirname, 'public', 'snapshot');
 const MAX_AGE_DAYS = 7;
