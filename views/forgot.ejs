@@ -6,174 +6,313 @@
   <title>🔐 Forgot Password - Smart Building</title>
   <link rel="stylesheet" href="/styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
-    :root {
-      --primary: #4e54c8;
-      --accent: #8f94fb;
-      --white: #fff;
-      --text: #222;
-      --input-bg: rgba(255,255,255,0.2);
-    }
-
-    [data-theme="dark"] {
-      --primary: #1e1e2f;
-      --accent: #3f3f5e;
-      --white: #f0f0f0;
-      --text: #ffffff;
-      --input-bg: rgba(255,255,255,0.15);
-    }
-
     body {
-      margin: 0;
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: background 0.3s ease;
-    }
-
-    .form-box {
-      background: rgba(255, 255, 255, 0.07);
-      backdrop-filter: blur(20px);
-      border-radius: 20px;
-      padding: 2rem 2.5rem;
-      width: 90%;
-      max-width: 400px;
-      color: var(--white);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
       position: relative;
+      overflow: hidden;
+    }
+    .particles {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 6s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 7s; }
+    .particle:nth-child(9) { left: 90%; animation-delay: 8s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) scale(1); opacity: 0; }
+    }
+    .forgot-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 420px;
+      margin: 20px;
+    }
+    .forgot-card {
+      backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.95);
+      border-radius: 24px;
+      padding: 2.5rem 2rem 2rem 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      color: #2c3e50;
       animation: fadeIn 0.8s ease-in;
+      position: relative;
+      overflow: hidden;
     }
-
-    h2 {
+    .forgot-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+      animation: gradientShift 3s ease-in-out infinite;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .header-section {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
-
+    .logo {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem auto;
+      box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .logo i { font-size: 2.2rem; color: white; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: #7f8c8d;
+      font-weight: 400;
+    }
+    .form-section { margin-bottom: 1.5rem; }
     .form-group {
       position: relative;
       margin-bottom: 1.5rem;
     }
-
     .form-group input {
       width: 100%;
-      padding: 0.9rem 1rem;
-      padding-left: 2.8rem;
+      padding: 1rem 1rem 1rem 3rem;
       border-radius: 12px;
-      border: none;
-      outline: none;
-      background: var(--input-bg);
-      color: var(--white);
+      border: 2px solid transparent;
+      background: rgba(102,126,234,0.07);
+      color: #2c3e50;
       font-size: 1rem;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
-
+    .form-group input:focus {
+      border-color: #667eea;
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+    }
     .form-group i {
       position: absolute;
       left: 1rem;
       top: 50%;
       transform: translateY(-50%);
-      color: #ccc;
+      color: #667eea;
+      font-size: 1.2rem;
     }
-
     button {
       width: 100%;
-      padding: 0.9rem;
+      padding: 1rem;
       border: none;
       border-radius: 12px;
-      background-color: var(--white);
-      color: var(--primary);
-      font-size: 1rem;
-      font-weight: bold;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
     }
-
     button:hover {
-      background-color: #f0f0f0;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102,126,234,0.2);
     }
-
     .back-link {
       text-align: center;
       margin-top: 1rem;
     }
-
     .back-link a {
-      color: var(--white);
+      color: #667eea;
       text-decoration: underline;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      font-weight: 500;
     }
-
     .error-message {
-      color: #ff7070;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: shake 0.5s ease-in-out;
+      box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+    }
+    .success-message {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: slideIn 0.5s ease-out;
+      box-shadow: 0 5px 15px rgba(79,172,254,0.3);
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .security-features {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+    .security-title {
+      font-size: 0.9rem;
+      color: #7f8c8d;
       text-align: center;
       margin-bottom: 1rem;
-      font-weight: bold;
     }
-
-    .success-message {
-      text-align: center;
-      color: #00ffcc;
-      font-weight: bold;
-      animation: pulse 1s ease infinite;
+    .security-icons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
     }
-
-    .dark-toggle {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      color: white;
-      cursor: pointer;
+    .security-icon {
+      width: 40px; height: 40px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #667eea;
       font-size: 1.2rem;
+      transition: all 0.3s ease;
     }
-
-    @keyframes pulse {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.03); }
-      100% { transform: scale(1); }
+    .security-icon:hover {
+      transform: translateY(-2px);
+      background: #e0e7ff;
     }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @media (max-width: 480px) {
+      .forgot-container { margin: 10px; }
+      .forgot-card { padding: 2rem 1rem; }
+      .title { font-size: 1.3rem; }
     }
   </style>
 </head>
 <body>
-  <div class="form-box">
-    <div class="dark-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-      <i class="fas fa-moon"></i>
-    </div>
-
-    <h2>🔑 Forgot Password</h2>
-
-    <% if (error) { %>
-      <div class="error-message">❌ <%= error %></div>
-    <% } else if (success) { %>
-      <div class="success-message">✅ <%= success %></div>
-    <% } %>
-
-    <form method="POST" action="/forgot">
-      <div class="form-group">
-        <i class="fas fa-user"></i>
-        <input type="text" name="username" placeholder="Enter your email or username" required />
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+  <div class="forgot-container">
+    <div class="forgot-card">
+      <div class="header-section">
+        <div class="logo">
+          <i class="fas fa-unlock-alt"></i>
+        </div>
+        <div class="title">Forgot Password</div>
+        <div class="subtitle">Enter your username or email to receive a reset link.</div>
       </div>
-
-      <button type="submit">Send Reset Link</button>
-    </form>
-
-    <div class="back-link">
-      <a href="/login">🔙 Back to Login</a>
+      <% if (error) { %>
+        <div class="error-message"><i class="fas fa-exclamation-triangle"></i> <%= error %></div>
+      <% } else if (success) { %>
+        <div class="success-message"><i class="fas fa-check-circle"></i> <%= success %></div>
+      <% } %>
+      <form method="POST" action="/forgot" class="form-section" onsubmit="return showProgress()">
+        <div class="form-group" title="Enter your registered username or email address.">
+          <i class="fas fa-user"></i>
+          <input type="text" name="username" placeholder="Enter your email or username" required />
+        </div>
+        <button type="submit" id="forgotBtn">Send Reset Link</button>
+      </form>
+      <div id="progressBar" style="display:none; text-align:center; margin-top:1rem;">
+        <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:#667eea;"></i>
+        <div style="color:#667eea; font-weight:600; margin-top:0.5rem;">Processing...</div>
+      </div>
+      <div id="successCheck" style="display:none; text-align:center; margin-top:1.5rem;">
+        <i class="fas fa-check-circle" style="font-size:2.5rem; color:#28a745; animation:bounce 1s;"></i>
+        <div style="color:#28a745; font-weight:600; margin-top:0.5rem;">Reset Link Sent!</div>
+      </div>
+      <div style="font-size:0.95rem; color:#888; margin-top:1.5rem;">
+        <i class="fas fa-shield-alt"></i> Security tip: Never share your password with anyone.
+      </div>
+      <div class="back-link">
+        <a href="/login"><i class="fas fa-arrow-left"></i> Back to Login</a>
+      </div>
+      <div class="security-features">
+        <div class="security-title">Advanced Security Features</div>
+        <div class="security-icons">
+          <div class="security-icon" title="AI-Powered Detection">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div class="security-icon" title="Real-time Monitoring">
+            <i class="fas fa-video"></i>
+          </div>
+          <div class="security-icon" title="Encrypted Communication">
+            <i class="fas fa-lock"></i>
+          </div>
+          <div class="security-icon" title="Multi-factor Authentication">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
   <script>
-    function toggleDarkMode() {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme') || 'light';
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    function showProgress() {
+      document.getElementById('forgotBtn').style.display = 'none';
+      document.getElementById('progressBar').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('progressBar').style.display = 'none';
+        document.getElementById('successCheck').style.display = 'block';
+      }, 2000); // Simulate processing
+      return true;
     }
   </script>
 </body>
