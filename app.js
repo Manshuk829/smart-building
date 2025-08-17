@@ -1,4 +1,4 @@
-require('dotenv').config();
+const config = require('./config');
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -19,21 +19,11 @@ const app = express();
 // ✅ Trust proxy for secure cookies on Render
 app.set('trust proxy', 1);
 
-// Global App Configs
-app.set('floors', [1, 2, 3, 4]);
-app.set('nodesPerFloor', 4); // 4 nodes per floor
-app.set('thresholds', {
-  temperature: 50,
-  humidity: 70,
-  gas: 300,
-  vibration: 5.0,
-  flame: 100, // Flame sensor threshold
-});
-app.set('visitorSettings', {
-  maxVisitorsPerPerson: 3, // Max visitors a known person can register
-  visitorExpiryHours: 24, // How long visitor access lasts
-  gracePeriodMinutes: 5, // Grace period before triggering intruder alert
-});
+// Global App Configs - Now using centralized config
+app.set('floors', config.floors);
+app.set('nodesPerFloor', config.nodesPerFloor);
+app.set('thresholds', config.thresholds);
+app.set('visitorSettings', config.visitorSettings);
 
 // ✅ View Engine Setup
 app.set('view engine', 'ejs');
@@ -49,16 +39,16 @@ app.use(express.json({ limit: '2mb' })); // In case ESP32-CAM sends base64 image
 // ✅ Session Configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'smart-building-secret-key',
+    secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding',
+      mongoUrl: config.mongodbUri,
       ttl: 86400, // 1 day in seconds
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: config.isProduction,
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
@@ -76,7 +66,7 @@ app.use((req, res, next) => {
 
 // ✅ MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smartbuilding')
+  .connect(config.mongodbUri)
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => {
     console.error('❌ MongoDB connection failed:', err.message);

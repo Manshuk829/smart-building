@@ -1,10 +1,11 @@
+const config = require('../config');
 const SensorData = require('../models/SensorData');
 const Alert = require('../models/Alert');
 const Visitor = require('../models/Visitor');
 
-const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0, flame: 100 };
-const floors = [1, 2, 3, 4];
-const nodesPerFloor = 4;
+const thresholds = config.thresholds;
+const floors = config.floors;
+const nodesPerFloor = config.nodesPerFloor;
 const sensorTypes = ['temp', 'humidity', 'gas', 'vibration', 'flame', 'motion', 'quake'];
 
 // 📊 Dashboard Page
@@ -38,14 +39,36 @@ exports.showDashboard = async (req, res) => {
         type: 'flame' 
       })
         .sort({ createdAt: -1 })
-        .limit(nodesPerFloor)
         .lean();
 
-      flameDataByFloor[floor] = flameEntries.map(entry => ({
-        node: entry.node || 1,
-        value: entry.payload,
-        timestamp: entry.createdAt
-      }));
+      // Group by node and get the latest reading for each node
+      const nodeData = {};
+      flameEntries.forEach(entry => {
+        const node = entry.node || 1;
+        if (!nodeData[node] || entry.createdAt > nodeData[node].timestamp) {
+          nodeData[node] = {
+            node: node,
+            value: entry.payload,
+            timestamp: entry.createdAt
+          };
+        }
+      });
+
+      // Convert to array and ensure we have nodes 1-4
+      flameDataByFloor[floor] = [];
+      for (let nodeNum = 1; nodeNum <= nodesPerFloor; nodeNum++) {
+        if (nodeData[nodeNum]) {
+          flameDataByFloor[floor].push(nodeData[nodeNum]);
+        } else {
+          // Add placeholder for missing nodes
+          flameDataByFloor[floor].push({
+            node: nodeNum,
+            value: 0,
+            timestamp: new Date(),
+            status: 'offline'
+          });
+        }
+      }
 
       sensorData.createdAt = latestTimestamp;
       dataByFloor[floor] = sensorData;
@@ -220,7 +243,7 @@ exports.showCharts = async (req, res) => {
       records.forEach(record => {
         allRecords.push({
           createdAt: record.createdAt,
-          temp: record.type === 'temp' ? record.payload : undefined,
+          temperature: record.type === 'temp' ? record.payload : undefined,
           humidity: record.type === 'humidity' ? record.payload : undefined,
           gas: record.type === 'gas' ? record.payload : undefined,
           vibration: record.type === 'vibration' ? record.payload : undefined,

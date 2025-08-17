@@ -327,7 +327,7 @@
     // Initialize sensorData globally with fallback to sample data
     let sensorData = <%- JSON.stringify(records.map(r => ({
       createdAt: r.createdAt,
-      temperature: r.temp || r.temperature,
+      temperature: r.temperature,
       humidity: r.humidity,
       gas: r.gas,
       flame: r.flame ? 1 : 0,
@@ -358,6 +358,13 @@
     
     // Make sensorData globally available for charts.js
     window.sensorData = sensorData;
+    
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderCharts === 'function') {
+        renderCharts();
+      }
+    });
     
     // Update performance metrics
     document.addEventListener('DOMContentLoaded', () => {

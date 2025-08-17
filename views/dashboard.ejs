@@ -359,6 +359,11 @@
       animation: pulse 1s infinite;
     }
 
+    .node-value.offline {
+      color: #6c757d;
+      font-style: italic;
+    }
+
     .no-data {
       color: #999;
       font-style: italic;
@@ -762,9 +767,13 @@
                   <% flameDataByFloor[floor].forEach(node => { %>
                     <div class="flame-node">
                       <span class="node-label">Node <%= node.node %>:</span>
-                      <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
-                        <%= node.value > thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
-                      </span>
+                      <% if (node.status === 'offline') { %>
+                        <span class="node-value offline">🔴 Offline</span>
+                      <% } else { %>
+                        <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
+                          <%= node.value > thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
+                        </span>
+                      <% } %>
                     </div>
                   <% }); %>
                 <% } else { %>
