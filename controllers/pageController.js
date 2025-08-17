@@ -1,8 +1,10 @@
 const SensorData = require('../models/SensorData');
 const Alert = require('../models/Alert');
+const Visitor = require('../models/Visitor');
 
-const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0 };
+const thresholds = { temperature: 50, humidity: 70, gas: 300, vibration: 5.0, flame: 100 };
 const floors = [1, 2, 3, 4];
+const nodesPerFloor = 4;
 const sensorTypes = ['temp', 'humidity', 'gas', 'vibration', 'flame', 'motion', 'quake'];
 
 // 📊 Dashboard Page
@@ -10,11 +12,12 @@ exports.showDashboard = async (req, res) => {
   try {
     const dataByFloor = {};
     const alerts = {};
+    const flameDataByFloor = {};
 
     for (const floor of floors) {
       const entries = await SensorData.find({ floor: String(floor) })
         .sort({ createdAt: -1 })
-        .limit(sensorTypes.length)
+        .limit(sensorTypes.length * nodesPerFloor) // Increased limit for multiple nodes
         .lean();
 
       const sensorData = {};
@@ -29,16 +32,45 @@ exports.showDashboard = async (req, res) => {
         }
       }
 
+      // Special handling for flame sensors (4 nodes per floor)
+      const flameEntries = await SensorData.find({ 
+        floor: String(floor), 
+        type: 'flame' 
+      })
+        .sort({ createdAt: -1 })
+        .limit(nodesPerFloor)
+        .lean();
+
+      flameDataByFloor[floor] = flameEntries.map(entry => ({
+        node: entry.node || 1,
+        value: entry.payload,
+        timestamp: entry.createdAt
+      }));
+
       sensorData.createdAt = latestTimestamp;
       dataByFloor[floor] = sensorData;
 
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
-    res.render('dashboard', { dataByFloor, thresholds, alerts, error: null });
+    res.render('dashboard', { 
+      dataByFloor, 
+      flameDataByFloor,
+      thresholds, 
+      alerts, 
+      nodesPerFloor,
+      error: null 
+    });
   } catch (err) {
     console.error('❌ Dashboard error:', err);
-    res.render('dashboard', { dataByFloor: {}, thresholds, alerts: {}, error: 'Unable to load dashboard at this time. Please try again later.' });
+    res.render('dashboard', { 
+      dataByFloor: {}, 
+      flameDataByFloor: {},
+      thresholds, 
+      alerts: {}, 
+      nodesPerFloor,
+      error: 'Unable to load dashboard at this time. Please try again later.' 
+    });
   }
 };
 
@@ -48,6 +80,7 @@ exports.showLive = async (req, res) => {
     const gates = ['gate1', 'gate2'];
     const dataByFloor = {};
     const alerts = {};
+    const visitorsByGate = {};
 
     for (const gate of gates) {
       // Convert gate string to floor number (e.g., "gate1" -> 1)
@@ -75,9 +108,25 @@ exports.showLive = async (req, res) => {
 
       // Use floor number for Alert queries
       alerts[gate] = await Alert.findOne({ floor: floorNumber }).sort({ createdAt: -1 }).lean();
+
+      // Get current visitors for this floor
+      const currentVisitors = await Visitor.find({
+        floor: floorNumber,
+        status: 'approved',
+        expectedArrival: { $lte: new Date() },
+        expectedDeparture: { $gte: new Date() }
+      }).lean();
+
+      visitorsByGate[gate] = currentVisitors;
     }
 
-    res.render('live', { dataByFloor, thresholds, alerts });
+    res.render('live', { 
+      dataByFloor, 
+      thresholds, 
+      alerts, 
+      visitorsByGate,
+      gracePeriodMinutes: req.app.get('visitorSettings').gracePeriodMinutes
+    });
   } catch (err) {
     console.error('❌ Live view error:', err.message);
     res.status(500).send('Error loading live view');

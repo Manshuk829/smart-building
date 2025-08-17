@@ -7,9 +7,15 @@ const sensorDataSchema = new mongoose.Schema({
     type: String, // e.g., "1", "2"
     required: true
   },
+  node: {
+    type: Number, // 1-4 for each floor (4 nodes per floor)
+    min: 1,
+    max: 4,
+    required: false // Optional for backward compatibility
+  },
   type: {
     type: String,
-    required: true // e.g., 'temp', 'gas', 'ml-alert', 'intruderImage'
+    required: true // e.g., 'temp', 'gas', 'ml-alert', 'intruderImage', 'flame'
   },
   payload: {
     type: mongoose.Schema.Types.Mixed, // Can be Number, Boolean, or Base64 String

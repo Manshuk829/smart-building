@@ -31,12 +31,13 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // ======================== SENSOR DATA ========================
     if (topic === 'iot/sensors') {
+      const node = toNumber(data.node) || 1; // Default to node 1 if not specified
       const sensors = {
         temp: toNumber(data.temp),
         humidity: toNumber(data.humidity),
         gas: toNumber(data.gas),
         vibration: toNumber(data.vibration),
-        flame: parseBool(data.flame),
+        flame: toNumber(data.flame), // Now numeric value for flame sensors
         motion: parseBool(data.motion),
       };
 
@@ -45,7 +46,14 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
       for (const [type, value] of Object.entries(sensors)) {
         if (value !== undefined) {
-          sensorEntries.push({ topic, floor: floorStr, type, payload: value, source: 'sensor' });
+          sensorEntries.push({ 
+            topic, 
+            floor: floorStr, 
+            node, // Add node information
+            type, 
+            payload: value, 
+            source: 'sensor' 
+          });
         }
       }
 

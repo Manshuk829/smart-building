@@ -1,10 +1,14 @@
 <nav class="navbar">
   <ul class="nav-links">
-    <li><a href="/">🏠 Dashboard</a></li>
+    <li><a href="/dashboard">🏠 Dashboard</a></li>
     <li><a href="/live">📹 Live</a></li>
     <li><a href="/alerts">🚨 ML Alerts</a></li>
     <li><a href="/charts">📈 Charts</a></li>
     <li><a href="/history">📜 History</a></li>
+    <li><a href="/visitors">👥 Visitors</a></li>
+    <% if (user && user.role === 'admin') { %>
+      <li><a href="/admin/users">👨‍💼 Admin</a></li>
+    <% } %>
     <li><a href="/logout">🚪 Logout</a></li>
   </ul>
 </nav>

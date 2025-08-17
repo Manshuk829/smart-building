@@ -169,6 +169,43 @@ function captureSnapshot(gate) {
   addSmartAlert('system', `Snapshot captured for Gate ${gate}`, 'info');
 }
 
+// Visitor Access Code Verification
+function verifyVisitorAccess(gate) {
+  const accessCode = prompt(`Enter visitor access code for Gate ${gate}:`);
+  if (!accessCode) return;
+  
+  fetch('/api/visitor/check', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ accessCode: accessCode.trim() })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.valid) {
+      addSmartAlert('visitor', `Visitor ${data.visitor.name} verified for ${data.visitor.registeredFor} on Floor ${data.visitor.floor}`, 'success');
+      
+      // Update visitor status on the page
+      const visitorInfo = document.getElementById(`visitor-info-${gate}`);
+      if (visitorInfo) {
+        visitorInfo.innerHTML = `
+          <div class="visitor-verified">
+            <strong>✓ Verified Visitor:</strong> ${data.visitor.name}<br>
+            <small>Visiting: ${data.visitor.registeredFor} | Purpose: ${data.visitor.purpose}</small>
+          </div>
+        `;
+      }
+    } else {
+      addSmartAlert('threat', `Invalid access code: ${data.message}`, 'warning');
+    }
+  })
+  .catch(err => {
+    console.error('Error verifying visitor access:', err);
+    addSmartAlert('system', 'Error verifying visitor access', 'error');
+  });
+}
+
 function startRecording(gate) {
   addSmartAlert('system', `Recording started for Gate ${gate}`, 'info');
   
@@ -262,37 +299,119 @@ function detectMotion(gate, data) {
   updateAIAnalytics();
 }
 
-// Enhanced Intruder Detection
+// Enhanced Intruder Detection with Visitor Check
 function handleIntruderDetection(gate, data) {
-  intruderCount++;
-  const box = document.getElementById(`intruder-${gate}`);
-  const img = document.getElementById(`intruder-img-${gate}`);
-  const nameEl = document.getElementById(`intruder-name-${gate}`);
-  const timeEl = document.getElementById(`intruder-time-${gate}`);
-  const confidenceEl = document.getElementById(`intruder-confidence-${gate}`);
-  const threatEl = document.getElementById(`intruder-threat-${gate}`);
-  const actionEl = document.getElementById(`intruder-action-${gate}`);
+  // First, check if this might be a registered visitor
+  checkForRegisteredVisitor(gate, data).then(isVisitor => {
+    if (isVisitor) {
+      // Handle as known visitor
+      handleKnownVisitor(gate, data);
+      return;
+    }
+
+    // Proceed with intruder detection
+    intruderCount++;
+    const box = document.getElementById(`intruder-${gate}`);
+    const img = document.getElementById(`intruder-img-${gate}`);
+    const nameEl = document.getElementById(`intruder-name-${gate}`);
+    const timeEl = document.getElementById(`intruder-time-${gate}`);
+    const confidenceEl = document.getElementById(`intruder-confidence-${gate}`);
+    const threatEl = document.getElementById(`intruder-threat-${gate}`);
+    const actionEl = document.getElementById(`intruder-action-${gate}`);
+    if (!box || !img) return;
+    
+    const confidence = Math.floor(Math.random() * 20 + 80); // 80-100%
+    const threatLevel = detectThreatLevel(gate, data);
+    const currentTime = new Date().toLocaleTimeString();
+    
+    if (nameEl) nameEl.textContent = 'Intruder';
+    if (timeEl) timeEl.textContent = currentTime;
+    if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
+    if (threatEl) threatEl.textContent = threatLevel;
+    if (actionEl) actionEl.textContent = 'Alert Sent';
+    
+    // Set intruder image
+    if (data && data.intruderImage) {
+      img.style.display = 'block';
+      img.src = `data:image/jpeg;base64,${data.intruderImage}`;
+    } else {
+      img.style.display = 'block';
+      img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    }
+    
+    box.style.display = 'block';
+    addSmartAlert('intruder', `Intruder detected at Gate ${gate} with ${confidence}% confidence`, 'critical');
+    setTimeout(() => { box.style.display = 'none'; }, 30000);
+    updateSecurityScore();
+    updateAIAnalytics();
+  });
+}
+
+// Check for registered visitor
+async function checkForRegisteredVisitor(gate, data) {
+  try {
+    // Get current visitors for this floor
+    const floorNumber = parseInt(gate.replace('gate', ''), 10);
+    const response = await fetch(`/api/visitors/floor/${floorNumber}`);
+    const { visitors } = await response.json();
+    
+    if (visitors && visitors.length > 0) {
+      // Check if any visitor is expected around this time
+      const now = new Date();
+      const gracePeriod = 5 * 60 * 1000; // 5 minutes grace period
+      
+      for (const visitor of visitors) {
+        const arrivalTime = new Date(visitor.expectedArrival);
+        const departureTime = new Date(visitor.expectedDeparture);
+        
+        if (now >= arrivalTime - gracePeriod && now <= departureTime + gracePeriod) {
+          // This could be the expected visitor
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  } catch (err) {
+    console.error('Error checking for registered visitor:', err);
+    return false;
+  }
+}
+
+// Handle known visitor
+function handleKnownVisitor(gate, data) {
+  const box = document.getElementById(`known-person-${gate}`);
+  const img = document.getElementById(`known-person-img-${gate}`);
+  const nameEl = document.getElementById(`known-person-name-${gate}`);
+  const timeEl = document.getElementById(`known-person-time-${gate}`);
+  const confidenceEl = document.getElementById(`known-person-confidence-${gate}`);
+  const accessEl = document.getElementById(`known-person-access-${gate}`);
+  const lastSeenEl = document.getElementById(`known-person-last-${gate}`);
+  
   if (!box || !img) return;
-  const confidence = Math.floor(Math.random() * 20 + 80); // 80-100%
-  const threatLevel = detectThreatLevel(gate, data);
+  
+  // Known visitor data
+  const visitorName = data && data.name ? data.name : 'Expected Visitor';
+  const confidence = Math.floor(Math.random() * 15 + 85); // 85-100%
   const currentTime = new Date().toLocaleTimeString();
-  if (nameEl) nameEl.textContent = 'Intruder';
+  
+  if (nameEl) nameEl.textContent = visitorName;
   if (timeEl) timeEl.textContent = currentTime;
-  if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
-  if (threatEl) threatEl.textContent = threatLevel;
-  if (actionEl) actionEl.textContent = 'Alert Sent';
-  // Set intruder image
+  if (confidenceEl) confidenceEl.textContent = `Confidence: ${confidence}%`;
+  if (accessEl) accessEl.textContent = 'Authorized Visitor';
+  if (lastSeenEl) lastSeenEl.textContent = 'Just now';
+  
+  // Show visitor image for verification
+  img.style.display = 'block';
   if (data && data.intruderImage) {
-    img.style.display = 'block';
     img.src = `data:image/jpeg;base64,${data.intruderImage}`;
   } else {
-    img.style.display = 'block';
     img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
   }
+  
   box.style.display = 'block';
-  addSmartAlert('intruder', `Intruder detected at Gate ${gate} with ${confidence}% confidence`, 'critical');
-  setTimeout(() => { box.style.display = 'none'; }, 30000);
-  updateSecurityScore();
+  addSmartAlert('visitor', `Expected visitor ${visitorName} detected at Gate ${gate}`, 'info');
+  setTimeout(() => { box.style.display = 'none'; }, 20000);
   updateAIAnalytics();
 }
 // Known Person Detection

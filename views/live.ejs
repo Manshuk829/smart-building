@@ -327,6 +327,11 @@
       color: white;
     }
 
+    .control-btn.info {
+      background: #17a2b8;
+      color: white;
+    }
+
     .control-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -594,6 +599,24 @@
             <button class="control-btn danger" data-gate="<%= gate %>" onclick="emergencyLockdown(<%= gate %>)">
               <i class="fas fa-lock"></i> Lockdown
             </button>
+            <button class="control-btn info" data-gate="<%= gate %>" onclick="verifyVisitorAccess(<%= gate %>)">
+              <i class="fas fa-user-check"></i> Verify Visitor
+            </button>
+          </div>
+          
+          <!-- Visitor Information -->
+          <div class="visitor-info" id="visitor-info-<%= gate %>" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 10px 0;">
+            <% if (visitorsByGate && visitorsByGate[`gate${gate}`] && visitorsByGate[`gate${gate}`].length > 0) { %>
+              <h4 style="color: white; margin: 0 0 10px 0;"><i class="fas fa-users"></i> Expected Visitors</h4>
+              <% visitorsByGate[`gate${gate}`].forEach(visitor => { %>
+                <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 5px; margin: 5px 0; color: white;">
+                  <strong><%= visitor.name %></strong> - Visiting <%= visitor.registeredFor %><br>
+                  <small>Purpose: <%= visitor.purpose %> | Arrival: <%= new Date(visitor.expectedArrival).toLocaleString() %></small>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div style="color: white; font-style: italic;">No expected visitors for this floor</div>
+            <% } %>
           </div>
 
           <!-- AI Analytics -->

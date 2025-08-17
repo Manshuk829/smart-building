@@ -323,6 +323,48 @@
       height: 60px;
       margin-top: 10px;
     }
+
+    /* Flame Sensor Nodes */
+    .flame-nodes {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .flame-node {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .node-label {
+      font-weight: bold;
+      color: #666;
+    }
+
+    .node-value {
+      font-weight: bold;
+    }
+
+    .node-value.normal {
+      color: #28a745;
+    }
+
+    .node-value.danger {
+      color: #dc3545;
+      animation: pulse 1s infinite;
+    }
+
+    .no-data {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 10px;
+    }
   </style>
   <script defer>
     document.addEventListener("DOMContentLoaded", () => {
@@ -714,13 +756,22 @@
             </div></div>
           </div>
           <div class="sensor-box"><i class="fas fa-fire"></i>
-            <div><div class="sensor-label">Flame</div><div class="sensor-value" id="flame-floor-<%= floor %>">
-              <% if (data['flame'] !== undefined) { %>
-                <%= data['flame'] ? '🔥 Flame Detected' : '✅ Normal' %>
-              <% } else { %>
-                N/A
-              <% } %>
-            </div></div>
+            <div><div class="sensor-label">Flame Sensors</div>
+              <div class="flame-nodes" id="flame-nodes-<%= floor %>">
+                <% if (flameDataByFloor && flameDataByFloor[floor] && flameDataByFloor[floor].length > 0) { %>
+                  <% flameDataByFloor[floor].forEach(node => { %>
+                    <div class="flame-node">
+                      <span class="node-label">Node <%= node.node %>:</span>
+                      <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
+                        <%= node.value > thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
+                      </span>
+                    </div>
+                  <% }); %>
+                <% } else { %>
+                  <div class="no-data">No flame sensor data</div>
+                <% } %>
+              </div>
+            </div>
           </div>
           <div class="sensor-box"><i class="fas fa-running"></i>
             <div><div class="sensor-label">Motion</div><div class="sensor-value" id="motion-floor-<%= floor %>">

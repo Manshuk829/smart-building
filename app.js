@@ -11,6 +11,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
+const visitorRoutes = require('./routes/visitorRoutes');
 
 // Initialize Express App
 const app = express();
@@ -20,11 +21,18 @@ app.set('trust proxy', 1);
 
 // Global App Configs
 app.set('floors', [1, 2, 3, 4]);
+app.set('nodesPerFloor', 4); // 4 nodes per floor
 app.set('thresholds', {
   temperature: 50,
   humidity: 70,
   gas: 300,
   vibration: 5.0,
+  flame: 100, // Flame sensor threshold
+});
+app.set('visitorSettings', {
+  maxVisitorsPerPerson: 3, // Max visitors a known person can register
+  visitorExpiryHours: 24, // How long visitor access lasts
+  gracePeriodMinutes: 5, // Grace period before triggering intruder alert
 });
 
 // ✅ View Engine Setup
@@ -81,6 +89,7 @@ app.use('/', pageRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
+app.use('/', visitorRoutes);
 
 // === Automatic Cleanup of Old Images in /public/snapshot ===
 const cron = require('node-cron');
