@@ -95,7 +95,6 @@ const visitorSchema = new mongoose.Schema({
 
 // Index for efficient queries
 visitorSchema.index({ status: 1, expectedArrival: 1 });
-visitorSchema.index({ accessCode: 1 });
 visitorSchema.index({ registeredBy: 1 });
 
 // Method to check if visitor is currently valid
