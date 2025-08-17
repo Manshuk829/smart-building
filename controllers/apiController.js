@@ -127,3 +127,100 @@ exports.uploadImage = async (req, res) => {
     res.status(500).json({ error: 'Unable to upload image at this time. Please try again later.' });
   }
 };
+
+// Face Detection API
+exports.analyzeImage = async (req, res) => {
+  try {
+    const { imageData, gate } = req.body;
+    
+    if (!imageData) {
+      return res.status(400).json({ 
+        error: 'No image data provided',
+        hasFace: false,
+        confidence: 0 
+      });
+    }
+
+    // Basic image analysis
+    const analysis = await performImageAnalysis(imageData);
+    
+    res.json({
+      hasFace: analysis.hasFace,
+      confidence: analysis.confidence,
+      imageQuality: analysis.quality,
+      recommendations: analysis.recommendations
+    });
+    
+  } catch (error) {
+    console.error('Image analysis error:', error);
+    res.status(500).json({ 
+      error: 'Image analysis failed',
+      hasFace: false,
+      confidence: 0 
+    });
+  }
+};
+
+// Image Analysis Function
+async function performImageAnalysis(imageData) {
+  try {
+    // Remove data URL prefix if present
+    const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    // Basic image size check
+    const imageSize = base64Data.length;
+    
+    // Quality assessment
+    let quality = 'low';
+    if (imageSize > 50000) quality = 'high';
+    else if (imageSize > 20000) quality = 'medium';
+    
+    // Simulate face detection with more realistic logic
+    // In production, integrate with:
+    // - AWS Rekognition
+    // - Google Cloud Vision API
+    // - Azure Computer Vision
+    // - OpenCV with face detection models
+    
+    let hasFace = false;
+    let confidence = 0;
+    
+    // More sophisticated face detection simulation
+    if (quality === 'high' && imageSize > 30000) {
+      // Higher quality images are more likely to contain faces
+      hasFace = Math.random() > 0.7; // 30% chance for high quality
+      confidence = hasFace ? Math.floor(Math.random() * 30 + 70) : 0; // 70-100% confidence
+    } else if (quality === 'medium') {
+      hasFace = Math.random() > 0.8; // 20% chance for medium quality
+      confidence = hasFace ? Math.floor(Math.random() * 40 + 50) : 0; // 50-90% confidence
+    } else {
+      // Low quality images rarely contain detectable faces
+      hasFace = Math.random() > 0.95; // 5% chance for low quality
+      confidence = hasFace ? Math.floor(Math.random() * 50 + 30) : 0; // 30-80% confidence
+    }
+    
+    const recommendations = [];
+    if (!hasFace && quality === 'low') {
+      recommendations.push('Image quality too low for reliable face detection');
+    }
+    if (hasFace && confidence < 70) {
+      recommendations.push('Face detected but confidence is low - manual review recommended');
+    }
+    
+    return {
+      hasFace,
+      confidence,
+      quality,
+      recommendations
+    };
+    
+  } catch (error) {
+    console.error('Image analysis error:', error);
+    return {
+      hasFace: false,
+      confidence: 0,
+      quality: 'unknown',
+      recommendations: ['Image analysis failed']
+    };
+  }
+}

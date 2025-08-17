@@ -130,3 +130,118 @@ exports.getMLAlertStats = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// Enhanced Admin Dashboard with Pagination
+exports.showAdminDashboard = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+    
+    const skip = (page - 1) * limit;
+    
+    // Build query filters
+    const query = {};
+    if (search) {
+      query.$or = [
+        { username: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { role: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (status) {
+      query.status = status;
+    }
+    
+    // Get users with pagination
+    const users = await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limit);
+    
+    // Get recent audit logs with pagination
+    const logs = await AuditLog.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('performedBy', 'username')
+      .lean();
+    
+    // Get system statistics
+    const stats = await getSystemStats();
+    
+    res.render('admin_users', {
+      users,
+      logs,
+      stats,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalUsers,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
+      filters: {
+        search,
+        status
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ Admin dashboard error:', err);
+    res.status(500).render('admin_users', {
+      users: [],
+      logs: [],
+      stats: {},
+      pagination: {},
+      filters: {},
+      error: 'Unable to load admin dashboard'
+    });
+  }
+};
+
+// Get System Statistics
+async function getSystemStats() {
+  try {
+    const [
+      totalUsers,
+      adminUsers,
+      guestUsers,
+      totalAlerts,
+      recentAlerts,
+      totalVisitors,
+      activeVisitors
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'admin' }),
+      User.countDocuments({ role: 'guest' }),
+      Alert.countDocuments(),
+      Alert.countDocuments({ createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+      Visitor.countDocuments(),
+      Visitor.countDocuments({ 
+        status: 'approved',
+        expectedArrival: { $lte: new Date() },
+        expectedDeparture: { $gte: new Date() }
+      })
+    ]);
+    
+    return {
+      totalUsers,
+      adminUsers,
+      guestUsers,
+      totalAlerts,
+      recentAlerts,
+      totalVisitors,
+      activeVisitors
+    };
+  } catch (error) {
+    console.error('Error getting system stats:', error);
+    return {};
+  }
+}

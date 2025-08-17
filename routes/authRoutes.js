@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { requireLogin } = require('../middleware/authMiddleware');
 
 // =====================
 // 🔐 AUTHENTICATION ROUTES
@@ -29,6 +30,11 @@ router.post('/forgot', authController.forgot);         // Send reset link via em
 // 🔁 Reset Password via Token
 router.get('/reset/:token', authController.showReset); // Show reset form
 router.post('/reset/:token', authController.reset);    // Handle reset submission
+
+// Profile routes
+router.get('/profile', requireLogin, authController.showProfile);
+router.post('/profile/update', requireLogin, authController.updateProfile);
+router.post('/profile/delete', requireLogin, authController.deleteAccount);
 
 // 🚪 Logout
 router.get('/logout', authController.logout);          // Clear session and redirect to login

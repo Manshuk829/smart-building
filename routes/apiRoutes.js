@@ -13,6 +13,9 @@ router.post('/alert', requireAdmin, apiController.triggerAlert);
 // POST endpoint for ESP32-CAM image upload
 router.post('/upload-image', apiController.uploadImage);
 
+// Face Detection API
+router.post('/analyze-image', apiController.analyzeImage);
+
 // ✅ Developer sanity check (optional)
 if (process.env.NODE_ENV !== 'production') {
   if (typeof apiController.saveSensorData !== 'function') {

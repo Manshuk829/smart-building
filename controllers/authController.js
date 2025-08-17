@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog'); // Added AuditLog import
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
@@ -218,5 +219,140 @@ exports.reset = async (req, res) => {
   } catch (error) {
     console.error("❌ Reset password error:", error);
     res.render('reset', { token: req.params.token, error: 'Failed to reset password.', success: null });
+  }
+};
+
+// User Profile Management
+exports.showProfile = async (req, res) => {
+  try {
+    if (!req.session.authUser) {
+      return res.redirect('/login');
+    }
+    
+    const user = await User.findById(req.session.authUser._id).lean();
+    if (!user) {
+      req.session.destroy();
+      return res.redirect('/login');
+    }
+    
+    res.render('profile', {
+      user,
+      success: req.query.success,
+      error: req.query.error
+    });
+    
+  } catch (err) {
+    console.error('❌ Profile error:', err);
+    res.redirect('/login');
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    if (!req.session.authUser) {
+      return res.redirect('/login');
+    }
+    
+    const { username, email, currentPassword, newPassword, confirmPassword } = req.body;
+    
+    // Validate input
+    if (!username || !email) {
+      return res.redirect('/profile?error=Username and email are required');
+    }
+    
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+      _id: { $ne: req.session.authUser._id }
+    });
+    
+    if (existingUser) {
+      return res.redirect('/profile?error=Username or email already exists');
+    }
+    
+    // Update basic info
+    const updateData = { username, email };
+    
+    // Handle password change
+    if (currentPassword && newPassword && confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        return res.redirect('/profile?error=New passwords do not match');
+      }
+      
+      if (newPassword.length < 6) {
+        return res.redirect('/profile?error=Password must be at least 6 characters');
+      }
+      
+      // Verify current password
+      const user = await User.findById(req.session.authUser._id);
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      
+      if (!isValidPassword) {
+        return res.redirect('/profile?error=Current password is incorrect');
+      }
+      
+      // Hash new password
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+    
+    // Update user
+    await User.findByIdAndUpdate(req.session.authUser._id, updateData);
+    
+    // Update session
+    req.session.authUser = { ...req.session.authUser, username, email };
+    
+    // Log the action
+    await AuditLog.create({
+      action: 'Profile Updated',
+      performedBy: req.session.authUser._id,
+      details: `User ${username} updated their profile`
+    });
+    
+    res.redirect('/profile?success=Profile updated successfully');
+    
+  } catch (err) {
+    console.error('❌ Profile update error:', err);
+    res.redirect('/profile?error=Failed to update profile');
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    if (!req.session.authUser) {
+      return res.redirect('/login');
+    }
+    
+    const { confirmPassword } = req.body;
+    
+    if (!confirmPassword) {
+      return res.redirect('/profile?error=Password confirmation required');
+    }
+    
+    // Verify password
+    const user = await User.findById(req.session.authUser._id);
+    const isValidPassword = await bcrypt.compare(confirmPassword, user.password);
+    
+    if (!isValidPassword) {
+      return res.redirect('/profile?error=Password is incorrect');
+    }
+    
+    // Log the action before deletion
+    await AuditLog.create({
+      action: 'Account Deleted',
+      performedBy: req.session.authUser._id,
+      details: `User ${user.username} deleted their account`
+    });
+    
+    // Delete user
+    await User.findByIdAndDelete(req.session.authUser._id);
+    
+    // Destroy session
+    req.session.destroy();
+    
+    res.redirect('/login?message=Account deleted successfully');
+    
+  } catch (err) {
+    console.error('❌ Account deletion error:', err);
+    res.redirect('/profile?error=Failed to delete account');
   }
 };

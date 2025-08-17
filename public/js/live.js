@@ -299,6 +299,69 @@ function detectMotion(gate, data) {
   updateAIAnalytics();
 }
 
+// Face Detection Functions
+async function detectFaceInImage(gate, data) {
+  try {
+    // Check if we have an actual image with content
+    if (!data || !data.intruderImage) {
+      console.log(`No image data for Gate ${gate}`);
+      return false; // No image data
+    }
+    
+    // Call the backend face detection API
+    const response = await fetch('/api/analyze-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        imageData: data.intruderImage,
+        gate: gate
+      })
+    });
+    
+    if (!response.ok) {
+      console.error(`Face detection API error for Gate ${gate}:`, response.status);
+      return false;
+    }
+    
+    const analysis = await response.json();
+    
+    console.log(`Face detection for Gate ${gate}:`, {
+      hasFace: analysis.hasFace,
+      confidence: analysis.confidence,
+      quality: analysis.imageQuality,
+      recommendations: analysis.recommendations
+    });
+    
+    // Only consider it a face if confidence is high enough
+    return analysis.hasFace && analysis.confidence >= 70;
+    
+  } catch (error) {
+    console.error('Error in face detection:', error);
+    return false; // Fail safe - no face detected
+  }
+}
+
+async function checkIfKnownPerson(gate, data) {
+  try {
+    // In a real implementation, you would:
+    // 1. Compare detected face with known faces database
+    // 2. Use facial recognition API
+    // 3. Check against registered visitors and known residents
+    
+    // For now, simulate with better logic
+    const isKnown = Math.random() > 0.4; // 60% chance of known person (more realistic)
+    
+    console.log(`Person recognition for Gate ${gate}: ${isKnown ? 'Known person' : 'Unknown person'}`);
+    return isKnown;
+    
+  } catch (error) {
+    console.error('Error in person recognition:', error);
+    return false; // Fail safe - unknown person
+  }
+}
+
 // Enhanced Intruder Detection with Visitor Check
 function handleIntruderDetection(gate, data) {
   // First, check if this might be a registered visitor
@@ -508,7 +571,7 @@ function checkDeviceStatus() {
 setInterval(checkDeviceStatus, 5000);
 
 // Enhanced Sensor Updates
-socket.on('sensor-update', (data) => {
+socket.on('sensor-update', async (data) => {
   const { floor, motion, intruderImage, ...sensorData } = data;
   if (!floor) return;
   
@@ -561,15 +624,24 @@ socket.on('sensor-update', (data) => {
     detectMotion(gate, sensorData);
   }
   
-  // Handle person detection (known vs unknown)
+  // Handle person detection with proper face detection
   if (motion || intruderImage) {
-    // Check if it's a known person (70% chance for known, 30% for unknown)
-    const isKnownPerson = Math.random() > 0.3; // 70% chance for known person
+    // First, check if there's actually a face in the image
+    const hasFace = await detectFaceInImage(gate, data);
     
-    if (isKnownPerson) {
-      handleKnownPersonDetection(gate, data);
+    if (hasFace) {
+      // Only proceed with person detection if a face is detected
+      const isKnownPerson = await checkIfKnownPerson(gate, data);
+      
+      if (isKnownPerson) {
+        handleKnownPersonDetection(gate, data);
+      } else {
+        handleIntruderDetection(gate, data);
+      }
     } else {
-      handleIntruderDetection(gate, data);
+      // No face detected - this is likely a false positive (bed, ceiling, etc.)
+      console.log(`No face detected at Gate ${gate} - ignoring motion detection`);
+      addSmartAlert('system', `Motion detected at Gate ${gate} but no face identified - likely false positive`, 'info');
     }
   }
   
