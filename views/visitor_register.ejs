@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>👥 Visitor Registration - Smart Building</title>
+  <style>
+    .visitor-form {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .btn {
+      background: #007bff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .btn:hover {
+      background: #0056b3;
+    }
+    
+    .visitors-list {
+      margin-top: 40px;
+    }
+    
+    .visitor-card {
+      background: #f8f9fa;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 4px solid #007bff;
+    }
+    
+    .visitor-card.approved {
+      border-left-color: #28a745;
+    }
+    
+    .visitor-card.pending {
+      border-left-color: #ffc107;
+    }
+    
+    .visitor-card.denied {
+      border-left-color: #dc3545;
+    }
+    
+    .visitor-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .visitor-details {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    
+    .access-code {
+      background: #e9ecef;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
+    }
+    
+    .error {
+      color: #dc3545;
+      background: #f8d7da;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    
+    .success {
+      color: #155724;
+      background: #d4edda;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <div class="container">
+    <h1><i class="fas fa-user-plus"></i> Visitor Registration</h1>
+    
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+    
+    <% if (success) { %>
+      <div class="success"><%= success %></div>
+    <% } %>
+    
+    <div class="visitor-form">
+      <h2>Register New Visitor</h2>
+      <form method="POST" action="/visitors">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Visitor Name *</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" name="phone" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email (Optional)</label>
+          <input type="email" id="email" name="email">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="registeredFor">Visiting *</label>
+            <input type="text" id="registeredFor" name="registeredFor" placeholder="Name of person being visited" required>
+          </div>
+          <div class="form-group">
+            <label for="floor">Floor *</label>
+            <select id="floor" name="floor" required>
+              <option value="">Select Floor</option>
+              <% floors.forEach(floor => { %>
+                <option value="<%= floor %>">Floor <%= floor %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="purpose">Purpose of Visit *</label>
+          <input type="text" id="purpose" name="purpose" placeholder="e.g., Meeting, Delivery, Maintenance" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expectedArrival">Expected Arrival *</label>
+            <input type="datetime-local" id="expectedArrival" name="expectedArrival" required>
+          </div>
+          <div class="form-group">
+            <label for="expectedDeparture">Expected Departure *</label>
+            <input type="datetime-local" id="expectedDeparture" name="expectedDeparture" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Additional Notes</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Any additional information..."></textarea>
+        </div>
+        
+        <button type="submit" class="btn">
+          <i class="fas fa-user-plus"></i> Register Visitor
+        </button>
+      </form>
+    </div>
+    
+    <% if (visitors && visitors.length > 0) { %>
+      <div class="visitors-list">
+        <h2>Recent Visitors</h2>
+        <% visitors.forEach(visitor => { %>
+          <div class="visitor-card <%= visitor.status %>">
+            <div class="visitor-name"><%= visitor.name %></div>
+            <div class="visitor-details">
+              Visiting: <%= visitor.registeredFor %> | Floor: <%= visitor.floor %> | 
+              Status: <span class="badge badge-<%= visitor.status %>"><%= visitor.status.toUpperCase() %></span>
+              <% if (visitor.accessCode) { %>
+                | Access Code: <span class="access-code"><%= visitor.accessCode %></span>
+              <% } %>
+            </div>
+            <div class="visitor-details">
+              Purpose: <%= visitor.purpose %> | 
+              Arrival: <%= new Date(visitor.expectedArrival).toLocaleString() %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔐 Smart Building Security - Login</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a6fd8;
+      --secondary: #764ba2;
+      --accent: #f093fb;
+      --success: #4facfe;
+      --warning: #43e97b;
+      --danger: #fa709a;
+      --white: #ffffff;
+      --text: #2c3e50;
+      --text-light: #7f8c8d;
+      --bg: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      --shadow-hover: 0 30px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    [data-theme="dark"] {
+      --primary: #4facfe;
+      --primary-dark: #00f2fe;
+      --secondary: #43e97b;
+      --accent: #fa709a;
+      --text: #ecf0f1;
+      --text-light: #bdc3c7;
+      --bg: #1a1a2e;
+      --card-bg: rgba(30, 30, 50, 0.95);
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+      animation: backgroundShift 20s ease-in-out infinite;
+    }
+
+    @keyframes backgroundShift {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(1deg); }
+    }
+
+    /* Floating Particles */
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 6s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 7s; }
+    .particle:nth-child(9) { left: 90%; animation-delay: 8s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) scale(1); opacity: 0; }
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 450px;
+      margin: 20px;
+    }
+
+    .login-card {
+      backdrop-filter: blur(20px);
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      animation: slideUp 0.8s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      animation: gradientShift 3s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-5px);
+      transition: all 0.3s ease;
+    }
+
+    .header-section {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .logo i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-light);
+      font-weight: 400;
+    }
+
+    .form-section {
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      background: var(--card-bg);
+      padding: 0 0.5rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 1rem 1rem;
+      padding-left: 3rem;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      background: var(--glass-bg);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .form-group input:focus {
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input:focus + label,
+    .form-group input:not(:placeholder-shown) + label {
+      top: -0.5rem;
+      left: 0.8rem;
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .form-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1.2rem;
+      transition: color 0.3s ease;
+    }
+
+    .form-group input:focus ~ i {
+      color: var(--primary);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: color 0.3s ease;
+    }
+
+    .password-toggle:hover {
+      color: var(--primary);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .login-btn:hover::before {
+      left: 100%;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading-spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: shake 0.5s ease-in-out;
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+    }
+
+    .success-message {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: slideIn 0.5s ease-out;
+      box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .extra-links {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .extra-links a {
+      color: var(--primary);
+      text-decoration: none;
+      margin: 0 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .extra-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .extra-links a:hover::after {
+      width: 100%;
+    }
+
+    .extra-links a:hover {
+      color: var(--secondary);
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      z-index: 20;
+    }
+
+    .theme-toggle:hover {
+      transform: rotate(180deg);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .theme-toggle i {
+      color: var(--text);
+      font-size: 1.2rem;
+    }
+
+    .security-features {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .security-title {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .security-icons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .security-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--glass-bg);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+    }
+
+    .security-icon:hover {
+      transform: translateY(-2px);
+      background: rgba(102, 126, 234, 0.2);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 10px;
+      }
+      
+      .login-card {
+        padding: 2rem 1.5rem;
+      }
+      
+      .title {
+        font-size: 1.5rem;
+      }
+      
+      .extra-links a {
+        display: block;
+        margin: 0.5rem 0;
+      }
+    }
+
+    /* Loading Animation */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .loading-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .loading-content {
+      text-align: center;
+      color: white;
+    }
+
+    .loading-spinner-large {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Background Particles -->
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Theme Toggle -->
+  <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+    <i class="fas fa-moon"></i>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="header-section">
+        <div class="logo-container">
+          <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+        </div>
+        <h1 class="title">Smart Building Security</h1>
+        <p class="subtitle">Secure access to your intelligent monitoring system</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i> <%= error %>
+        </div>
+      <% } %>
+
+      <% if (success) { %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i> <%= success %> Redirecting...
+        </div>
+        <script>
+          setTimeout(() => window.location.href = "/", 2000);
+        </script>
+      <% } %>
+
+      <form method="POST" action="/login" onsubmit="return validateAndSubmit()" class="form-section">
+        <div class="form-group">
+          <input type="text" name="username" id="username" placeholder=" " required value="<%= typeof oldUsername !== 'undefined' ? oldUsername : '' %>" />
+          <label for="username">Username</label>
+          <i class="fas fa-user"></i>
+        </div>
+
+        <div class="form-group">
+          <input type="password" name="password" id="passwordInput" placeholder=" " required />
+          <label for="passwordInput">Password</label>
+          <i class="fas fa-lock"></i>
+          <button type="button" class="password-toggle" onclick="togglePassword()">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+          <div class="loading-spinner" id="loadingSpinner"></div>
+          <span id="loginText">Sign In</span>
+        </button>
+      </form>
+
+      <div class="extra-links">
+        <a href="/forgot">Forgot Password?</a>
+        <a href="/register">Create Account</a>
+      </div>
+
+      <div class="security-features">
+        <div class="security-title">Advanced Security Features</div>
+        <div class="security-icons">
+          <div class="security-icon" title="AI-Powered Detection">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div class="security-icon" title="Real-time Monitoring">
+            <i class="fas fa-video"></i>
+          </div>
+          <div class="security-icon" title="Encrypted Communication">
+            <i class="fas fa-lock"></i>
+          </div>
+          <div class="security-icon" title="Multi-factor Authentication">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="loading-spinner-large"></div>
+      <p>Authenticating...</p>
+    </div>
+  </div>
+
+  <script>
+    // Theme Management
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const newTheme = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update theme toggle icon
+      const icon = document.querySelector('.theme-toggle i');
+      icon.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+
+    // Initialize theme
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      const icon = document.querySelector('.theme-toggle i');
+      icon.className = savedTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    });
+
+    // Password Toggle
+    function togglePassword() {
+      const input = document.getElementById('passwordInput');
+      const icon = document.querySelector('.password-toggle i');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+
+    // Form Validation and Submission
+    function validateAndSubmit() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('passwordInput').value.trim();
+      const loginBtn = document.getElementById('loginBtn');
+      const loginText = document.getElementById('loginText');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      // Clear previous errors
+      const errorMessages = document.querySelectorAll('.error-message');
+      errorMessages.forEach(msg => msg.remove());
+
+      // Validation
+      if (!username || !password) {
+        showError('Please fill in all fields.');
+        return false;
+      }
+
+      if (username.length < 3) {
+        showError('Username must be at least 3 characters long.');
+        return false;
+      }
+
+      if (password.length < 4) {
+        showError('Password must be at least 4 characters long.');
+        return false;
+      }
+
+      // Show loading state
+      loginBtn.disabled = true;
+      loginText.textContent = 'Signing In...';
+      loadingSpinner.style.display = 'inline-block';
+      loadingOverlay.classList.add('show');
+
+      // Simulate loading delay (remove in production)
+      setTimeout(() => {
+        // Form will submit normally
+        return true;
+      }, 1000);
+
+      return true;
+    }
+
+    // Error Display
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+      
+      const form = document.querySelector('.form-section');
+      form.insertBefore(errorDiv, form.firstChild);
+      
+      // Auto-remove error after 5 seconds
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.remove();
+        }
+      }, 5000);
+    }
+
+    // Success Display
+    function showSuccess(message) {
+      const successDiv = document.createElement('div');
+      successDiv.className = 'success-message';
+      successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+      
+      const form = document.querySelector('.form-section');
+      form.insertBefore(successDiv, form.firstChild);
+    }
+
+    // Input Focus Effects
+    document.querySelectorAll('.form-group input').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.classList.add('focused');
+      });
+      
+      input.addEventListener('blur', function() {
+        if (!this.value) {
+          this.parentElement.classList.remove('focused');
+        }
+      });
+    });
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+        const form = e.target.closest('form');
+        if (form) {
+          form.requestSubmit();
+        }
+      }
+    });
+
+    // Auto-focus username field
+    window.addEventListener('DOMContentLoaded', () => {
+      const usernameField = document.getElementById('username');
+      if (usernameField && !usernameField.value) {
+        usernameField.focus();
+      }
+    });
+
+    // Security Features Animation
+    document.querySelectorAll('.security-icon').forEach((icon, index) => {
+      icon.style.animationDelay = `${index * 0.1}s`;
+      icon.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px) scale(1.1)';
+      });
+      
+      icon.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+  </script>
+</body>
+</html>
