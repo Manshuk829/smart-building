@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>👥 Visitor Management - Smart Building</title>
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    
+    .pending { color: #ffc107; }
+    .approved { color: #28a745; }
+    .denied { color: #dc3545; }
+    .expired { color: #6c757d; }
+    
+    .visitors-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .visitors-table th,
+    .visitors-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .visitors-table th {
+      background: #f8f9fa;
+      font-weight: bold;
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-denied { background: #f8d7da; color: #721c24; }
+    .status-expired { background: #e2e3e5; color: #383d41; }
+    
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin: 2px;
+    }
+    
+    .btn-approve { background: #28a745; color: white; }
+    .btn-deny { background: #dc3545; color: white; }
+    .btn-edit { background: #007bff; color: white; }
+    
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .filter-tab {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .filter-tab.active {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <div class="container">
+    <h1><i class="fas fa-users-cog"></i> Visitor Management</h1>
+    
+    <!-- Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number pending"><%= stats.pending %></div>
+        <div class="stat-label">Pending Approval</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number approved"><%= stats.approved %></div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number denied"><%= stats.denied %></div>
+        <div class="stat-label">Denied</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number expired"><%= stats.expired %></div>
+        <div class="stat-label">Expired</div>
+      </div>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <div class="filter-tab <%= currentStatus === 'all' ? 'active' : '' %>" onclick="filterVisitors('all')">All</div>
+      <div class="filter-tab <%= currentStatus === 'pending' ? 'active' : '' %>" onclick="filterVisitors('pending')">Pending</div>
+      <div class="filter-tab <%= currentStatus === 'approved' ? 'active' : '' %>" onclick="filterVisitors('approved')">Approved</div>
+      <div class="filter-tab <%= currentStatus === 'denied' ? 'active' : '' %>" onclick="filterVisitors('denied')">Denied</div>
+      <div class="filter-tab <%= currentStatus === 'expired' ? 'active' : '' %>" onclick="filterVisitors('expired')">Expired</div>
+    </div>
+    
+    <!-- Visitors Table -->
+    <table class="visitors-table">
+      <thead>
+        <tr>
+          <th>Visitor Name</th>
+          <th>Contact</th>
+          <th>Visiting</th>
+          <th>Floor</th>
+          <th>Purpose</th>
+          <th>Arrival</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% visitors.forEach(visitor => { %>
+          <tr>
+            <td><strong><%= visitor.name %></strong></td>
+            <td>
+              <%= visitor.phone %><br>
+              <% if (visitor.email) { %>
+                <small><%= visitor.email %></small>
+              <% } %>
+            </td>
+            <td><%= visitor.registeredFor %></td>
+            <td>Floor <%= visitor.floor %></td>
+            <td><%= visitor.purpose %></td>
+            <td>
+              <%= new Date(visitor.expectedArrival).toLocaleDateString() %><br>
+              <small><%= new Date(visitor.expectedArrival).toLocaleTimeString() %></small>
+            </td>
+            <td>
+              <span class="status-badge status-<%= visitor.status %>">
+                <%= visitor.status.toUpperCase() %>
+              </span>
+              <% if (visitor.accessCode) { %>
+                <br><small>Code: <%= visitor.accessCode %></small>
+              <% } %>
+            </td>
+            <td>
+              <% if (visitor.status === 'pending') { %>
+                <button class="action-btn btn-approve" onclick="updateStatus('<%= visitor._id %>', 'approved')">
+                  Approve
+                </button>
+                <button class="action-btn btn-deny" onclick="updateStatus('<%= visitor._id %>', 'denied')">
+                  Deny
+                </button>
+              <% } %>
+              <button class="action-btn btn-edit" onclick="editVisitor('<%= visitor._id %>')">
+                Edit
+              </button>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  
+  <script>
+    function filterVisitors(status) {
+      window.location.href = `/admin/visitors?status=${status}`;
+    }
+    
+    function updateStatus(visitorId, status) {
+      const notes = prompt(`Add notes for ${status} action (optional):`);
+      
+      fetch(`/admin/visitors/${visitorId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status, notes })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(`Visitor ${status} successfully`);
+          location.reload();
+        } else {
+          alert('Error updating visitor status');
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Error updating visitor status');
+      });
+    }
+    
+    function editVisitor(visitorId) {
+      alert('Edit functionality coming soon!');
+    }
+  </script>
+</body>
+</html>

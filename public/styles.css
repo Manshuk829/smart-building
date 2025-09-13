@@ -1,0 +1,291 @@
+/* ===== Base Theme Colors ===== */
+:root {
+  --bg: #f4f6f9;
+  --text: #2c3e50;
+  --card: white;
+  --btn: #2c3e50;
+  --btn-hover: #1a252f;
+  --status-online: green;
+  --status-offline: red;
+  --highlight-bg: #ffd2d2;
+  --highlight-pulse: #ffb3b3;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --input-focus: #007BFF;
+}
+
+[data-theme="dark"] {
+  --bg: #121212;
+  --text: #f0f0f0;
+  --card: #1e1e1e;
+  --btn: #2980b9;
+  --btn-hover: #3498db;
+  --status-online: #00ff66;
+  --status-offline: #ff4d4d;
+  --highlight-bg: #661111;
+  --highlight-pulse: #882222;
+  --input-bg: #2a2a2a;
+  --input-border: #444;
+  --input-focus: #00bfff;
+}
+
+/* ===== Reset + Global ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 20px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ===== Container ===== */
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: var(--card);
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Headings ===== */
+h1, h2, h3 {
+  text-align: center;
+  color: var(--text);
+}
+
+/* ===== Record/Card ===== */
+.card, .record {
+  margin-top: 20px;
+  font-size: 1.1rem;
+  padding: 15px;
+  border-left: 5px solid #e0e0e0;
+  background: #fafafa;
+  border-radius: 8px;
+  color: var(--text);
+}
+
+/* ===== Buttons ===== */
+.button, .alert-button, .download-button {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: var(--btn);
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover, .alert-button:hover, .download-button:hover {
+  background-color: var(--btn-hover);
+}
+
+/* ===== Status Text ===== */
+.status-line, .mqtt-status, .last-updated {
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.online {
+  color: var(--status-online);
+}
+
+.offline {
+  color: var(--status-offline);
+}
+
+/* ===== ESP32-CAM & Intruder ===== */
+.esp32-cam img,
+.intruder-box img {
+  max-width: 100%;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  margin-top: 10px;
+}
+
+.intruder-box {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.intruder-box img {
+  border: 3px solid red;
+}
+
+.intruder-box h3 {
+  color: red;
+  margin-bottom: 10px;
+}
+
+/* ===== Chart Container ===== */
+.chart-container {
+  margin: 30px 0;
+}
+
+/* ===== Highlight Style ===== */
+.highlight {
+  color: #d8000c;
+  font-weight: bold;
+  background-color: var(--highlight-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { background-color: var(--highlight-bg); }
+  to   { background-color: var(--highlight-pulse); }
+}
+
+/* ===== ML Prediction Alert (Blinking + Glow) ===== */
+.prediction-alert {
+  background-color: #ffcccc;
+  color: #900;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 15px;
+  margin: 25px auto;
+  max-width: 600px;
+  border: 2px solid #f00;
+  border-radius: 10px;
+  display: none;
+}
+
+.prediction-alert.active {
+  display: block;
+  animation: blink-animation 1s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.7); /* 🔴 Glowing Effect */
+}
+
+@keyframes blink-animation {
+  0%, 100% {
+    background-color: #ffcccc;
+  }
+  50% {
+    background-color: #ff6666;
+  }
+}
+
+/* ===== Back Navigation Links ===== */
+.back {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.back a {
+  text-decoration: none;
+  font-weight: bold;
+  color: var(--btn);
+  margin: 0 15px;
+  font-size: 16px;
+}
+
+.back a:hover {
+  text-decoration: underline;
+}
+
+/* ===== Login Box ===== */
+.login-box {
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 30px 40px;
+  border-radius: 20px;
+  max-width: 400px;
+  margin: 80px auto;
+  text-align: center;
+  color: var(--text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.login-box h2 {
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 15px;
+  padding-left: 2.8rem;
+  margin: 10px 0 20px;
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.login-box input:focus {
+  border-color: var(--input-focus);
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--btn);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.login-box button:hover {
+  background-color: var(--btn-hover);
+}
+
+.login-box .error,
+.login-box .error-message {
+  color: #ff7070;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.login-box .success-message {
+  color: #00ffcc;
+  font-weight: bold;
+  animation: pulse 1s ease infinite;
+}
+
+.login-box .extra-links {
+  margin-top: 1rem;
+}
+
+.login-box .extra-links a {
+  color: var(--text);
+  text-decoration: underline;
+  margin: 0 10px;
+  font-size: 0.9rem;
+}
+
+/* ===== Dark Mode Toggle ===== */
+.dark-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+/* ===== Responsive Login Box ===== */
+@media (max-width: 500px) {
+  .login-box {
+    padding: 20px;
+    margin: 40px 10px;
+  }
+}
