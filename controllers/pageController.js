@@ -278,7 +278,27 @@ exports.showCharts = async (req, res) => {
       });
     });
 
-    const records = Object.values(groupedRecords).sort((a, b) => a.createdAt - b.createdAt);
+    let records = Object.values(groupedRecords).sort((a, b) => a.createdAt - b.createdAt);
+
+    // If no records found, generate sample data for demonstration
+    if (records.length === 0) {
+      console.log('No sensor data found, generating sample data for charts...');
+      records = [];
+      const sampleCount = 50;
+      
+      for (let i = 0; i < sampleCount; i++) {
+        const timestamp = new Date(now.getTime() - (sampleCount - i) * 60000); // 1 min intervals
+        records.push({
+          createdAt: timestamp,
+          temperature: 20 + Math.sin(i * 0.2) * 5 + Math.random() * 2,
+          humidity: 50 + Math.cos(i * 0.3) * 10 + Math.random() * 5,
+          gas: 200 + Math.sin(i * 0.1) * 50 + Math.random() * 20,
+          flame: Math.random() > 0.95 ? 1 : 0,
+          motion: Math.random() > 0.8 ? 1 : 0,
+          vibration: Math.random() * 2 + Math.sin(i * 0.4) * 0.5
+        });
+      }
+    }
 
     res.render('charts', {
       records,
@@ -289,5 +309,82 @@ exports.showCharts = async (req, res) => {
   } catch (err) {
     console.error('❌ Charts page error:', err.message);
     res.status(500).send('Error loading charts');
+  }
+};
+
+// 🚨 Evacuation Routes Page
+exports.showEvacuation = async (req, res) => {
+  try {
+    // Get current evacuation data from database
+    const evacuationData = {};
+    const floors = [1, 2, 3, 4];
+    
+    for (const floor of floors) {
+      // Get latest ML data for this floor
+      const mlData = await SensorData.find({ 
+        floor: String(floor), 
+        source: 'ml',
+        type: { $in: ['evacuation', 'threat', 'emergency'] }
+      })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+      // Get current sensor data for threat assessment
+      const sensorData = await SensorData.find({ 
+        floor: String(floor), 
+        source: 'sensor',
+        type: { $in: ['temp', 'gas', 'flame', 'motion'] }
+      })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+      // Determine floor status based on data
+      let status = 'safe';
+      let threats = [];
+      let evacuationTime = 3;
+
+      // Check for fire threats
+      const fireData = sensorData.filter(d => d.type === 'flame' && d.payload > 100);
+      if (fireData.length > 0) {
+        status = 'danger';
+        threats.push('fire');
+        evacuationTime = 1;
+      }
+
+      // Check for gas leaks
+      const gasData = sensorData.filter(d => d.type === 'gas' && d.payload > 300);
+      if (gasData.length > 0) {
+        status = status === 'safe' ? 'warning' : 'danger';
+        threats.push('gas');
+        evacuationTime = Math.min(evacuationTime, 2);
+      }
+
+      // Check for high temperature
+      const tempData = sensorData.filter(d => d.type === 'temp' && d.payload > 50);
+      if (tempData.length > 0) {
+        status = status === 'safe' ? 'warning' : 'danger';
+        threats.push('heat');
+        evacuationTime = Math.min(evacuationTime, 2);
+      }
+
+      evacuationData[floor] = {
+        status,
+        threats,
+        evacuationTime,
+        capacity: 50,
+        lastUpdate: new Date(),
+        routes: ['main', 'secondary', 'emergency']
+      };
+    }
+
+    res.render('evacuation', {
+      evacuationData,
+      thresholds
+    });
+  } catch (err) {
+    console.error('❌ Evacuation page error:', err.message);
+    res.status(500).send('Error loading evacuation routes');
   }
 };

@@ -123,31 +123,45 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // ======================== ESP32-CAM (Gate 1 & 2) ========================
     else if (topic === 'iot/esp32cam') {
-      if (!personName && !intruderImage) return;
+      // Handle ESP32-CAM data for gates
+      const gateNumber = floor; // floor should be 1 or 2 for gates
+      
+      // Always emit sensor update to show device is online
+      io.emit('sensor-update', {
+        floor: gateNumber,
+        intruderImage: intruderImage || undefined,
+        name: personName || 'Unknown',
+        motion: true, // ESP32-CAM typically indicates motion when sending data
+        timestamp: new Date()
+      });
 
-      if (personName?.toLowerCase() === 'intruder' && intruderImage) {
-        await SensorData.create({
-          topic,
-          floor: floorStr,
-          type: 'intruderImage',
-          source: 'esp32cam',
-          payload: intruderImage
-        });
+      // Only process intruder detection if we have image data
+      if (intruderImage) {
+        if (personName?.toLowerCase() === 'intruder') {
+          await SensorData.create({
+            topic,
+            floor: floorStr,
+            type: 'intruderImage',
+            source: 'esp32cam',
+            payload: intruderImage
+          });
+
+          io.emit('intruder-alert', {
+            floor: gateNumber,
+            image: intruderImage,
+            name: 'Intruder'
+          });
+        } else {
+          // Known person or visitor
+          io.emit('visitor-detected', {
+            floor: gateNumber,
+            image: intruderImage,
+            name: personName || 'Known Person'
+          });
+        }
       }
 
-      io.emit('sensor-update', {
-        floor,
-        intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
-        name: personName ?? 'Unknown'
-      });
-
-      io.emit('intruder-alert', {
-        floor,
-        image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
-        name: personName ?? 'Unknown'
-      });
-
-      console.log(`📸 ESP32-CAM Alert — ${personName ?? 'Unknown'} at Gate ${floor}`);
+      console.log(`📸 ESP32-CAM Data — ${personName || 'Motion'} at Gate ${gateNumber}`);
     }
 
     // ======================== UNKNOWN TOPIC ========================

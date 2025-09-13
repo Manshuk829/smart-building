@@ -96,6 +96,33 @@ function generateSampleData() {
   return sampleData;
 }
 
+// -------------------- Data Validation and Processing --------------------
+function validateAndProcessData(data) {
+  if (!data || !Array.isArray(data)) {
+    console.log('No valid data provided, generating sample data...');
+    return generateSampleData();
+  }
+  
+  // Filter out invalid entries
+  const validData = data.filter(entry => {
+    return entry && entry.createdAt && (
+      entry.temperature !== undefined ||
+      entry.humidity !== undefined ||
+      entry.gas !== undefined ||
+      entry.flame !== undefined ||
+      entry.motion !== undefined ||
+      entry.vibration !== undefined
+    );
+  });
+  
+  if (validData.length === 0) {
+    console.log('No valid sensor data found, generating sample data...');
+    return generateSampleData();
+  }
+  
+  return validData;
+}
+
 // -------------------- Enhanced Chart Creation --------------------
 function createChart(ctx, label, data, color, type = 'line', mlOverlayTimes = []) {
   // Ensure we have data to work with
@@ -336,11 +363,8 @@ function getChartLabel(chartId) {
 function renderCharts() {
   console.log('Starting chart rendering...');
   
-  // If no sensor data, generate sample data for testing
-  if (!sensorData || sensorData.length === 0) {
-    console.log('No sensor data found, generating sample data for testing...');
-    sensorData = generateSampleData();
-  }
+  // Validate and process data
+  sensorData = validateAndProcessData(sensorData);
   
   console.log('Sensor data available:', sensorData.length, 'records');
 
