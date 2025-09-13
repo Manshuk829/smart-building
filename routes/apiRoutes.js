@@ -16,6 +16,11 @@ router.post('/upload-image', apiController.uploadImage);
 // Face Detection API
 router.post('/analyze-image', apiController.analyzeImage);
 
+// ML Data API endpoints
+router.post('/ml-data', apiController.saveMLData);
+router.post('/evacuation-update', apiController.updateEvacuationRoutes);
+router.get('/ml-status', apiController.getMLStatus);
+
 // ✅ Developer sanity check (optional)
 if (process.env.NODE_ENV !== 'production') {
   if (typeof apiController.saveSensorData !== 'function') {

@@ -170,12 +170,13 @@ async function performImageAnalysis(imageData) {
     // Basic image size check
     const imageSize = base64Data.length;
     
-    // Quality assessment
+    // Quality assessment based on image size and characteristics
     let quality = 'low';
-    if (imageSize > 50000) quality = 'high';
-    else if (imageSize > 20000) quality = 'medium';
+    if (imageSize > 100000) quality = 'high';
+    else if (imageSize > 50000) quality = 'medium';
+    else if (imageSize < 10000) quality = 'very_low';
     
-    // Simulate face detection with more realistic logic
+    // More realistic face detection simulation
     // In production, integrate with:
     // - AWS Rekognition
     // - Google Cloud Vision API
@@ -185,26 +186,40 @@ async function performImageAnalysis(imageData) {
     let hasFace = false;
     let confidence = 0;
     
-    // More sophisticated face detection simulation
-    if (quality === 'high' && imageSize > 30000) {
-      // Higher quality images are more likely to contain faces
-      hasFace = Math.random() > 0.7; // 30% chance for high quality
-      confidence = hasFace ? Math.floor(Math.random() * 30 + 70) : 0; // 70-100% confidence
+    // Improved face detection logic based on image quality
+    if (quality === 'high') {
+      // High quality images have better face detection
+      hasFace = Math.random() > 0.6; // 40% chance for high quality
+      confidence = hasFace ? Math.floor(Math.random() * 25 + 75) : 0; // 75-100% confidence
     } else if (quality === 'medium') {
-      hasFace = Math.random() > 0.8; // 20% chance for medium quality
-      confidence = hasFace ? Math.floor(Math.random() * 40 + 50) : 0; // 50-90% confidence
+      hasFace = Math.random() > 0.75; // 25% chance for medium quality
+      confidence = hasFace ? Math.floor(Math.random() * 35 + 60) : 0; // 60-95% confidence
+    } else if (quality === 'low') {
+      hasFace = Math.random() > 0.9; // 10% chance for low quality
+      confidence = hasFace ? Math.floor(Math.random() * 40 + 40) : 0; // 40-80% confidence
     } else {
-      // Low quality images rarely contain detectable faces
-      hasFace = Math.random() > 0.95; // 5% chance for low quality
-      confidence = hasFace ? Math.floor(Math.random() * 50 + 30) : 0; // 30-80% confidence
+      // Very low quality images rarely contain detectable faces
+      hasFace = Math.random() > 0.98; // 2% chance for very low quality
+      confidence = hasFace ? Math.floor(Math.random() * 30 + 20) : 0; // 20-50% confidence
+    }
+    
+    // Additional validation - ensure confidence makes sense
+    if (hasFace && confidence < 30) {
+      hasFace = false; // If confidence is too low, consider it no face
+      confidence = 0;
     }
     
     const recommendations = [];
-    if (!hasFace && quality === 'low') {
+    if (!hasFace && quality === 'very_low') {
       recommendations.push('Image quality too low for reliable face detection');
+    } else if (!hasFace && quality === 'low') {
+      recommendations.push('Image quality may be insufficient for face detection');
     }
     if (hasFace && confidence < 70) {
       recommendations.push('Face detected but confidence is low - manual review recommended');
+    }
+    if (hasFace && confidence >= 90) {
+      recommendations.push('High confidence face detection - proceed with identification');
     }
     
     return {
@@ -224,3 +239,153 @@ async function performImageAnalysis(imageData) {
     };
   }
 }
+
+// ML Data API endpoints
+exports.saveMLData = async (req, res) => {
+  try {
+    const { floor, node, dataType, prediction, confidence, evacuationRoute, threatLevel } = req.body;
+    
+    if (!floor || !dataType) {
+      return res.status(400).json({ 
+        error: 'Floor and dataType are required',
+        hasFace: false,
+        confidence: 0 
+      });
+    }
+
+    // Save ML data to database
+    const mlData = new SensorData({
+      topic: 'iot/ml',
+      floor: String(floor),
+      node: node || 1,
+      type: dataType, // 'evacuation', 'threat', 'emergency', 'prediction'
+      payload: {
+        prediction: prediction || 'normal',
+        confidence: confidence || 0.95,
+        evacuationRoute: evacuationRoute || null,
+        threatLevel: threatLevel || 'low',
+        timestamp: new Date()
+      },
+      source: 'ml'
+    });
+
+    await mlData.save();
+
+    // Emit real-time updates
+    const io = req.app.get('io');
+    io.emit('ml-data-update', {
+      floor: parseInt(floor),
+      node: node || 1,
+      dataType,
+      prediction: prediction || 'normal',
+      confidence: confidence || 0.95,
+      timestamp: new Date()
+    });
+
+    // If it's evacuation data, emit specific event
+    if (dataType === 'evacuation' || dataType === 'emergency') {
+      io.emit('ml-evacuation-update', {
+        floor: parseInt(floor),
+        status: threatLevel || 'safe',
+        threats: prediction ? [prediction] : [],
+        evacuationTime: threatLevel === 'danger' ? 1 : 3,
+        capacity: 50
+      });
+    }
+
+    console.log(`📊 ML Data saved — Floor ${floor}, Type: ${dataType}, Prediction: ${prediction}`);
+    res.status(200).json({ 
+      message: 'ML data saved successfully', 
+      data: mlData 
+    });
+
+  } catch (error) {
+    console.error('ML data save error:', error);
+    res.status(500).json({ 
+      error: 'Unable to save ML data',
+      hasFace: false,
+      confidence: 0 
+    });
+  }
+};
+
+exports.updateEvacuationRoutes = async (req, res) => {
+  try {
+    const { floor, status, threats, evacuationTime, capacity, routes } = req.body;
+    
+    if (!floor) {
+      return res.status(400).json({ error: 'Floor is required' });
+    }
+
+    // Emit evacuation update
+    const io = req.app.get('io');
+    io.emit('ml-evacuation-update', {
+      floor: parseInt(floor),
+      status: status || 'safe',
+      threats: threats || [],
+      evacuationTime: evacuationTime || 3,
+      capacity: capacity || 50,
+      routes: routes || ['main', 'secondary', 'emergency']
+    });
+
+    // If emergency, emit emergency alert
+    if (status === 'danger' || status === 'emergency') {
+      io.emit('emergency-alert', {
+        floor: parseInt(floor),
+        message: `Emergency detected on Floor ${floor} - evacuation routes updated`,
+        timestamp: new Date()
+      });
+    }
+
+    console.log(`🚨 Evacuation update — Floor ${floor}, Status: ${status}`);
+    res.status(200).json({ 
+      message: 'Evacuation routes updated successfully' 
+    });
+
+  } catch (error) {
+    console.error('Evacuation update error:', error);
+    res.status(500).json({ error: 'Unable to update evacuation routes' });
+  }
+};
+
+exports.getMLStatus = async (req, res) => {
+  try {
+    const floor = req.query.floor;
+    const query = { source: 'ml' };
+    if (floor) query.floor = String(floor);
+
+    const mlData = await SensorData.find(query)
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    // Group by floor and type
+    const statusByFloor = {};
+    mlData.forEach(data => {
+      const floorNum = data.floor;
+      if (!statusByFloor[floorNum]) {
+        statusByFloor[floorNum] = {
+          floor: floorNum,
+          lastUpdate: data.createdAt,
+          dataTypes: {},
+          overallStatus: 'safe'
+        };
+      }
+      
+      statusByFloor[floorNum].dataTypes[data.type] = {
+        prediction: data.payload.prediction || 'normal',
+        confidence: data.payload.confidence || 0.95,
+        timestamp: data.createdAt
+      };
+    });
+
+    res.json({
+      status: 'success',
+      data: Object.values(statusByFloor)
+    });
+
+  } catch (error) {
+    console.error('ML status error:', error);
+    res.status(500).json({ error: 'Unable to get ML status' });
+  }
+};

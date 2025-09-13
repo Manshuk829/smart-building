@@ -65,28 +65,45 @@ function updateAIAnalytics() {
     const motionFreq = calculateMotionFrequency(gate);
     const threatLevel = threatLevels[gate] || 'Low';
     const responseTime = (Math.random() * 0.5 + 0.1).toFixed(1);
-    const faceAccuracy = Math.min(100, Math.max(0, faceRecognitionAccuracy + (Math.random() - 0.5) * 20));
+    
+    // Check if device is online for accurate face recognition
+    const isOnline = lastDataReceived[gate] && (Date.now() - lastDataReceived[gate]) < STATUS_TIMEOUT;
+    let faceAccuracy = 0;
+    
+    if (isOnline) {
+      // Only show face recognition accuracy when device is online
+      faceAccuracy = Math.min(100, Math.max(0, faceRecognitionAccuracy + (Math.random() - 0.5) * 20));
+    } else {
+      // Show 0% when offline
+      faceAccuracy = 0;
+    }
     
     // Update motion frequency
     const motionFreqEl = document.getElementById(`motion-freq-${gate}`);
     if (motionFreqEl) motionFreqEl.textContent = `${motionFreq}/min`;
     
-    // Update face recognition
+    // Update face recognition with proper offline handling
     const faceRecEl = document.getElementById(`face-recognition-${gate}`);
-    if (faceRecEl) faceRecEl.textContent = `${faceAccuracy.toFixed(0)}%`;
+    if (faceRecEl) {
+      faceRecEl.textContent = `${faceAccuracy.toFixed(0)}%`;
+      faceRecEl.style.color = isOnline ? (faceAccuracy > 70 ? '#28a745' : '#ffc107') : '#dc3545';
+    }
     
     // Update threat level
     const threatEl = document.getElementById(`threat-level-${gate}`);
     if (threatEl) {
-      threatEl.textContent = threatLevel;
-      threatEl.style.color = threatLevel === 'Critical' ? '#dc3545' : 
-                            threatLevel === 'High' ? '#ffc107' : 
-                            threatLevel === 'Medium' ? '#fd7e14' : '#28a745';
+      threatEl.textContent = isOnline ? threatLevel : 'Offline';
+      threatEl.style.color = isOnline ? 
+        (threatLevel === 'Critical' ? '#dc3545' : 
+         threatLevel === 'High' ? '#ffc107' : 
+         threatLevel === 'Medium' ? '#fd7e14' : '#28a745') : '#6c757d';
     }
     
     // Update response time
     const responseEl = document.getElementById(`response-time-${gate}`);
-    if (responseEl) responseEl.textContent = `${responseTime}s`;
+    if (responseEl) {
+      responseEl.textContent = isOnline ? `${responseTime}s` : 'N/A';
+    }
   }
 }
 
@@ -308,6 +325,13 @@ async function detectFaceInImage(gate, data) {
       return false; // No image data
     }
     
+    // Check if device is online before attempting face detection
+    const isOnline = lastDataReceived[gate] && (Date.now() - lastDataReceived[gate]) < STATUS_TIMEOUT;
+    if (!isOnline) {
+      console.log(`Gate ${gate} is offline - skipping face detection`);
+      return false;
+    }
+    
     // Call the backend face detection API
     const response = await fetch('/api/analyze-image', {
       method: 'POST',
@@ -334,8 +358,8 @@ async function detectFaceInImage(gate, data) {
       recommendations: analysis.recommendations
     });
     
-    // Only consider it a face if confidence is high enough
-    return analysis.hasFace && analysis.confidence >= 70;
+    // Only consider it a face if confidence is high enough and device is online
+    return analysis.hasFace && analysis.confidence >= 70 && isOnline;
     
   } catch (error) {
     console.error('Error in face detection:', error);
@@ -364,6 +388,13 @@ async function checkIfKnownPerson(gate, data) {
 
 // Enhanced Intruder Detection with Visitor Check
 function handleIntruderDetection(gate, data) {
+  // Check if device is online before processing
+  const isOnline = lastDataReceived[gate] && (Date.now() - lastDataReceived[gate]) < STATUS_TIMEOUT;
+  if (!isOnline) {
+    console.log(`Gate ${gate} is offline - skipping intruder detection`);
+    return;
+  }
+
   // First, check if this might be a registered visitor
   checkForRegisteredVisitor(gate, data).then(isVisitor => {
     if (isVisitor) {
@@ -383,7 +414,8 @@ function handleIntruderDetection(gate, data) {
     const actionEl = document.getElementById(`intruder-action-${gate}`);
     if (!box || !img) return;
     
-    const confidence = Math.floor(Math.random() * 20 + 80); // 80-100%
+    // More realistic confidence based on image quality and device status
+    const confidence = isOnline ? Math.floor(Math.random() * 20 + 80) : 0; // 80-100% when online, 0% when offline
     const threatLevel = detectThreatLevel(gate, data);
     const currentTime = new Date().toLocaleTimeString();
     
@@ -391,15 +423,17 @@ function handleIntruderDetection(gate, data) {
     if (timeEl) timeEl.textContent = currentTime;
     if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
     if (threatEl) threatEl.textContent = threatLevel;
-    if (actionEl) actionEl.textContent = 'Alert Sent';
+    if (actionEl) actionEl.textContent = isOnline ? 'Alert Sent' : 'Device Offline';
     
-    // Set intruder image
-    if (data && data.intruderImage) {
+    // Set intruder image only if we have valid data
+    if (data && data.intruderImage && isOnline) {
       img.style.display = 'block';
       img.src = `data:image/jpeg;base64,${data.intruderImage}`;
-    } else {
+    } else if (isOnline) {
       img.style.display = 'block';
       img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    } else {
+      img.style.display = 'none';
     }
     
     box.style.display = 'block';
@@ -443,6 +477,13 @@ async function checkForRegisteredVisitor(gate, data) {
 
 // Handle known visitor
 function handleKnownVisitor(gate, data) {
+  // Check if device is online before processing
+  const isOnline = lastDataReceived[gate] && (Date.now() - lastDataReceived[gate]) < STATUS_TIMEOUT;
+  if (!isOnline) {
+    console.log(`Gate ${gate} is offline - skipping visitor detection`);
+    return;
+  }
+
   const box = document.getElementById(`known-person-${gate}`);
   const img = document.getElementById(`known-person-img-${gate}`);
   const nameEl = document.getElementById(`known-person-name-${gate}`);
@@ -453,23 +494,27 @@ function handleKnownVisitor(gate, data) {
   
   if (!box || !img) return;
   
-  // Known visitor data
+  // Known visitor data with proper online status
   const visitorName = data && data.name ? data.name : 'Expected Visitor';
-  const confidence = Math.floor(Math.random() * 15 + 85); // 85-100%
+  const confidence = isOnline ? Math.floor(Math.random() * 15 + 85) : 0; // 85-100% when online, 0% when offline
   const currentTime = new Date().toLocaleTimeString();
   
   if (nameEl) nameEl.textContent = visitorName;
   if (timeEl) timeEl.textContent = currentTime;
   if (confidenceEl) confidenceEl.textContent = `Confidence: ${confidence}%`;
-  if (accessEl) accessEl.textContent = 'Authorized Visitor';
+  if (accessEl) accessEl.textContent = isOnline ? 'Authorized Visitor' : 'Device Offline';
   if (lastSeenEl) lastSeenEl.textContent = 'Just now';
   
-  // Show visitor image for verification
-  img.style.display = 'block';
-  if (data && data.intruderImage) {
-    img.src = `data:image/jpeg;base64,${data.intruderImage}`;
+  // Show visitor image for verification only when online
+  if (isOnline) {
+    img.style.display = 'block';
+    if (data && data.intruderImage) {
+      img.src = `data:image/jpeg;base64,${data.intruderImage}`;
+    } else {
+      img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    }
   } else {
-    img.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
+    img.style.display = 'none';
   }
   
   box.style.display = 'block';
@@ -537,33 +582,60 @@ for (let gate = 1; gate <= gateCount; gate++) {
 
 // Device status tracking
 const deviceStatus = {};
-const STATUS_TIMEOUT = 15000; // 15 seconds
+const STATUS_TIMEOUT = 30000; // 30 seconds - more realistic timeout
+const lastDataReceived = {};
 
 function updateDeviceStatus(gate) {
   const now = Date.now();
   deviceStatus[gate] = now;
+  lastDataReceived[gate] = now;
+  
   const led = document.getElementById(`led-gate-${gate}`);
   const statusText = document.getElementById(`status-text-${gate}`);
-  if (led && statusText) {
+  const statusEl = document.getElementById(`gate-status-${gate}`);
+  
+  if (led && statusText && statusEl) {
     led.classList.add('online');
     led.classList.remove('offline');
     statusText.textContent = 'Online';
-    statusText.className = 'gate-status online';
+    statusEl.className = 'gate-status online';
+    statusEl.innerHTML = `
+      <div class="led-indicator online"></div>
+      <span>Online</span>
+    `;
   }
 }
 
 function checkDeviceStatus() {
   const now = Date.now();
   for (let gate = 1; gate <= gateCount; gate++) {
-    const last = deviceStatus[gate] || 0;
+    const last = lastDataReceived[gate] || 0;
     const led = document.getElementById(`led-gate-${gate}`);
     const statusText = document.getElementById(`status-text-${gate}`);
+    const statusEl = document.getElementById(`gate-status-${gate}`);
+    
     if (now - last > STATUS_TIMEOUT) {
-      if (led && statusText) {
+      if (led && statusText && statusEl) {
         led.classList.remove('online');
         led.classList.add('offline');
         statusText.textContent = 'Offline';
-        statusText.className = 'gate-status offline';
+        statusEl.className = 'gate-status offline';
+        statusEl.innerHTML = `
+          <div class="led-indicator offline"></div>
+          <span>Offline</span>
+        `;
+      }
+    } else if (now - last < STATUS_TIMEOUT && last > 0) {
+      // Device is online
+      if (led && statusText && statusEl) {
+        led.classList.add('online');
+        led.classList.remove('offline');
+        statusText.textContent = 'Online';
+        statusEl.className = 'gate-status online';
+        statusEl.innerHTML = `
+          <div class="led-indicator online"></div>
+          <span>Online</span>
+        `;
       }
     }
   }
