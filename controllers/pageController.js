@@ -388,13 +388,12 @@ exports.showEvacuation = async (req, res) => {
     res.status(500).send('Error loading evacuation routes');
   }
 };
-
-exports.showFaceTraining = async (req, res) => {
-  try {
-    console.log('🎯 Loading face training page...');
-    res.render('face_training');
-  } catch (err) {
-    console.error('❌ Face training page error:', err.message);
-    res.status(500).send('Error loading face training page');
-  }
-};
+  exports.showFaceTraining = async (req, res) => {
+    try {
+      console.log('🎯 Loading face training page...');
+      res.render('face_training');
+    } catch (err) {
+      console.error('❌ Face training page error:', err.message);
+      res.status(500).send('Error loading face training page');
+    }
+  };

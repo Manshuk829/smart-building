@@ -439,9 +439,9 @@
           evacuationTime: 3,
           threats: [],
           routes: ['main', 'secondary', 'emergency'],
-          lastUpdate: new Date(),
-          aiConfidence: 0, // Start with 0% confidence
-          hasData: false // Track if we have actual data
+            lastUpdate: new Date(),
+            aiConfidence: 0, // Start with 0% confidence
+            hasData: false // Track if we have actual data
         };
       }
     }
@@ -515,33 +515,31 @@
       const activeThreats = Object.values(evacuationData).reduce((sum, floor) => sum + floor.threats.length, 0);
       const evacuationRoutes = Object.values(evacuationData).reduce((sum, floor) => sum + floor.routes.length, 0);
       const safeZones = Object.values(evacuationData).filter(floor => floor.status === 'safe').length * 2;
-      
-      // Calculate AI confidence based on actual data availability
-      const floorsWithData = Object.values(evacuationData).filter(floor => floor.hasData).length;
-      const totalFloors = Object.keys(evacuationData).length;
-      const dataCoverage = totalFloors > 0 ? (floorsWithData / totalFloors) * 100 : 0;
-      
-      // AI confidence should be based on data quality, not random
-      let aiConfidence = 0;
-      if (dataCoverage > 75) {
-        aiConfidence = Math.min(95, 60 + (dataCoverage - 75) * 1.4); // 60-95% based on data coverage
-      } else if (dataCoverage > 50) {
-        aiConfidence = Math.min(60, 30 + (dataCoverage - 50) * 1.2); // 30-60% based on data coverage
-      } else if (dataCoverage > 25) {
-        aiConfidence = Math.min(30, 10 + (dataCoverage - 25) * 0.8); // 10-30% based on data coverage
-      } else {
-        aiConfidence = Math.min(10, dataCoverage * 0.4); // 0-10% based on data coverage
-      }
+        // Calculate AI confidence based on actual data availability
+        const floorsWithData = Object.values(evacuationData).filter(floor => floor.hasData).length;
+        const totalFloors = Object.keys(evacuationData).length;
+        const dataCoverage = totalFloors > 0 ? (floorsWithData / totalFloors) * 100 : 0;
+        // AI confidence should be based on data quality, not random
+        let aiConfidence = 0;
+        if (dataCoverage > 75) {
+          aiConfidence = Math.min(95, 60 + (dataCoverage - 75) * 1.4); // 60-95% based on data coverage
+        } else if (dataCoverage > 50) {
+          aiConfidence = Math.min(60, 30 + (dataCoverage - 50) * 1.2); // 30-60% based on data coverage
+        } else if (dataCoverage > 25) {
+          aiConfidence = Math.min(30, 10 + (dataCoverage - 25) * 0.8); // 10-30% based on data coverage
+        } else {
+          aiConfidence = Math.min(10, dataCoverage * 0.4); // 0-10% based on data coverage
+        }
 
       document.getElementById('active-threats').textContent = activeThreats;
       document.getElementById('evacuation-routes').textContent = evacuationRoutes;
       document.getElementById('safe-zones').textContent = safeZones;
-      document.getElementById('ai-confidence').textContent = Math.round(aiConfidence) + '%';
+    document.getElementById('ai-confidence').textContent = Math.round(aiConfidence) + '%';
     }
 
     // Handle ML data updates
     socket.on('ml-evacuation-update', (data) => {
-      const { floor, status, threats, capacity, evacuationTime, confidence } = data;
+    const { floor, status, threats, capacity, evacuationTime, confidence } = data;
       
       if (evacuationData[floor]) {
         evacuationData[floor].status = status;
@@ -549,8 +547,8 @@
         evacuationData[floor].capacity = capacity || evacuationData[floor].capacity;
         evacuationData[floor].evacuationTime = evacuationTime || evacuationData[floor].evacuationTime;
         evacuationData[floor].lastUpdate = new Date();
-        evacuationData[floor].aiConfidence = confidence || 0;
-        evacuationData[floor].hasData = true; // Mark that we have actual data
+    evacuationData[floor].aiConfidence = confidence || 0;
+    evacuationData[floor].hasData = true; // Mark that we have actual data
         
         updateFloorStatus(floor, status, evacuationData[floor]);
         updateMLMetrics();

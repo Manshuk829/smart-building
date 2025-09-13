@@ -10,25 +10,29 @@ import numpy as np
 import base64
 import requests
 import json
-import time
-import logging
-from datetime import datetime
-import os
+MAIN_WEBSITE_URL = os.getenv('MAIN_WEBSITE_URL', 'https://smart-building-7906.onrender.com')
 from werkzeug.utils import secure_filename
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+KNOWN_FACES = {
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Configuration
+FACE_TRAINING_DATA = {}
+TRAINING_MODE = False
+<<<<<<< HEAD
 MAIN_WEBSITE_URL = os.getenv('MAIN_WEBSITE_URL', 'https://smart-building-7906.onrender.com')
+=======
+MAIN_WEBSITE_URL = os.getenv('MAIN_WEBSITE_URL', 'http://localhost:3000')
+>>>>>>> f5294853192a43d4b11de833b323d1ad65055cdc
 API_ENDPOINT = f"{MAIN_WEBSITE_URL}/api/upload-image"
 ML_ENDPOINT = f"{MAIN_WEBSITE_URL}/api/ml-data"
 
 # Known faces database (in production, use a proper database)
+<<<<<<< HEAD
 KNOWN_FACES = {}
 
 # Face training data storage
@@ -57,6 +61,12 @@ def load_known_faces_from_file():
 
 # Load existing faces on startup
 load_known_faces_from_file()
+=======
+KNOWN_FACES = {
+    # Add known faces here
+    # "person_id": {"name": "John Doe", "confidence_threshold": 0.8}
+}
+>>>>>>> f5294853192a43d4b11de833b323d1ad65055cdc
 
 class ImageProcessor:
     def __init__(self):
@@ -150,18 +160,15 @@ class ImageProcessor:
         return analysis
     
     def identify_person(self, face_roi, confidence):
-        """Identify if person is known using trained data"""
-        if not KNOWN_FACES or confidence < 70:
-            return None
-        
-        # Simple face matching based on face features
-        # In production, use proper face recognition libraries
-        face_features = self.extract_face_features(face_roi)
-        
-        best_match = None
-        best_confidence = 0
-        
-        for person_id, person_data in KNOWN_FACES.items():
+            """Identify if person is known using trained data"""
+            if not KNOWN_FACES or confidence < 70:
+                return None
+            # Simple face matching based on face features
+            # In production, use proper face recognition libraries
+            face_features = self.extract_face_features(face_roi)
+            best_match = None
+            best_confidence = 0
+            for person_id, person_data in KNOWN_FACES.items():
             if 'face_encodings' in person_data and person_data['face_encodings']:
                 # Calculate similarity with stored encodings
                 similarity = self.calculate_face_similarity(face_features, person_data['face_encodings'])
@@ -211,6 +218,22 @@ class ImageProcessor:
                 similarities.append(similarity)
         
         return max(similarities) if similarities else 0
+=======
+        """Identify if person is known (simplified)"""
+        # In production, use face recognition models like:
+        # - face_recognition library
+        # - dlib
+        # - OpenFace
+        # - Custom trained models
+        
+        # For now, use simple heuristics
+        if confidence > 85:
+            # Simulate known person detection
+            if np.random.random() > 0.7:  # 30% chance of known person
+                return f"Known Person {np.random.randint(1, 10)}"
+        
+        return None
+>>>>>>> f5294853192a43d4b11de833b323d1ad65055cdc
     
     def assess_image_quality(self, image):
         """Assess image quality"""
@@ -310,38 +333,36 @@ def send_to_main_website(analysis, gate_number, floor, image_data):
         payload = {
             "floor": floor,
             "gate": gate_number,
-            "intruderImage": image_data if analysis["isIntruder"] else None,  # Only send image for intruders
+                "intruderImage": image_data if analysis["isIntruder"] else None,  # Only send image for intruders
             "name": analysis["personName"],
             "confidence": analysis["confidence"],
             "isIntruder": analysis["isIntruder"],
             "threatLevel": analysis["threatLevel"],
             "imageQuality": analysis["imageQuality"],
             "recommendations": analysis["recommendations"],
-            "timestamp": datetime.now().isoformat(),
-            "hasFace": analysis["hasFace"],
-            "faceCount": analysis["faceCount"]
+                "timestamp": datetime.now().isoformat(),
+                "hasFace": analysis["hasFace"],
+                "faceCount": analysis["faceCount"]
         }
         
         # Send to main website
         response = requests.post(API_ENDPOINT, json=payload, timeout=10)
         
         if response.status_code == 200:
-            logger.info(f"Successfully sent analysis to main website for Gate {gate_number} - {analysis['personName']}")
-            
-            # Also send ML data update for evacuation system
-            if analysis["isIntruder"]:
-                ml_payload = {
-                    "floor": floor,
-                    "node": gate_number,
-                    "dataType": "intruder_detection",
-                    "prediction": "intruder",
-                    "confidence": analysis["confidence"] / 100,  # Convert to 0-1 scale
-                    "threatLevel": analysis["threatLevel"]
-                }
-                
-                ml_response = requests.post(ML_ENDPOINT, json=ml_payload, timeout=10)
-                if ml_response.status_code == 200:
-                    logger.info(f"Successfully sent ML data for intruder detection on Floor {floor}")
+                logger.info(f"Successfully sent analysis to main website for Gate {gate_number} - {analysis['personName']}")
+                # Also send ML data update for evacuation system
+                if analysis["isIntruder"]:
+                    ml_payload = {
+                        "floor": floor,
+                        "node": gate_number,
+                        "dataType": "intruder_detection",
+                        "prediction": "intruder",
+                        "confidence": analysis["confidence"] / 100,  # Convert to 0-1 scale
+                        "threatLevel": analysis["threatLevel"]
+                    }
+                    ml_response = requests.post(ML_ENDPOINT, json=ml_payload, timeout=10)
+                    if ml_response.status_code == 200:
+                        logger.info(f"Successfully sent ML data for intruder detection on Floor {floor}")
         else:
             logger.error(f"Failed to send to main website: {response.status_code}")
             
@@ -381,12 +402,11 @@ def receive_ml_data():
     except Exception as e:
         logger.error(f"Error processing ML data: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-@app.route('/train-face', methods=['POST'])
-def train_face():
-    """Train face recognition with new person data"""
-    try:
-        data = request.get_json()
+    @app.route('/train-face', methods=['POST'])
+    def train_face():
+        """Train face recognition with new person data"""
+        try:
+            data = request.get_json()
         
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -472,6 +492,8 @@ def get_known_faces():
         logger.error(f"Error getting known faces: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+=======
+>>>>>>> f5294853192a43d4b11de833b323d1ad65055cdc
 @app.route('/evacuation-update', methods=['POST'])
 def update_evacuation():
     """Update evacuation routes based on ML analysis"""
