@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🤖 AI-Powered Live ESP32-CAM Monitoring</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/css/live_modern_styles.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+  <script src="/js/modernLive.js"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --secondary: #764ba2;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --dark: #2c3e50;
+      --light: #f8f9fa;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin: 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin: 10px 0;
+    }
+
+    /* AI Analytics Dashboard */
+    .ai-dashboard {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .ai-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .ai-metric {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .ai-metric i {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .ai-metric h3 {
+      margin: 5px 0;
+      font-size: 1.1rem;
+    }
+
+    .ai-metric p {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    /* Smart Alerts */
+    .smart-alerts {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border-left: 4px solid var(--primary);
+    }
+
+    .alert-item.critical {
+      background: #fff5f5;
+      border-left-color: var(--danger);
+    }
+
+    .alert-item.warning {
+      background: #fffbf0;
+      border-left-color: var(--warning);
+    }
+
+    .alert-icon {
+      font-size: 1.5rem;
+    }
+
+    .alert-content h4 {
+      margin: 0 0 5px 0;
+      font-size: 1.1rem;
+    }
+
+    .alert-content p {
+      margin: 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    /* Gate Sections */
+    .gates-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 30px;
+    }
+
+    .gate-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease;
+    }
+
+    .gate-section:hover {
+      transform: translateY(-5px);
+    }
+
+    .gate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .gate-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gate-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .gate-status.online {
+      background: var(--success);
+      color: white;
+    }
+
+    .gate-status.offline {
+      background: var(--danger);
+      color: white;
+    }
+
+    .gate-status.warning {
+      background: var(--warning);
+      color: var(--dark);
+    }
+
+    .led-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .led-indicator.online {
+      background: var(--success);
+    }
+
+    .led-indicator.offline {
+      background: var(--danger);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Camera Feed */
+    .camera-container {
+      position: relative;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+      background: #f0f0f0;
+      min-height: 300px;
+    }
+
+    .esp32-cam {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .esp32-cam img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+      z-index: 1;
+    }
+
+    .camera-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      z-index: 0;
+    }
+
+    .camera-placeholder i {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      color: #999;
+    }
+
+    .camera-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .motion-detection {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      display: none;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .control-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-btn.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .control-btn.success {
+      background: var(--success);
+      color: white;
+    }
+
+    .control-btn.warning {
+      background: var(--warning);
+      color: var(--dark);
+    }
+
+    .control-btn.danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .control-btn.info {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* AI Analytics */
+    .ai-analytics {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .analytics-item {
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+
+    .analytics-item h4 {
+      margin: 0 0 10px 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .analytics-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    /* Intruder Detection */
+    .intruder-box {
+      background: rgba(220, 53, 69, 0.1);
+      border: 2px solid var(--danger);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      animation: slideIn 0.5s ease;
+    }
+
+    /* Known Person Detection */
+    .known-person-box {
+      background: rgba(40, 167, 69, 0.1);
+      border: 2px solid var(--success);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      animation: slideIn 0.5s ease;
+    }
+
+    .person-name {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    /* Known person name styling */
+    .known-person-box .person-name {
+      color: var(--success);
+      background: rgba(40, 167, 69, 0.1);
+      border: 2px solid var(--success);
+    }
+
+    /* Intruder name styling */
+    .intruder-box .person-name {
+      color: var(--danger);
+      background: rgba(220, 53, 69, 0.1);
+      border: 2px solid var(--danger);
+    }
+
+    .person-confidence {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .intruder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .intruder-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--danger);
+    }
+
+    .intruder-time {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .intruder-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .intruder-image {
+      text-align: center;
+    }
+
+    .intruder-image img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .intruder-details {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .detail-label {
+      font-weight: bold;
+      color: #666;
+    }
+
+    .detail-value {
+      color: var(--dark);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .gates-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .ai-metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .intruder-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Dark Mode Support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      }
+      
+      .gate-section, .ai-dashboard, .smart-alerts, .ai-analytics {
+        background: rgba(255, 255, 255, 0.1);
+      color: white;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-robot"></i> AI-Powered Live Monitoring</h1>
+      <p>Advanced ESP32-CAM Security System with Intelligent Analytics</p>
+  </div>
+
+    <!-- AI Analytics Dashboard -->
+    <div class="ai-dashboard">
+      <h2><i class="fas fa-brain"></i> AI Security Analytics</h2>
+      
+      <div class="ai-metrics">
+        <div class="ai-metric">
+          <i class="fas fa-eye"></i>
+          <h3>Active Cameras</h3>
+          <p id="active-cameras">2</p>
+        </div>
+        <div class="ai-metric">
+          <i class="fas fa-user-secret"></i>
+          <h3>Intruders Detected</h3>
+          <p id="intruders-detected">0</p>
+  </div>
+        <div class="ai-metric">
+          <i class="fas fa-running"></i>
+          <h3>Motion Events</h3>
+          <p id="motion-events">0</p>
+      </div>
+        <div class="ai-metric">
+          <i class="fas fa-shield-alt"></i>
+          <h3>Security Score</h3>
+          <p id="security-score">95%</p>
+        </div>
+        <div class="ai-metric">
+          <i class="fas fa-brain"></i>
+          <h3>AI Confidence</h3>
+          <p id="ai-confidence">92%</p>
+        </div>
+        <div class="ai-metric">
+          <i class="fas fa-bolt"></i>
+          <h3>Response Time</h3>
+          <p id="response-time">0.15s</p>
+        </div>
+      </div>
+      
+      <!-- Real-Time ML Predictions -->
+      <div class="ml-predictions">
+        <h3><i class="fas fa-robot"></i> Real-Time ML Predictions</h3>
+        <div class="ml-grid">
+          <% for (let gate = 1; gate <= 2; gate++) { %>
+            <div class="ml-card">
+              <h4>Gate <%= gate %></h4>
+              <div id="ml-prediction-<%= gate %>" class="ml-prediction-container"></div>
+              <div id="edge-ai-<%= gate %>" class="edge-ai-container"></div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Smart Alerts -->
+      <div class="smart-alerts">
+        <h3><i class="fas fa-bell"></i> Smart Security Alerts</h3>
+        <div id="alerts-container">
+          <!-- Alerts will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Gates Container -->
+    <div class="gates-container">
+      <% for (let gate = 1; gate <= 2; gate++) { %>
+        <div class="gate-section">
+          <div class="gate-header">
+            <div class="gate-title">
+              <i class="fas fa-door-open"></i>
+              Gate <%= gate %>
+            </div>
+            <div class="gate-status" id="gate-status-<%= gate %>">
+              <div class="led-indicator" id="led-gate-<%= gate %>"></div>
+              <span id="status-text-<%= gate %>">Initializing...</span>
+            </div>
+          </div>
+
+          <!-- Camera Feed with Modern Features -->
+          <div class="camera-container">
+            <div class="camera-overlay">
+              <i class="fas fa-video"></i> Live Feed
+              <span class="fps-indicator" id="fps-<%= gate %>">-- fps</span>
+            </div>
+            <div class="motion-detection" id="motion-<%= gate %>" style="display: none;">
+              <i class="fas fa-running"></i> Motion Detected
+            </div>
+            <div class="ai-overlay" id="ai-overlay-<%= gate %>">
+              <div class="ai-badge">
+                <i class="fas fa-brain"></i> AI Processing
+              </div>
+            </div>
+            <div class="esp32-cam">
+              <div class="camera-placeholder" id="placeholder-<%= gate %>">
+                <i class="fas fa-camera"></i>
+                <div>Camera Initializing...</div>
+                <div class="loading-spinner"></div>
+              </div>
+              <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg" alt="Gate <%= gate %> Camera" style="display: none;" />
+              <canvas id="canvas-<%= gate %>" style="display: none;"></canvas>
+            </div>
+            <!-- Threat Level Indicator -->
+            <div class="threat-indicator" id="threat-indicator-<%= gate %>">
+              <span class="threat-label">Threat Level:</span>
+              <span class="threat-level low" id="threat-level-<%= gate %>">Low</span>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="controls">
+            <button class="control-btn primary" data-gate="<%= gate %>" onclick="captureSnapshot(<%= gate %>)">
+              <i class="fas fa-camera"></i> Capture
+            </button>
+            <button class="control-btn success" data-gate="<%= gate %>" onclick="startRecording(<%= gate %>)">
+              <i class="fas fa-video"></i> Record
+            </button>
+            <button class="control-btn warning" data-gate="<%= gate %>" onclick="triggerAlert(<%= gate %>)">
+              <i class="fas fa-bell"></i> Alert
+            </button>
+            <button class="control-btn danger" data-gate="<%= gate %>" onclick="emergencyLockdown(<%= gate %>)">
+              <i class="fas fa-lock"></i> Lockdown
+            </button>
+            <button class="control-btn info" data-gate="<%= gate %>" onclick="verifyVisitorAccess(<%= gate %>)">
+              <i class="fas fa-user-check"></i> Verify Visitor
+            </button>
+          </div>
+          
+          <!-- Visitor Information -->
+          <div class="visitor-info" id="visitor-info-<%= gate %>" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 10px 0;">
+            <% if (visitorsByGate && visitorsByGate[`gate${gate}`] && visitorsByGate[`gate${gate}`].length > 0) { %>
+              <h4 style="color: white; margin: 0 0 10px 0;"><i class="fas fa-users"></i> Expected Visitors</h4>
+              <% visitorsByGate[`gate${gate}`].forEach(visitor => { %>
+                <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 5px; margin: 5px 0; color: white;">
+                  <strong><%= visitor.name %></strong> - Visiting <%= visitor.registeredFor %><br>
+                  <small>Purpose: <%= visitor.purpose %> | Arrival: <%= new Date(visitor.expectedArrival).toLocaleString() %></small>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div style="color: white; font-style: italic;">No expected visitors for this floor</div>
+            <% } %>
+          </div>
+
+          <!-- AI Analytics -->
+          <div class="ai-analytics">
+            <h3><i class="fas fa-chart-line"></i> AI Analytics</h3>
+            <div class="analytics-grid">
+              <div class="analytics-item">
+                <h4>Motion Frequency</h4>
+                <div class="analytics-value" id="motion-freq-<%= gate %>">0/min</div>
+              </div>
+              <div class="analytics-item">
+                <h4>Face Recognition</h4>
+                <div class="analytics-value" id="face-recognition-<%= gate %>">0%</div>
+              </div>
+              <div class="analytics-item">
+                <h4>Threat Level</h4>
+                <div class="analytics-value" id="threat-level-<%= gate %>">Low</div>
+              </div>
+              <div class="analytics-item">
+                <h4>Response Time</h4>
+                <div class="analytics-value" id="response-time-<%= gate %>">0.2s</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Known Person Detection -->
+          <div class="known-person-box" id="known-person-<%= gate %>">
+            <div class="intruder-header">
+              <div class="intruder-title">
+                <i class="fas fa-user-check"></i> Known Person Detected
+              </div>
+              <div class="intruder-time" id="known-person-time-<%= gate %>"></div>
+            </div>
+            <div class="intruder-content">
+              <div class="intruder-image">
+                <img id="known-person-img-<%= gate %>" src="" alt="Known Person Image" />
+              </div>
+              <div class="intruder-details">
+                <div class="person-name" id="known-person-name-<%= gate %>">John Doe</div>
+                <div class="person-confidence" id="known-person-confidence-<%= gate %>">Confidence: 95%</div>
+                <div class="detail-item">
+                  <span class="detail-label">Access Level:</span>
+                  <span class="detail-value" id="known-person-access-<%= gate %>">Authorized</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Last Seen:</span>
+                  <span class="detail-value" id="known-person-last-<%= gate %>">2 hours ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Intruder Detection -->
+          <div class="intruder-box" id="intruder-<%= gate %>">
+            <div class="intruder-header">
+              <div class="intruder-title">
+                <i class="fas fa-user-secret"></i> Intruder Detected!
+              </div>
+              <div class="intruder-time" id="intruder-time-<%= gate %>"></div>
+            </div>
+            <div class="intruder-content">
+              <div class="intruder-image">
+                <img id="intruder-img-<%= gate %>" src="" alt="Intruder Image" />
+              </div>
+              <div class="intruder-details">
+                <div class="person-name" id="intruder-name-<%= gate %>">Intruder</div>
+                <div class="detail-item">
+                  <span class="detail-label">Confidence:</span>
+                  <span class="detail-value" id="intruder-confidence-<%= gate %>">95%</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Location:</span>
+                  <span class="detail-value" id="intruder-location-<%= gate %>">Gate <%= gate %></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Threat Level:</span>
+                  <span class="detail-value" id="intruder-threat-<%= gate %>">High</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Action:</span>
+                  <span class="detail-value" id="intruder-action-<%= gate %>">Alert Sent</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="last-updated" id="last-updated-<%= gate %>">
+            Last updated: Initializing...
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/live.js"></script>
+  <script src="/js/modernLive.js"></script>
+</body>
+</html>

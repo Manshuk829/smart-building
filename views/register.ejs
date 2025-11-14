@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>👤 Register - Smart Building</title>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .particles {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 6s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 7s; }
+    .particle:nth-child(9) { left: 90%; animation-delay: 8s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) scale(1); opacity: 0; }
+    }
+    .register-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 420px;
+      margin: 20px;
+    }
+    .register-card {
+      backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.95);
+      border-radius: 24px;
+      padding: 2.5rem 2rem 2rem 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      color: #2c3e50;
+      animation: fadeIn 0.8s ease-in;
+      position: relative;
+      overflow: hidden;
+    }
+    .register-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+      animation: gradientShift 3s ease-in-out infinite;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .header-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .logo {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem auto;
+      box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .logo i { font-size: 2.2rem; color: white; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: #7f8c8d;
+      font-weight: 400;
+    }
+    .form-section { margin-bottom: 1.5rem; }
+    .form-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: rgba(102,126,234,0.07);
+      color: #2c3e50;
+      font-size: 1rem;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #667eea;
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+    }
+    .form-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #667eea;
+      font-size: 1.2rem;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #667eea;
+    }
+    .password-strength {
+      margin-top: 0.3rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #888;
+      text-align: right;
+    }
+    .strength-weak { color: #ff7070; }
+    .strength-medium { color: #ffc107; }
+    .strength-strong { color: #28a745; }
+    button {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102,126,234,0.2);
+    }
+    .login-link {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .login-link a {
+      color: #667eea;
+      text-decoration: underline;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .error-message {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: shake 0.5s ease-in-out;
+      box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+    }
+    .success-message {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      text-align: center;
+      animation: slideIn 0.5s ease-out;
+      box-shadow: 0 5px 15px rgba(79,172,254,0.3);
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .security-features {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+    .security-title {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .security-icons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .security-icon {
+      width: 40px; height: 40px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #667eea;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+    }
+    .security-icon:hover {
+      transform: translateY(-2px);
+      background: #e0e7ff;
+    }
+    @media (max-width: 480px) {
+      .register-container { margin: 10px; }
+      .register-card { padding: 2rem 1rem; }
+      .title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+  <div class="register-container">
+    <div class="register-card">
+      <div class="header-section">
+        <div class="logo">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="title">Create Account</div>
+        <div class="subtitle">Register as Admin or Guest to access the smart building system.</div>
+      </div>
+      <% if (error) { %>
+        <div class="error-message"><i class="fas fa-exclamation-triangle"></i> <%= error %></div>
+      <% } else if (success) { %>
+        <div class="success-message"><i class="fas fa-check-circle"></i> <%= success %></div>
+        <script>setTimeout(() => { window.location.href = "/login"; }, 3000);</script>
+      <% } %>
+      <form method="POST" action="/register" class="form-section" onsubmit="return validateForm()">
+        <div class="form-group" title="Username must be unique and at least 3 characters.">
+          <i class="fas fa-user"></i>
+          <input type="text" name="username" id="username" placeholder="Username" required minlength="3" />
+        </div>
+        <div class="form-group" title="Password must be at least 6 characters, include a number, an uppercase letter, and a symbol.">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="password" id="regPassword" placeholder="Password" required oninput="checkStrength(this.value); updateChecklist(this.value)" minlength="6" />
+          <span class="toggle-password" onclick="togglePassword()">
+            <i class="fas fa-eye"></i>
+          </span>
+        </div>
+        <div class="password-strength" id="passwordStrength"></div>
+        <ul id="passwordChecklist" style="list-style:none; padding-left:0; font-size:0.95rem; margin-bottom:1rem;">
+          <li id="pw-length" class="pw-req">❌ At least 6 characters</li>
+          <li id="pw-upper" class="pw-req">❌ One uppercase letter</li>
+          <li id="pw-number" class="pw-req">❌ One number</li>
+          <li id="pw-symbol" class="pw-req">❌ One symbol</li>
+        </ul>
+        <div class="form-group" title="Admin: Full access. Guest: Limited access.">
+          <i class="fas fa-user-shield"></i>
+          <select name="role" id="role" required>
+            <option value="" disabled hidden selected>Select Role</option>
+            <option value="admin" title="Full access to all features">Admin</option>
+            <option value="guest" title="Limited access, view only">Guest</option>
+          </select>
+          <span style="position:absolute; right:2.2rem; top:50%; transform:translateY(-50%); cursor:pointer;" title="Admin: Full access. Guest: Limited access."><i class="fas fa-info-circle"></i></span>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <input type="checkbox" id="terms" required style="margin-right:0.5rem;" />
+          <label for="terms" style="font-size:0.95rem;">I agree to the <a href="#" onclick="alert('Terms and conditions placeholder.'); return false;">terms and conditions</a>.</label>
+        </div>
+        <div style="font-size:0.95rem; color:#888; margin-bottom:1rem;">
+          <i class="fas fa-shield-alt"></i> Security tip: Use a strong, unique password for your account.
+        </div>
+        <button type="submit" id="registerBtn">Register</button>
+      </form>
+      <div class="login-link">
+        Already have an account? <a href="/login">Login here</a>
+      </div>
+      <div id="successCheck" style="display:none; text-align:center; margin-top:1.5rem;">
+        <i class="fas fa-check-circle" style="font-size:2.5rem; color:#28a745; animation:bounce 1s;"></i>
+        <div style="color:#28a745; font-weight:600; margin-top:0.5rem;">Registration Successful!</div>
+      </div>
+      <div class="security-features">
+        <div class="security-title">Advanced Security Features</div>
+        <div class="security-icons">
+          <div class="security-icon" title="AI-Powered Detection">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div class="security-icon" title="Real-time Monitoring">
+            <i class="fas fa-video"></i>
+          </div>
+          <div class="security-icon" title="Encrypted Communication">
+            <i class="fas fa-lock"></i>
+          </div>
+          <div class="security-icon" title="Multi-factor Authentication">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('regPassword');
+      const icon = document.querySelector('.toggle-password i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+    function checkStrength(password) {
+      const strengthEl = document.getElementById('passwordStrength');
+      let strength = 0;
+      if (password.length >= 6) strength++;
+      if (/[A-Z]/.test(password)) strength++;
+      if (/[0-9]/.test(password)) strength++;
+      if (/[^A-Za-z0-9]/.test(password)) strength++;
+      if (password.length === 0) {
+        strengthEl.textContent = '';
+        strengthEl.className = 'password-strength';
+      } else if (strength <= 1) {
+        strengthEl.textContent = 'Weak';
+        strengthEl.className = 'password-strength strength-weak';
+      } else if (strength === 2 || strength === 3) {
+        strengthEl.textContent = 'Medium';
+        strengthEl.className = 'password-strength strength-medium';
+      } else {
+        strengthEl.textContent = 'Strong';
+        strengthEl.className = 'password-strength strength-strong';
+      }
+    }
+    function updateChecklist(password) {
+      document.getElementById('pw-length').textContent = (password.length >= 6 ? '✅' : '❌') + ' At least 6 characters';
+      document.getElementById('pw-upper').textContent = (/[A-Z]/.test(password) ? '✅' : '❌') + ' One uppercase letter';
+      document.getElementById('pw-number').textContent = (/[0-9]/.test(password) ? '✅' : '❌') + ' One number';
+      document.getElementById('pw-symbol').textContent = (/[^A-Za-z0-9]/.test(password) ? '✅' : '❌') + ' One symbol';
+    }
+    function validateForm() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      const role = document.getElementById('role').value;
+      const terms = document.getElementById('terms').checked;
+      if (!username || !password || !role || !terms) {
+        alert("Please fill in all fields, select a role, and agree to the terms.");
+        return false;
+      }
+      if (password.length < 6 || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        alert("Password must meet all requirements.");
+        return false;
+      }
+      // Show animated checkmark on success
+      document.getElementById('registerBtn').style.display = 'none';
+      document.getElementById('successCheck').style.display = 'block';
+      return true;
+    }
+  </script>
+</body>
+</html>

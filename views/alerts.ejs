@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>🤖 AI/ML Security Alerts</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* AI Analytics Dashboard */
+    .ai-dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .ai-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .ai-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .ai-card i {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .ai-card.critical i { color: #dc3545; }
+    .ai-card.warning i { color: #ffc107; }
+    .ai-card.success i { color: #28a745; }
+    .ai-card.info i { color: #17a2b8; }
+
+    .ai-card h3 {
+      margin: 10px 0;
+      color: #333;
+    }
+
+    .ai-card .value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .ai-card .trend {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* Alert Categories */
+    .alert-categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .category-btn {
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      padding: 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .category-btn:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
+    }
+
+    .category-btn.active {
+      background: #007bff;
+      color: white;
+    }
+
+    /* Alert Container */
+    .alert-container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .alert-header h2 {
+      margin: 0;
+      color: #333;
+    }
+
+    .alert-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .control-btn.primary { background: #007bff; color: white; }
+    .control-btn.success { background: #28a745; color: white; }
+    .control-btn.warning { background: #ffc107; color: #333; }
+    .control-btn.danger { background: #dc3545; color: white; }
+
+    .control-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    /* Alert Cards */
+    .alert-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border-left: 5px solid #ddd;
+      transition: all 0.3s ease;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .alert-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .alert-card.critical {
+      border-left-color: #dc3545;
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+    }
+
+    .alert-card.warning {
+      border-left-color: #ffc107;
+      background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+    }
+
+    .alert-card.info {
+      border-left-color: #17a2b8;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
+    }
+
+    .alert-card.success {
+      border-left-color: #28a745;
+      background: linear-gradient(135deg, #f0fff4 0%, #e6ffe6 100%);
+    }
+
+    .alert-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .alert-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin: 0;
+      color: #333;
+    }
+
+    .alert-severity {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .severity-critical { background: #dc3545; color: white; }
+    .severity-warning { background: #ffc107; color: #333; }
+    .severity-info { background: #17a2b8; color: white; }
+    .severity-success { background: #28a745; color: white; }
+
+    .alert-content {
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+
+    .alert-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .alert-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .action-btn.acknowledge { background: #28a745; color: white; }
+    .action-btn.resolve { background: #007bff; color: white; }
+    .action-btn.ignore { background: #6c757d; color: white; }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .no-alerts {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .no-alerts i {
+      font-size: 3rem;
+      color: #ddd;
+      margin-bottom: 15px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .ai-dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .alert-categories {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .alert-header {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .alert-controls {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI/ML Security Alerts</h1>
+      <p>Advanced threat detection and intelligent alert management system</p>
+    </div>
+
+    <!-- AI Analytics Dashboard -->
+    <div class="ai-dashboard">
+      <div class="ai-card critical">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Active Threats</h3>
+        <div class="value" id="activeThreats">0</div>
+        <div class="trend">↗️ +2 this hour</div>
+      </div>
+      
+      <div class="ai-card warning">
+        <i class="fas fa-shield-alt"></i>
+        <h3>Security Score</h3>
+        <div class="value" id="securityScore">85%</div>
+        <div class="trend">↘️ -5% today</div>
+      </div>
+      
+      <div class="ai-card info">
+        <i class="fas fa-brain"></i>
+        <h3>AI Confidence</h3>
+        <div class="value" id="aiConfidence">92%</div>
+        <div class="trend">↗️ +3% this week</div>
+      </div>
+      
+      <div class="ai-card success">
+        <i class="fas fa-check-circle"></i>
+        <h3>Resolved Alerts</h3>
+        <div class="value" id="resolvedAlerts">24</div>
+        <div class="trend">↗️ +8 today</div>
+      </div>
+    </div>
+
+    <!-- Alert Categories -->
+    <div class="alert-categories">
+      <button class="category-btn active" onclick="filterAlerts('all')">
+        🚨 All Alerts
+      </button>
+      <button class="category-btn" onclick="filterAlerts('critical')">
+        🔥 Critical
+      </button>
+      <button class="category-btn" onclick="filterAlerts('warning')">
+        ⚠️ Warning
+      </button>
+      <button class="category-btn" onclick="filterAlerts('info')">
+        ℹ️ Info
+      </button>
+      <button class="category-btn" onclick="filterAlerts('ai')">
+        🤖 AI Generated
+      </button>
+      <button class="category-btn" onclick="filterAlerts('ml')">
+        🧠 ML Detection
+      </button>
+    </div>
+
+    <!-- Alert Container -->
+    <div class="alert-container">
+      <div class="alert-header">
+        <h2>📋 Alert Management</h2>
+        <div class="alert-controls">
+          <button class="control-btn primary" onclick="refreshAlerts()">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+          <button class="control-btn success" onclick="acknowledgeAll()">
+            <i class="fas fa-check"></i> Acknowledge All
+          </button>
+          <button class="control-btn warning" onclick="exportAlerts()">
+            <i class="fas fa-download"></i> Export
+          </button>
+          <button class="control-btn danger" onclick="clearAlerts()">
+            <i class="fas fa-trash"></i> Clear All
+          </button>
+        </div>
+      </div>
+
+      <div id="alert-container" aria-live="polite">
+        <div class="no-alerts">
+          <i class="fas fa-shield-check"></i>
+          <h3>All Clear! 🎉</h3>
+          <p>No active alerts detected. The system is operating normally.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%- include('partials/scripts') %>
+
+  <script>
+    const socket = io({ transports: ['websocket'], upgrade: false });
+    const alertContainer = document.getElementById('alert-container');
+    let allAlerts = [];
+    let currentFilter = 'all';
+
+    // AI Analytics Data
+    let aiAnalytics = {
+      activeThreats: 0,
+      securityScore: 85,
+      aiConfidence: 92,
+      resolvedAlerts: 24
+    };
+
+    // Update AI Analytics
+    function updateAIAnalytics() {
+      document.getElementById('activeThreats').textContent = aiAnalytics.activeThreats;
+      document.getElementById('securityScore').textContent = aiAnalytics.securityScore + '%';
+      document.getElementById('aiConfidence').textContent = aiAnalytics.aiConfidence + '%';
+      document.getElementById('resolvedAlerts').textContent = aiAnalytics.resolvedAlerts;
+    }
+
+    // Generate sample AI alerts for demonstration
+    function generateSampleAlerts() {
+      const sampleAlerts = [
+        {
+          id: 1,
+          type: 'fire',
+          severity: 'critical',
+          floor: 2,
+          message: 'High temperature detected with smoke patterns indicating potential fire outbreak',
+          timestamp: new Date(Date.now() - 300000),
+          source: 'ai',
+          confidence: 94.5,
+          aiAnalysis: 'ML model detected unusual temperature spike with 94.5% confidence'
+        },
+        {
+          id: 2,
+          type: 'intrusion',
+          severity: 'warning',
+          floor: 1,
+          message: 'Unauthorized access attempt detected at main entrance',
+          timestamp: new Date(Date.now() - 600000),
+          source: 'ml',
+          confidence: 87.2,
+          aiAnalysis: 'Facial recognition failed with 87.2% confidence - potential intruder'
+        },
+        {
+          id: 3,
+          type: 'gas_leak',
+          severity: 'critical',
+          floor: 3,
+          message: 'Gas levels exceeding safety thresholds',
+          timestamp: new Date(Date.now() - 900000),
+          source: 'ai',
+          confidence: 96.1,
+          aiAnalysis: 'Gas sensor readings indicate potential leak with 96.1% confidence'
+        },
+        {
+          id: 4,
+          type: 'anomaly',
+          severity: 'info',
+          floor: 4,
+          message: 'Unusual vibration patterns detected',
+          timestamp: new Date(Date.now() - 1200000),
+          source: 'ml',
+          confidence: 78.9,
+          aiAnalysis: 'Vibration sensor detected anomaly with 78.9% confidence'
+        }
+      ];
+
+      sampleAlerts.forEach(alert => {
+        addAlert(alert);
+      });
+    }
+
+    // Add new alert
+    function addAlert(alertData) {
+      const alert = {
+        id: alertData.id || Date.now(),
+        type: alertData.type || 'unknown',
+        severity: alertData.severity || 'info',
+        floor: alertData.floor || 1,
+        message: alertData.message || 'Alert detected',
+        timestamp: alertData.timestamp || new Date(),
+        source: alertData.source || 'system',
+        confidence: alertData.confidence || 0,
+        aiAnalysis: alertData.aiAnalysis || '',
+        acknowledged: false,
+        resolved: false
+      };
+
+      allAlerts.unshift(alert);
+      renderAlerts();
+      updateAIAnalytics();
+    }
+
+    // Render alerts based on current filter
+    function renderAlerts() {
+      const filteredAlerts = allAlerts.filter(alert => {
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'ai') return alert.source === 'ai';
+        if (currentFilter === 'ml') return alert.source === 'ml';
+        return alert.severity === currentFilter;
+      });
+
+      if (filteredAlerts.length === 0) {
+        alertContainer.innerHTML = `
+          <div class="no-alerts">
+            <i class="fas fa-shield-check"></i>
+            <h3>No ${currentFilter === 'all' ? '' : currentFilter} alerts</h3>
+            <p>${currentFilter === 'all' ? 'All clear! No active alerts detected.' : `No ${currentFilter} alerts found.`}</p>
+          </div>
+        `;
+        return;
+      }
+
+      alertContainer.innerHTML = filteredAlerts.map(alert => `
+        <div class="alert-card ${alert.severity}" data-id="${alert.id}">
+          <div class="alert-header-row">
+            <h4 class="alert-title">
+              ${getAlertIcon(alert.type)} ${alert.type.toUpperCase()} Alert
+              ${alert.source === 'ai' ? '🤖' : alert.source === 'ml' ? '🧠' : ''}
+            </h4>
+            <span class="alert-severity severity-${alert.severity}">
+              ${alert.severity.toUpperCase()}
+            </span>
+          </div>
+          
+          <div class="alert-content">
+            <p><strong>Floor ${alert.floor}:</strong> ${alert.message}</p>
+            ${alert.aiAnalysis ? `<p><em>🤖 AI Analysis:</em> ${alert.aiAnalysis}</p>` : ''}
+                         ${alert.confidence > 0 ? `<p><em>🎯 Confidence:</em> ${alert.confidence.toFixed(2)}%</p>` : ''}
+          </div>
+          
+          <div class="alert-meta">
+            <span>🕒 ${formatTimestamp(alert.timestamp)}</span>
+            <div class="alert-actions">
+              ${!alert.acknowledged ? `<button class="action-btn acknowledge" onclick="acknowledgeAlert(${alert.id})">✓ Acknowledge</button>` : ''}
+              ${!alert.resolved ? `<button class="action-btn resolve" onclick="resolveAlert(${alert.id})">🔧 Resolve</button>` : ''}
+              <button class="action-btn ignore" onclick="ignoreAlert(${alert.id})">✕ Ignore</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Filter alerts
+    function filterAlerts(filter) {
+      currentFilter = filter;
+      
+      // Update active button
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      renderAlerts();
+    }
+
+    // Alert actions
+    function acknowledgeAlert(id) {
+      const alert = allAlerts.find(a => a.id === id);
+      if (alert) {
+        alert.acknowledged = true;
+        renderAlerts();
+        updateAIAnalytics();
+      }
+    }
+
+    function resolveAlert(id) {
+      const alert = allAlerts.find(a => a.id === id);
+      if (alert) {
+        alert.resolved = true;
+        aiAnalytics.resolvedAlerts++;
+        renderAlerts();
+        updateAIAnalytics();
+      }
+    }
+
+    function ignoreAlert(id) {
+      allAlerts = allAlerts.filter(a => a.id !== id);
+      renderAlerts();
+      updateAIAnalytics();
+    }
+
+    function acknowledgeAll() {
+      allAlerts.forEach(alert => alert.acknowledged = true);
+      renderAlerts();
+      updateAIAnalytics();
+    }
+
+    function clearAlerts() {
+      if (confirm('Are you sure you want to clear all alerts?')) {
+        allAlerts = [];
+        renderAlerts();
+        updateAIAnalytics();
+      }
+    }
+
+    function exportAlerts() {
+      const dataStr = JSON.stringify(allAlerts, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `alerts_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+    }
+
+    function refreshAlerts() {
+      updateAIAnalytics();
+    }
+
+    // Utility functions
+    function getAlertIcon(type) {
+      const icons = {
+        fire: '🔥',
+        intrusion: '🕵️',
+        gas_leak: '🧪',
+        anomaly: '⚠️',
+        motion: '🚶',
+        vibration: '💥',
+        temperature: '🌡️',
+        humidity: '💧'
+      };
+      return icons[type] || '🚨';
+    }
+
+    function formatTimestamp(timestamp) {
+      return new Date(timestamp).toLocaleString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    // Socket.IO event handlers
+    socket.on('ml-alert', (data) => {
+      if (!data || !data.time || !data.type || !data.floor) return;
+
+      const alert = {
+        id: Date.now(),
+        type: data.type.toLowerCase().replace('_', ' '),
+        severity: data.severity || (data.type.includes('critical') || data.type.includes('fire') || data.type.includes('gas_leak') ? 'critical' : 
+                 data.type.includes('warning') || data.type.includes('intrusion') ? 'warning' : 'info'),
+        floor: data.floor,
+        message: data.message || `${data.type} detected on floor ${data.floor}`,
+        timestamp: new Date(data.time),
+        source: data.source || 'ml',
+        confidence: data.confidence || Math.floor(Math.random() * 20) + 80,
+        aiAnalysis: `ML model detected ${data.type} with ${data.confidence || 85}% confidence`,
+        acknowledged: false,
+        resolved: false
+      };
+
+      addAlert(alert);
+      
+      // Update AI analytics
+      if (alert.severity === 'critical') {
+        aiAnalytics.activeThreats++;
+      }
+      updateAIAnalytics();
+    });
+    
+    // Also listen for sensor updates that might trigger ML predictions
+    socket.on('sensor-update', async (data) => {
+      if (!data || !data.floor) return;
+      
+      // Trigger ML prediction if we have sensor data
+      if (data.temp !== undefined || data.gas !== undefined || data.flame !== undefined || 
+          data.vibration !== undefined || data.motion !== undefined) {
+        try {
+          const response = await fetch('/api/ml-predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              floor: data.floor,
+              sensorData: {
+                temp: data.temp,
+                humidity: data.humidity,
+                gas: data.gas,
+                vibration: data.vibration,
+                flame: data.flame,
+                motion: data.motion
+              },
+              faceRecognitionResult: { name: data.name }
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            // ML alerts are already emitted by the server
+            console.log('ML prediction completed:', result.prediction.overallThreatLevel);
+          }
+        } catch (error) {
+          console.error('Error triggering ML prediction:', error);
+        }
+      }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load initial alerts from server
+      <% if (typeof initialAlerts !== 'undefined' && initialAlerts && initialAlerts.length > 0) { %>
+        initialAlerts.forEach(alert => {
+          addAlert({
+            id: alert.id,
+            type: alert.type,
+            severity: alert.severity,
+            floor: alert.floor,
+            message: alert.message,
+            timestamp: new Date(alert.timestamp),
+            source: alert.source,
+            confidence: alert.confidence,
+            aiAnalysis: alert.source === 'ml' ? 'ML model detected threat' : 'System alert',
+            acknowledged: alert.acknowledged,
+            resolved: alert.resolved
+          });
+        });
+      <% } else { %>
+        // Generate sample alerts if no real data
+        generateSampleAlerts();
+      <% } %>
+      
+      updateAIAnalytics();
+      
+      // Simulate real-time updates
+      setInterval(() => {
+        aiAnalytics.activeThreats = allAlerts.filter(a => !a.resolved).length;
+        aiAnalytics.securityScore = Math.max(50, Math.min(100, 100 - aiAnalytics.activeThreats * 5));
+        aiAnalytics.aiConfidence = Math.max(70, Math.min(100, 95 + Math.random() * 10));
+        
+        updateAIAnalytics();
+      }, 10000);
+    });
+  </script>
+</body>
+</html>
