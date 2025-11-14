@@ -76,11 +76,81 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         console.log(`✅ Sensor data saved — Floor ${floor}`);
       }
 
+      // Run ML prediction on sensor data (with error handling)
+      let mlPrediction = { threats: [], overallThreatLevel: 'info', overallConfidence: 0 };
+      try {
+        const { mlEngine } = require('../ml/mlModels');
+        // Get recent history for better predictions
+        const recentHistory = await SensorData.find({
+          floor: floorStr,
+          source: 'sensor',
+          createdAt: { $gte: new Date(Date.now() - 3600000) } // Last hour
+        })
+        .sort({ createdAt: 1 })
+        .limit(50)
+        .lean();
+        
+        // Add to anomaly detector history
+        recentHistory.forEach(entry => {
+          const histData = {
+            temp: entry.type === 'temp' ? entry.payload : undefined,
+            humidity: entry.type === 'humidity' ? entry.payload : undefined,
+            gas: entry.type === 'gas' ? entry.payload : undefined,
+            vibration: entry.type === 'vibration' ? entry.payload : undefined,
+            flame: entry.type === 'flame' ? entry.payload : undefined
+          };
+          mlEngine.anomalyDetector.addDataPoint(histData);
+        });
+        
+        // Prepare history for ML models
+        const history = recentHistory.map(entry => ({
+          temp: entry.type === 'temp' ? entry.payload : undefined,
+          humidity: entry.type === 'humidity' ? entry.payload : undefined,
+          gas: entry.type === 'gas' ? entry.payload : undefined,
+          vibration: entry.type === 'vibration' ? entry.payload : undefined,
+          flame: entry.type === 'flame' ? entry.payload : undefined
+        })).filter(h => Object.values(h).some(v => v !== undefined));
+        
+        mlPrediction = await mlEngine.predictThreats(floor, sensors, { name: personName }, history);
+      } catch (mlError) {
+        console.error('ML prediction error:', mlError);
+        // Continue without ML prediction if it fails
+      }
+      
+      // Emit ML alerts if threats detected
+      if (mlPrediction.threats.length > 0) {
+        mlPrediction.threats.forEach(threat => {
+          io.emit('ml-alert', {
+            type: threat.type,
+            floor: floor,
+            severity: threat.severity,
+            confidence: threat.confidence,
+            message: threat.message,
+            time: new Date(),
+            source: 'ml'
+          });
+        });
+      }
+      
+      // Emit sensor update with all sensor values
       io.emit('sensor-update', {
         floor,
-        ...sensors,
+        temp: sensors.temp,
+        humidity: sensors.humidity,
+        gas: sensors.gas,
+        vibration: sensors.vibration,
+        flame: sensors.flame,
+        motion: sensors.motion,
         intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
-        name: personName ?? undefined
+        name: personName ?? undefined,
+        mlPrediction: mlPrediction.overallThreatLevel
+      });
+      
+      // Also emit chart update for charts page
+      io.emit('chart-update', {
+        floor,
+        data: sensors,
+        timestamp: new Date()
       });
     }
 
@@ -123,31 +193,61 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
 
     // ======================== ESP32-CAM (Gate 1 & 2) ========================
     else if (topic === 'iot/esp32cam') {
-      if (!personName && !intruderImage) return;
+      // Handle ESP32-CAM data for gates
+      const gateNumber = floor; // floor should be 1 or 2 for gates
+      
+      // Save snapshot image if provided
+      if (intruderImage) {
+        const fs = require('fs');
+        const path = require('path');
+        try {
+          const matches = intruderImage.match(/^data:image\/(jpeg|jpg|png);base64,(.+)$/);
+          let base64Data = intruderImage;
+          if (matches) base64Data = matches[2];
+          const imgPath = path.join(__dirname, '../public/snapshot', `${gateNumber}.jpg`);
+          fs.mkdirSync(path.dirname(imgPath), { recursive: true });
+          fs.writeFileSync(imgPath, Buffer.from(base64Data, 'base64'));
+        } catch (err) {
+          console.error(`Error saving snapshot for gate ${gateNumber}:`, err);
+        }
+      }
+      
+      // Always emit sensor update to show device is online
+      io.emit('sensor-update', {
+        floor: gateNumber,
+        intruderImage: intruderImage || undefined,
+        name: personName || 'Unknown',
+        motion: true, // ESP32-CAM typically indicates motion when sending data
+        timestamp: new Date()
+      });
 
-      if (personName?.toLowerCase() === 'intruder' && intruderImage) {
-        await SensorData.create({
-          topic,
-          floor: floorStr,
-          type: 'intruderImage',
-          source: 'esp32cam',
-          payload: intruderImage
-        });
+      // Only process intruder detection if we have image data
+      if (intruderImage) {
+        if (personName?.toLowerCase() === 'intruder') {
+          await SensorData.create({
+            topic,
+            floor: floorStr,
+            type: 'intruderImage',
+            source: 'esp32cam',
+            payload: intruderImage
+          });
+
+          io.emit('intruder-alert', {
+            floor: gateNumber,
+            image: intruderImage,
+            name: 'Intruder'
+          });
+        } else {
+          // Known person or visitor
+          io.emit('visitor-detected', {
+            floor: gateNumber,
+            image: intruderImage,
+            name: personName || 'Known Person'
+          });
+        }
       }
 
-      io.emit('sensor-update', {
-        floor,
-        intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
-        name: personName ?? 'Unknown'
-      });
-
-      io.emit('intruder-alert', {
-        floor,
-        image: personName?.toLowerCase() === 'intruder' ? intruderImage : null,
-        name: personName ?? 'Unknown'
-      });
-
-      console.log(`📸 ESP32-CAM Alert — ${personName ?? 'Unknown'} at Gate ${floor}`);
+      console.log(`📸 ESP32-CAM Data — ${personName || 'Motion'} at Gate ${gateNumber}`);
     }
 
     // ======================== UNKNOWN TOPIC ========================

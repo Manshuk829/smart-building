@@ -361,8 +361,11 @@
     
     // Initialize charts when page loads
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('Charts page loaded with data:', sensorData.length, 'records');
       if (typeof renderCharts === 'function') {
         renderCharts();
+      } else {
+        console.error('renderCharts function not found');
       }
     });
     

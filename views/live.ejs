@@ -5,8 +5,11 @@
   <title>🤖 AI-Powered Live ESP32-CAM Monitoring</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/css/live_modern_styles.css" />
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+  <script src="/js/modernLive.js"></script>
   <style>
     :root {
       --primary: #667eea;
@@ -542,6 +545,30 @@
           <h3>Security Score</h3>
           <p id="security-score">95%</p>
         </div>
+        <div class="ai-metric">
+          <i class="fas fa-brain"></i>
+          <h3>AI Confidence</h3>
+          <p id="ai-confidence">92%</p>
+        </div>
+        <div class="ai-metric">
+          <i class="fas fa-bolt"></i>
+          <h3>Response Time</h3>
+          <p id="response-time">0.15s</p>
+        </div>
+      </div>
+      
+      <!-- Real-Time ML Predictions -->
+      <div class="ml-predictions">
+        <h3><i class="fas fa-robot"></i> Real-Time ML Predictions</h3>
+        <div class="ml-grid">
+          <% for (let gate = 1; gate <= 2; gate++) { %>
+            <div class="ml-card">
+              <h4>Gate <%= gate %></h4>
+              <div id="ml-prediction-<%= gate %>" class="ml-prediction-container"></div>
+              <div id="edge-ai-<%= gate %>" class="edge-ai-container"></div>
+            </div>
+          <% } %>
+        </div>
       </div>
 
       <!-- Smart Alerts -->
@@ -568,20 +595,33 @@
             </div>
           </div>
 
-          <!-- Camera Feed -->
+          <!-- Camera Feed with Modern Features -->
           <div class="camera-container">
             <div class="camera-overlay">
               <i class="fas fa-video"></i> Live Feed
+              <span class="fps-indicator" id="fps-<%= gate %>">-- fps</span>
             </div>
-            <div class="motion-detection" id="motion-<%= gate %>">
+            <div class="motion-detection" id="motion-<%= gate %>" style="display: none;">
               <i class="fas fa-running"></i> Motion Detected
+            </div>
+            <div class="ai-overlay" id="ai-overlay-<%= gate %>">
+              <div class="ai-badge">
+                <i class="fas fa-brain"></i> AI Processing
+              </div>
             </div>
             <div class="esp32-cam">
               <div class="camera-placeholder" id="placeholder-<%= gate %>">
                 <i class="fas fa-camera"></i>
                 <div>Camera Initializing...</div>
+                <div class="loading-spinner"></div>
               </div>
               <img id="cam-<%= gate %>" src="/snapshot/<%= gate %>.jpg" alt="Gate <%= gate %> Camera" style="display: none;" />
+              <canvas id="canvas-<%= gate %>" style="display: none;"></canvas>
+            </div>
+            <!-- Threat Level Indicator -->
+            <div class="threat-indicator" id="threat-indicator-<%= gate %>">
+              <span class="threat-label">Threat Level:</span>
+              <span class="threat-level low" id="threat-level-<%= gate %>">Low</span>
             </div>
           </div>
 
@@ -712,5 +752,6 @@
   </div>
 
   <script src="/js/live.js"></script>
+  <script src="/js/modernLive.js"></script>
 </body>
 </html>

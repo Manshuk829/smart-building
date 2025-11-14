@@ -96,6 +96,33 @@ function generateSampleData() {
   return sampleData;
 }
 
+// -------------------- Data Validation and Processing --------------------
+function validateAndProcessData(data) {
+  if (!data || !Array.isArray(data)) {
+    console.log('No valid data provided, generating sample data...');
+    return generateSampleData();
+  }
+  
+  // Filter out invalid entries
+  const validData = data.filter(entry => {
+    return entry && entry.createdAt && (
+      entry.temperature !== undefined ||
+      entry.humidity !== undefined ||
+      entry.gas !== undefined ||
+      entry.flame !== undefined ||
+      entry.motion !== undefined ||
+      entry.vibration !== undefined
+    );
+  });
+  
+  if (validData.length === 0) {
+    console.log('No valid sensor data found, generating sample data...');
+    return generateSampleData();
+  }
+  
+  return validData;
+}
+
 // -------------------- Enhanced Chart Creation --------------------
 function createChart(ctx, label, data, color, type = 'line', mlOverlayTimes = []) {
   // Ensure we have data to work with
@@ -336,18 +363,20 @@ function getChartLabel(chartId) {
 function renderCharts() {
   console.log('Starting chart rendering...');
   
-  // If no sensor data, generate sample data for testing
-  if (!sensorData || sensorData.length === 0) {
-    console.log('No sensor data found, generating sample data for testing...');
-    sensorData = generateSampleData();
-  }
+  // Validate and process data
+  sensorData = validateAndProcessData(sensorData);
   
   console.log('Sensor data available:', sensorData.length, 'records');
 
-  const prepareData = key => sensorData.map(d => ({
-    value: d[key],
-    createdAt: d.createdAt
-  })).filter(d => d.value !== undefined && d.value !== null);
+  const prepareData = key => {
+    const data = sensorData.map(d => ({
+      value: d[key],
+      createdAt: d.createdAt
+    })).filter(d => d.value !== undefined && d.value !== null);
+    
+    // If no data available, return empty array (don't generate sample data here)
+    return data;
+  };
 
   const chartDefs = [
     { id: 'tempChart', key: 'temperature', label: 'Temperature (°C)', color: '#e74c3c' },
@@ -367,7 +396,17 @@ function renderCharts() {
     
     const data = prepareData(key);
     if (data.length === 0) {
-      console.warn(`No data for ${key}`);
+      console.warn(`No data for ${key}, skipping chart creation`);
+      // Show a message instead of creating empty chart
+      const canvas = document.getElementById(id);
+      if (canvas && canvas.parentElement) {
+        const parent = canvas.parentElement;
+        parent.innerHTML = `<div style="text-align: center; padding: 40px; color: #999;">
+          <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 10px;"></i>
+          <p>No data available for ${label}</p>
+          <p style="font-size: 12px;">Waiting for sensor data...</p>
+        </div>`;
+      }
       return;
     }
     
@@ -426,10 +465,61 @@ function updatePerformanceMetrics() {
 const socket = io();
 
 socket.on('sensor-update', newData => {
+  console.log('Received sensor update:', newData);
   if (!sensorData) sensorData = [];
-  newData.createdAt = new Date();
-  sensorData.push(newData);
-  renderCharts();
+  
+  // Convert the new data to the expected format
+  const chartData = {
+    createdAt: new Date(),
+    temperature: newData.temp !== undefined && newData.temp !== null ? newData.temp : undefined,
+    humidity: newData.humidity !== undefined && newData.humidity !== null ? newData.humidity : undefined,
+    gas: newData.gas !== undefined && newData.gas !== null ? newData.gas : undefined,
+    flame: newData.flame !== undefined && newData.flame !== null ? (typeof newData.flame === 'boolean' ? (newData.flame ? 1 : 0) : newData.flame) : undefined,
+    motion: newData.motion !== undefined && newData.motion !== null ? (typeof newData.motion === 'boolean' ? (newData.motion ? 1 : 0) : newData.motion) : undefined,
+    vibration: newData.vibration !== undefined && newData.vibration !== null ? newData.vibration : undefined
+  };
+  
+  // Only add if we have at least one valid sensor value
+  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined || 
+      chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
+    sensorData.push(chartData);
+    
+    // Keep only last 100 data points
+    if (sensorData.length > 100) {
+      sensorData = sensorData.slice(-100);
+    }
+    
+    renderCharts();
+  }
+});
+
+socket.on('chart-update', newData => {
+  console.log('Received chart update:', newData);
+  if (!sensorData) sensorData = [];
+  
+  // Convert the new data to the expected format
+  const chartData = {
+    createdAt: newData.timestamp || new Date(),
+    temperature: newData.data?.temp !== undefined && newData.data?.temp !== null ? newData.data.temp : undefined,
+    humidity: newData.data?.humidity !== undefined && newData.data?.humidity !== null ? newData.data.humidity : undefined,
+    gas: newData.data?.gas !== undefined && newData.data?.gas !== null ? newData.data.gas : undefined,
+    flame: newData.data?.flame !== undefined && newData.data?.flame !== null ? (typeof newData.data.flame === 'boolean' ? (newData.data.flame ? 1 : 0) : newData.data.flame) : undefined,
+    motion: newData.data?.motion !== undefined && newData.data?.motion !== null ? (typeof newData.data.motion === 'boolean' ? (newData.data.motion ? 1 : 0) : newData.data.motion) : undefined,
+    vibration: newData.data?.vibration !== undefined && newData.data?.vibration !== null ? newData.data.vibration : undefined
+  };
+  
+  // Only add if we have at least one valid sensor value
+  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined || 
+      chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
+    sensorData.push(chartData);
+    
+    // Keep only last 100 data points
+    if (sensorData.length > 100) {
+      sensorData = sensorData.slice(-100);
+    }
+    
+    renderCharts();
+  }
 });
 
 socket.on('ml-line', ({ floor, prediction, timestamp }) => {

@@ -34,6 +34,20 @@ try {
   console.error('❌ MQTT initialization failed:', err.message);
 }
 
+// Initialize Modern AI/ML Services
+const app = require('./app');
+app.initializeModernServices(io)
+  .then(result => {
+    if (result.success) {
+      console.log('🚀 Modern AI/ML services ready');
+    } else {
+      console.error('⚠️ Some services failed to initialize:', result.error);
+    }
+  })
+  .catch(err => {
+    console.error('❌ Service initialization error:', err);
+  });
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 

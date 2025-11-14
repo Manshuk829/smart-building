@@ -18,8 +18,15 @@ const config = {
   },
   
   // Application Settings
-  floors: [1, 2, 3, 4],
+  floors: [1, 2, 3, 4], // 4 floors (each base/shelf of shoe rack = 1 floor)
   nodesPerFloor: 4,
+  buildingDimensions: {
+    depth: 17,    // 17 cm (Depth)
+    width: 15,    // 15 cm (Width)
+    height: 15,   // 15 cm (Height per floor)
+    blocks: 4,    // 4 blocks/sections
+    unit: 'cm'   // All dimensions in centimeters
+  },
   
   // Sensor Thresholds
   thresholds: {

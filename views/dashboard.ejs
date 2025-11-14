@@ -552,11 +552,22 @@
         const { floor, temp, humidity, gas, vibration, flame, motion } = data;
         
         // Update sensor values
-        if (temp !== undefined) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
-        if (humidity !== undefined) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
-        if (gas !== undefined) document.getElementById(`gas-floor-${floor}`).textContent = gas;
-        if (vibration !== undefined) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
-        if (flame !== undefined) document.getElementById(`flame-floor-${floor}`).textContent = flame ? "🔥 Flame Detected" : "✅ Normal";
+        if (temp !== undefined && temp !== null) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
+        if (humidity !== undefined && humidity !== null) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
+        if (gas !== undefined && gas !== null) {
+          const gasValue = typeof gas === 'number' ? gas.toFixed(2) : gas;
+          document.getElementById(`gas-floor-${floor}`).textContent = `${gasValue} ppm`;
+        }
+        if (vibration !== undefined && vibration !== null) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
+        if (flame !== undefined) {
+          const flameElement = document.getElementById(`flame-floor-${floor}`);
+          if (flameElement) {
+            // Handle both boolean and numeric flame values
+            const isFlameDetected = typeof flame === 'boolean' ? flame : (flame > 0);
+            flameElement.textContent = isFlameDetected ? "🔥 Flame Detected" : "✅ Normal";
+            flameElement.style.color = isFlameDetected ? '#dc3545' : '#28a745';
+          }
+        }
         if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ None";
         
         // Set default motion value if not provided
@@ -706,12 +717,40 @@
     <% const now = new Date(); %>
     <% for (let floor = 1; floor <= 4; floor++) {
       const data = dataByFloor[floor];
-      const updatedAt = data ? new Date(data.createdAt) : null;
-      const diff = data ? Math.floor((now - updatedAt) / 1000) : null;
-      const days = diff ? Math.floor(diff / 86400) : 0;
-      const hrs = diff ? Math.floor((diff % 86400) / 3600) : 0;
-      const mins = diff ? Math.floor((diff % 3600) / 60) : 0;
-      const secs = diff ? diff % 60 : 0;
+      let updatedAt = null;
+      let diff = null;
+      let days = 0, hrs = 0, mins = 0, secs = 0;
+      
+      if (data && data.createdAt) {
+        try {
+          // Handle both Date objects and ISO strings
+          updatedAt = data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt);
+          
+          // Validate date is not invalid
+          if (!isNaN(updatedAt.getTime())) {
+            diff = Math.floor((now.getTime() - updatedAt.getTime()) / 1000);
+            
+            // Only calculate if diff is positive and reasonable (not in future, not too old)
+            if (diff >= 0 && diff < 31536000) { // Less than 1 year
+              days = Math.floor(diff / 86400);
+              hrs = Math.floor((diff % 86400) / 3600);
+              mins = Math.floor((diff % 3600) / 60);
+              secs = diff % 60;
+            } else {
+              // Invalid or future date - treat as no data
+              diff = null;
+              updatedAt = null;
+            }
+          } else {
+            diff = null;
+            updatedAt = null;
+          }
+        } catch (e) {
+          console.error('Error parsing date for floor', floor, e);
+          diff = null;
+          updatedAt = null;
+        }
+      }
     %>
       <div class="floor-heading">
         🏢 Floor <%= floor %>
@@ -719,8 +758,10 @@
       </div>
 
       <% if (data) { %>
-        <% if (diff > 30) { %>
+        <% if (diff !== null && diff > 30) { %>
           <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m <%= secs %>s</div>
+        <% } else if (diff === null) { %>
+          <div class="status-alert" style="color: orange;">⚠ Data timestamp unavailable</div>
         <% } %>
 
         <div class="card">
@@ -744,8 +785,8 @@
           </div>
           <div class="sensor-box"><i class="fas fa-smog"></i>
             <div><div class="sensor-label">Gas</div><div class="sensor-value" id="gas-floor-<%= floor %>">
-              <% if (data['gas'] !== undefined) { %>
-                <%= data['gas'] %>
+              <% if (data['gas'] !== undefined && data['gas'] !== null) { %>
+                <%= typeof data['gas'] === 'number' ? data['gas'].toFixed(2) : data['gas'] %> ppm
               <% } else { %>
                 N/A
               <% } %>

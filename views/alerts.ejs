@@ -649,26 +649,89 @@
 
       const alert = {
         id: Date.now(),
-        type: data.type.toLowerCase(),
-        severity: data.type.includes('critical') ? 'critical' : 
-                 data.type.includes('warning') ? 'warning' : 'info',
+        type: data.type.toLowerCase().replace('_', ' '),
+        severity: data.severity || (data.type.includes('critical') || data.type.includes('fire') || data.type.includes('gas_leak') ? 'critical' : 
+                 data.type.includes('warning') || data.type.includes('intrusion') ? 'warning' : 'info'),
         floor: data.floor,
         message: data.message || `${data.type} detected on floor ${data.floor}`,
         timestamp: new Date(data.time),
-        source: 'ml',
-        confidence: Math.floor(Math.random() * 20) + 80,
-        aiAnalysis: `ML model detected ${data.type} with high confidence`,
+        source: data.source || 'ml',
+        confidence: data.confidence || Math.floor(Math.random() * 20) + 80,
+        aiAnalysis: `ML model detected ${data.type} with ${data.confidence || 85}% confidence`,
         acknowledged: false,
         resolved: false
       };
 
       addAlert(alert);
+      
+      // Update AI analytics
+      if (alert.severity === 'critical') {
+        aiAnalytics.activeThreats++;
+      }
+      updateAIAnalytics();
+    });
+    
+    // Also listen for sensor updates that might trigger ML predictions
+    socket.on('sensor-update', async (data) => {
+      if (!data || !data.floor) return;
+      
+      // Trigger ML prediction if we have sensor data
+      if (data.temp !== undefined || data.gas !== undefined || data.flame !== undefined || 
+          data.vibration !== undefined || data.motion !== undefined) {
+        try {
+          const response = await fetch('/api/ml-predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              floor: data.floor,
+              sensorData: {
+                temp: data.temp,
+                humidity: data.humidity,
+                gas: data.gas,
+                vibration: data.vibration,
+                flame: data.flame,
+                motion: data.motion
+              },
+              faceRecognitionResult: { name: data.name }
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            // ML alerts are already emitted by the server
+            console.log('ML prediction completed:', result.prediction.overallThreatLevel);
+          }
+        } catch (error) {
+          console.error('Error triggering ML prediction:', error);
+        }
+      }
     });
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
+      // Load initial alerts from server
+      <% if (typeof initialAlerts !== 'undefined' && initialAlerts && initialAlerts.length > 0) { %>
+        initialAlerts.forEach(alert => {
+          addAlert({
+            id: alert.id,
+            type: alert.type,
+            severity: alert.severity,
+            floor: alert.floor,
+            message: alert.message,
+            timestamp: new Date(alert.timestamp),
+            source: alert.source,
+            confidence: alert.confidence,
+            aiAnalysis: alert.source === 'ml' ? 'ML model detected threat' : 'System alert',
+            acknowledged: alert.acknowledged,
+            resolved: alert.resolved
+          });
+        });
+      <% } else { %>
+        // Generate sample alerts if no real data
+        generateSampleAlerts();
+      <% } %>
+      
       updateAIAnalytics();
-      generateSampleAlerts();
       
       // Simulate real-time updates
       setInterval(() => {

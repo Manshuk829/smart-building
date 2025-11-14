@@ -16,6 +16,20 @@ router.post('/upload-image', apiController.uploadImage);
 // Face Detection API
 router.post('/analyze-image', apiController.analyzeImage);
 
+// ML Data API endpoints
+router.post('/ml-data', apiController.saveMLData);
+router.post('/evacuation-update', apiController.updateEvacuationRoutes);
+router.get('/ml-status', apiController.getMLStatus);
+
+// Face Training API - Proxy to Flask server
+router.post('/train-face', apiController.trainFace);
+router.get('/known-faces', apiController.getKnownFaces);
+
+// ML Prediction API
+router.post('/ml-predict', apiController.mlPredict);
+router.get('/evacuation-route', apiController.getEvacuationRoute);
+router.post('/train-evacuation-model', apiController.trainEvacuationModel);
+
 // ✅ Developer sanity check (optional)
 if (process.env.NODE_ENV !== 'production') {
   if (typeof apiController.saveSensorData !== 'function') {

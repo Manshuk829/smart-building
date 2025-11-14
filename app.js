@@ -5,6 +5,12 @@ const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 
+// Modern AI/ML Services (Next-Generation Stack)
+const { RealTimeMLProcessor } = require('./ml/realtimeMLProcessor');
+const { RealTimeAnalytics } = require('./services/realtimeAnalytics');
+const { EdgeAIService } = require('./services/edgeAI');
+const { StreamingService } = require('./services/streamingService');
+
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -81,6 +87,10 @@ app.use('/api', apiRoutes);
 app.use('/alerts', alertsRoutes);
 app.use('/', visitorRoutes);
 
+// Modern API Routes (GraphQL, Real-Time ML, Edge AI)
+const modernApiRoutes = require('./routes/modernApiRoutes');
+app.use('/api/modern', modernApiRoutes);
+
 // === Automatic Cleanup of Old Images in /public/snapshot ===
 const cron = require('node-cron');
 const fs = require('fs');
@@ -106,5 +116,47 @@ cron.schedule('0 3 * * *', () => { // Run daily at 3:00 AM
     console.error('❌ Error during snapshot cleanup:', err);
   }
 });
+
+// Initialize Modern AI/ML Services
+let realTimeML, realTimeAnalytics, edgeAI, streamingService;
+
+async function initializeModernServices(io) {
+  try {
+    // Initialize Real-Time ML Processor
+    realTimeML = new RealTimeMLProcessor();
+    await realTimeML.initializeModels();
+    realTimeML.startProcessing(1000); // Process every second
+    console.log('✅ Real-Time ML Processor initialized');
+
+    // Initialize Real-Time Analytics
+    realTimeAnalytics = new RealTimeAnalytics();
+    realTimeAnalytics.initialize();
+    console.log('✅ Real-Time Analytics initialized');
+
+    // Initialize Edge AI Service
+    edgeAI = new EdgeAIService();
+    await edgeAI.initialize();
+    console.log('✅ Edge AI Service initialized');
+
+    // Initialize Streaming Service
+    streamingService = new StreamingService();
+    streamingService.initialize(io);
+    console.log('✅ Streaming Service initialized');
+
+    // Make services available globally
+    app.set('realTimeML', realTimeML);
+    app.set('realTimeAnalytics', realTimeAnalytics);
+    app.set('edgeAI', edgeAI);
+    app.set('streamingService', streamingService);
+
+    return { success: true, message: 'All modern AI/ML services initialized' };
+  } catch (error) {
+    console.error('❌ Error initializing modern services:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Export initialization function
+app.initializeModernServices = initializeModernServices;
 
 module.exports = app;

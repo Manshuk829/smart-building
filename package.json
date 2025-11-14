@@ -25,18 +25,25 @@
     "node": ">=16"
   },
   "dependencies": {
+    "@tensorflow/tfjs-node": "^4.15.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "connect-mongo": "^5.1.0",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "graphql": "^16.8.1",
+    "graphql-subscriptions": "^2.0.0",
+    "graphql-ws": "^5.14.2",
     "mongoose": "^8.16.1",
     "mqtt": "^5.13.2",
-    "nodemailer": "^7.0.5",
-    "socket.io": "^4.8.1",
     "multer": "^1.4.5-lts.1",
-    "node-cron": "^3.0.0"
+    "node-cron": "^3.0.0",
+    "nodemailer": "^7.0.5",
+    "redis": "^4.6.12",
+    "socket.io": "^4.8.1",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
