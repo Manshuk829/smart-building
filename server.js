@@ -35,7 +35,6 @@ try {
 }
 
 // Initialize Modern AI/ML Services
-const app = require('./app');
 app.initializeModernServices(io)
   .then(result => {
     if (result.success) {
