@@ -1,644 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <title>🚨 Emergency Evacuation Routes</title>
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Evacuation System | 3D Digital Twin</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
+
   <style>
-    :root {
-      --primary: #e74c3c;
-      --secondary: #c0392b;
-      --success: #27ae60;
-      --warning: #f39c12;
-      --danger: #e74c3c;
-      --dark: #2c3e50;
-      --light: #ecf0f1;
-    }
-
     body {
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      color: #333;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .header {
-      text-align: center;
+      overflow: hidden;
+      background-color: #0f172a;
       color: white;
-      margin-bottom: 30px;
+      font-family: 'Inter', sans-serif;
     }
 
-    .header h1 {
-      font-size: 2.5rem;
-      margin: 0;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
     }
 
-    .emergency-banner {
-      background: linear-gradient(45deg, #e74c3c, #c0392b);
-      color: white;
+    .ui-panel {
+      position: absolute;
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
       padding: 20px;
-      border-radius: 15px;
-      margin-bottom: 30px;
-      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .status-safe {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: 1px solid #22c55e;
+    }
+
+    .status-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid #ef4444;
       animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-    }
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
 
-    .building-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
+      70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
 
-    .floor-plan {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      position: relative;
-    }
-
-    .floor-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #eee;
-    }
-
-    .floor-title {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: var(--dark);
-    }
-
-    .floor-status {
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: bold;
-    }
-
-    .status-safe {
-      background: var(--success);
-      color: white;
-    }
-
-    .status-warning {
-      background: var(--warning);
-      color: white;
-    }
-
-    .status-danger {
-      background: var(--danger);
-      color: white;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0.5; }
-    }
-
-    .evacuation-route {
-      position: relative;
-      height: 200px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      margin: 15px 0;
-      overflow: hidden;
-    }
-
-    .route-path {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(45deg, #3498db, #2980b9);
-      opacity: 0.3;
-      border-radius: 10px;
-    }
-
-    .route-points {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-    }
-
-    .route-point {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--primary);
-      border: 3px solid white;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      position: relative;
-    }
-
-    .route-point.start {
-      background: var(--success);
-    }
-
-    .route-point.end {
-      background: var(--warning);
-    }
-
-    .route-point.danger {
-      background: var(--danger);
-      animation: pulse 1s infinite;
-    }
-
-    .route-labels {
-      position: absolute;
-      top: -30px;
-      width: 100%;
-      display: flex;
-      justify-content: space-around;
-    }
-
-    .route-label {
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: var(--dark);
-      text-align: center;
-    }
-
-    .ml-data {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    .ml-metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .ml-metric {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    .ml-metric h4 {
-      margin: 0 0 10px 0;
-      font-size: 1rem;
-    }
-
-    .ml-metric p {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-
-    .alerts-container {
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .alert-item {
-      background: #f8f9fa;
-      border-left: 4px solid var(--primary);
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 5px;
-      animation: slideIn 0.5s ease;
-    }
-
-    .alert-item.warning {
-      border-left-color: var(--warning);
-      background: #fff3cd;
-    }
-
-    .alert-item.danger {
-      border-left-color: var(--danger);
-      background: #f8d7da;
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(-20px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-
-    .alert-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-    }
-
-    .alert-title {
-      font-weight: bold;
-      color: var(--dark);
-    }
-
-    .alert-time {
-      font-size: 0.8rem;
-      color: #666;
-    }
-
-    .alert-message {
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .control-btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .control-btn.primary {
-      background: var(--primary);
-      color: white;
-    }
-
-    .control-btn.success {
-      background: var(--success);
-      color: white;
-    }
-
-    .control-btn.warning {
-      background: var(--warning);
-      color: white;
-    }
-
-    .control-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-
-    .back {
-      text-align: center;
-      margin-top: 30px;
-    }
-
-    .back a {
-      color: white;
-      text-decoration: none;
-      font-weight: bold;
-      padding: 10px 20px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 25px;
-      transition: all 0.3s ease;
-    }
-
-    .back a:hover {
-      background: rgba(255,255,255,0.3);
-      transform: translateY(-2px);
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="header">
-      <h1><i class="fas fa-route"></i> Emergency Evacuation Routes</h1>
-      <p>AI-Powered Emergency Response System</p>
+
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header / Status -->
+  <div class="ui-panel top-6 left-6 w-80">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-xl font-bold text-white">Smart Building Twin</h1>
+      <span id="systemStatus" class="status-badge status-safe">SYSTEM NORMAL</span>
     </div>
 
-    <div class="emergency-banner" id="emergency-banner" style="display: none;">
-      <h2><i class="fas fa-exclamation-triangle"></i> EMERGENCY ALERT</h2>
-      <p id="emergency-message">Evacuation routes have been updated based on current conditions</p>
-    </div>
-
-    <div class="controls">
-      <button class="control-btn primary" onclick="refreshData()">
-        <i class="fas fa-sync"></i> Refresh Data
-      </button>
-      <button class="control-btn success" onclick="testEvacuation()">
-        <i class="fas fa-play"></i> Test Evacuation
-      </button>
-      <button class="control-btn warning" onclick="simulateEmergency()">
-        <i class="fas fa-exclamation-triangle"></i> Simulate Emergency
-      </button>
-    </div>
-
-    <!-- ML Data Overview -->
-    <div class="ml-data">
-      <h3><i class="fas fa-brain"></i> ML Analysis & Evacuation Data</h3>
-      <div class="ml-metrics">
-        <div class="ml-metric">
-          <h4>Active Threats</h4>
-          <p id="active-threats">0</p>
-        </div>
-        <div class="ml-metric">
-          <h4>Evacuation Routes</h4>
-          <p id="evacuation-routes">4</p>
-        </div>
-        <div class="ml-metric">
-          <h4>Safe Zones</h4>
-          <p id="safe-zones">8</p>
-        </div>
-        <div class="ml-metric">
-          <h4>AI Confidence</h4>
-          <p id="ai-confidence">95%</p>
-        </div>
+    <div class="space-y-3">
+      <div class="flex justify-between text-sm text-gray-400">
+        <span>Active Sensors</span>
+        <span class="text-white font-mono">24/24</span>
       </div>
-    </div>
-
-    <!-- Building Floors -->
-    <div class="building-container">
-      <% for (let floor = 1; floor <= 4; floor++) { %>
-        <div class="floor-plan">
-          <div class="floor-header">
-            <div class="floor-title">
-              <i class="fas fa-building"></i> Floor <%= floor %>
-            </div>
-            <div class="floor-status" id="floor-status-<%= floor %>">
-              Safe
-            </div>
-          </div>
-
-          <div class="evacuation-route" id="route-<%= floor %>">
-            <div class="route-path"></div>
-            <div class="route-points">
-              <div class="route-point start" title="Main Entrance"></div>
-              <div class="route-point" title="Corridor A"></div>
-              <div class="route-point" title="Corridor B"></div>
-              <div class="route-point end" title="Emergency Exit"></div>
-            </div>
-            <div class="route-labels">
-              <div class="route-label">Entrance</div>
-              <div class="route-label">Corridor A</div>
-              <div class="route-label">Corridor B</div>
-              <div class="route-label">Exit</div>
-            </div>
-          </div>
-
-          <div class="floor-info">
-            <p><strong>Capacity:</strong> <span id="capacity-<%= floor %>">50</span> people</p>
-            <p><strong>Evacuation Time:</strong> <span id="evac-time-<%= floor %>">3</span> minutes</p>
-            <p><strong>Status:</strong> <span id="status-<%= floor %>">Normal</span></p>
-          </div>
-        </div>
-      <% } %>
-    </div>
-
-    <!-- Real-time Alerts -->
-    <div class="ml-data">
-      <h3><i class="fas fa-bell"></i> Real-time ML Alerts</h3>
-      <div class="alerts-container" id="alerts-container">
-        <!-- Alerts will be dynamically added here -->
+      <div class="flex justify-between text-sm text-gray-400">
+        <span>Occupancy</span>
+        <span class="text-white font-mono">142 People</span>
       </div>
-    </div>
-
-    <div class="back">
-      <a href="/dashboard"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-      <a href="/live"><i class="fas fa-video"></i> Live Monitoring</a>
+      <div class="h-px bg-gray-700 my-2"></div>
+      <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Live Alerts</div>
+      <div id="alertsList" class="text-sm text-gray-300 italic">No active threats detected.</div>
     </div>
   </div>
 
-  <script>
+  <!-- Controls -->
+  <div class="ui-panel bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4">
+    <button onclick="simulateFire()"
+      class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
+      <span>🔥</span> Simulate Fire
+    </button>
+    <button onclick="resetSystem()"
+      class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+      Reset
+    </button>
+    <a href="/dashboard"
+      class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
+      <span>📊</span> Dashboard
+    </a>
+  </div>
+
+  <!-- Legend -->
+  <div class="ui-panel bottom-6 right-6">
+    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Legend</h3>
+    <div class="space-y-2 text-sm">
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-blue-500"></div> Stairs/Lifts (Nodes)
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-green-500"></div> Safe Path
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-red-500"></div> Hazard Zone
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Script -->
+  <script type="module">
+    import { initEvacuationSystem, updateSensorData } from '/js/evacuation3d.js';
+
+    // Initialize 3D World
+    initEvacuationSystem('canvas-container');
+
+    // Socket.io Connection
     const socket = io();
-    let evacuationData = {};
-    let emergencyMode = false;
 
-    // Initialize evacuation data
-    function initializeEvacuationData() {
-      for (let floor = 1; floor <= 4; floor++) {
-        evacuationData[floor] = {
-          status: 'safe',
-          capacity: 50,
-          evacuationTime: 3,
-          threats: [],
-          routes: ['main', 'secondary', 'emergency'],
-          lastUpdate: new Date(),
-          aiConfidence: 0, // Start with 0% confidence
-          hasData: false // Track if we have actual data
-        };
-      }
-    }
+    socket.on('connect', () => {
+      console.log('Connected to Smart Building Network');
+    });
 
-    // Update floor status
-    function updateFloorStatus(floor, status, data = {}) {
-      const statusEl = document.getElementById(`floor-status-${floor}`);
-      const capacityEl = document.getElementById(`capacity-${floor}`);
-      const evacTimeEl = document.getElementById(`evac-time-${floor}`);
-      const statusTextEl = document.getElementById(`status-${floor}`);
-      
-      if (statusEl) {
-        statusEl.className = `floor-status status-${status}`;
-        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-      }
-      
-      if (capacityEl && data.capacity) {
-        capacityEl.textContent = data.capacity;
-      }
-      
-      if (evacTimeEl && data.evacuationTime) {
-        evacTimeEl.textContent = data.evacuationTime;
-      }
-      
-      if (statusTextEl) {
-        statusTextEl.textContent = data.status || status;
-      }
-
-      // Update route points based on status
-      updateRoutePoints(floor, status, data);
-    }
-
-    // Update route points based on threat level
-    function updateRoutePoints(floor, status, data) {
-      const routePoints = document.querySelectorAll(`#route-${floor} .route-point`);
-      routePoints.forEach((point, index) => {
-        point.className = 'route-point';
-        if (index === 0) point.classList.add('start');
-        if (index === routePoints.length - 1) point.classList.add('end');
-        
-        // Add danger class if there's a threat in this area
-        if (data.threats && data.threats.includes(index)) {
-          point.classList.add('danger');
+    socket.on('sensor-update', (data) => {
+      // data: { floor: 1, type: 'flame', node: 2, value: 1 }
+      if (data.type === 'flame') {
+        updateSensorData(data);
+        if (data.value === 1) {
+          updateStatus('danger', `FIRE DETECTED: Floor ${data.floor}, Node ${data.node}`);
         }
-      });
-    }
-
-    // Add alert
-    function addAlert(alert) {
-      const container = document.getElementById('alerts-container');
-      const alertEl = document.createElement('div');
-      alertEl.className = `alert-item ${alert.severity}`;
-      alertEl.innerHTML = `
-        <div class="alert-header">
-          <div class="alert-title">${alert.title}</div>
-          <div class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</div>
-        </div>
-        <div class="alert-message">${alert.message}</div>
-      `;
-      
-      container.insertBefore(alertEl, container.firstChild);
-      
-      // Keep only last 10 alerts
-      while (container.children.length > 10) {
-        container.removeChild(container.lastChild);
       }
-    }
+    });
 
-    // Update ML metrics
-    function updateMLMetrics() {
-      const activeThreats = Object.values(evacuationData).reduce((sum, floor) => sum + floor.threats.length, 0);
-      const evacuationRoutes = Object.values(evacuationData).reduce((sum, floor) => sum + floor.routes.length, 0);
-      const safeZones = Object.values(evacuationData).filter(floor => floor.status === 'safe').length * 2;
-      
-      // Calculate AI confidence based on actual data availability
-      const floorsWithData = Object.values(evacuationData).filter(floor => floor.hasData).length;
-      const totalFloors = Object.keys(evacuationData).length;
-      const dataCoverage = totalFloors > 0 ? (floorsWithData / totalFloors) * 100 : 0;
-      
-      // AI confidence should be based on data quality, not random
-      let aiConfidence = 0;
-      if (dataCoverage > 75) {
-        aiConfidence = Math.min(95, 60 + (dataCoverage - 75) * 1.4); // 60-95% based on data coverage
-      } else if (dataCoverage > 50) {
-        aiConfidence = Math.min(60, 30 + (dataCoverage - 50) * 1.2); // 30-60% based on data coverage
-      } else if (dataCoverage > 25) {
-        aiConfidence = Math.min(30, 10 + (dataCoverage - 25) * 0.8); // 10-30% based on data coverage
+    // Global functions for buttons
+    window.simulateFire = () => {
+      const randomFloor = Math.floor(Math.random() * 4) + 1;
+      const randomNode = Math.floor(Math.random() * 4) + 1;
+
+      // Mock Data
+      const mockData = {
+        floor: randomFloor,
+        type: 'flame',
+        node: randomNode,
+        value: 1
+      };
+
+      updateSensorData(mockData);
+      updateStatus('danger', `SIMULATION: Fire on Floor ${randomFloor}, Node ${randomNode}`);
+    };
+
+    window.resetSystem = () => {
+      location.reload();
+    };
+
+    function updateStatus(type, message) {
+      const badge = document.getElementById('systemStatus');
+      const list = document.getElementById('alertsList');
+
+      if (type === 'danger') {
+        badge.className = 'status-badge status-danger';
+        badge.innerText = 'CRITICAL ALERT';
+        list.innerHTML = `<div class="text-red-400 font-bold animate-pulse">⚠️ ${message}</div>`;
       } else {
-        aiConfidence = Math.min(10, dataCoverage * 0.4); // 0-10% based on data coverage
+        badge.className = 'status-badge status-safe';
+        badge.innerText = 'SYSTEM NORMAL';
+        list.innerText = 'No active threats detected.';
       }
-
-      document.getElementById('active-threats').textContent = activeThreats;
-      document.getElementById('evacuation-routes').textContent = evacuationRoutes;
-      document.getElementById('safe-zones').textContent = safeZones;
-      document.getElementById('ai-confidence').textContent = Math.round(aiConfidence) + '%';
     }
-
-    // Handle ML data updates
-    socket.on('ml-evacuation-update', (data) => {
-      const { floor, status, threats, capacity, evacuationTime, confidence } = data;
-      
-      if (evacuationData[floor]) {
-        evacuationData[floor].status = status;
-        evacuationData[floor].threats = threats || [];
-        evacuationData[floor].capacity = capacity || evacuationData[floor].capacity;
-        evacuationData[floor].evacuationTime = evacuationTime || evacuationData[floor].evacuationTime;
-        evacuationData[floor].lastUpdate = new Date();
-        evacuationData[floor].aiConfidence = confidence || 0;
-        evacuationData[floor].hasData = true; // Mark that we have actual data
-        
-        updateFloorStatus(floor, status, evacuationData[floor]);
-        updateMLMetrics();
-      }
-    });
-
-    // Handle emergency alerts
-    socket.on('emergency-alert', (data) => {
-      emergencyMode = true;
-      const banner = document.getElementById('emergency-banner');
-      const message = document.getElementById('emergency-message');
-      
-      banner.style.display = 'block';
-      message.textContent = data.message || 'Emergency evacuation routes have been activated';
-      
-      // Update all floors to danger status
-      for (let floor = 1; floor <= 4; floor++) {
-        updateFloorStatus(floor, 'danger', {
-          status: 'Emergency',
-          threats: [1, 2], // Simulate threats in corridors
-          evacuationTime: 1
-        });
-      }
-      
-      addAlert({
-        title: 'Emergency Alert',
-        message: data.message || 'Emergency evacuation required',
-        severity: 'danger',
-        timestamp: new Date()
-      });
-    });
-
-    // Control functions
-    function refreshData() {
-      // Simulate data refresh
-      for (let floor = 1; floor <= 4; floor++) {
-        const statuses = ['safe', 'warning', 'danger'];
-        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-        
-        updateFloorStatus(floor, randomStatus, {
-          capacity: Math.floor(Math.random() * 30 + 30),
-          evacuationTime: Math.floor(Math.random() * 3 + 2),
-          threats: randomStatus === 'danger' ? [1, 2] : []
-        });
-      }
-      
-      updateMLMetrics();
-    }
-
-    function testEvacuation() {
-      addAlert({
-        title: 'Evacuation Test',
-        message: 'Testing evacuation routes - all systems operational',
-        severity: 'warning',
-        timestamp: new Date()
-      });
-    }
-
-    function simulateEmergency() {
-      const floor = Math.floor(Math.random() * 4) + 1;
-      const threats = [Math.floor(Math.random() * 3) + 1];
-      
-      updateFloorStatus(floor, 'danger', {
-        status: 'Emergency',
-        threats: threats,
-        evacuationTime: 1
-      });
-      
-      addAlert({
-        title: 'Simulated Emergency',
-        message: `Emergency detected on Floor ${floor} - evacuation routes updated`,
-        severity: 'danger',
-        timestamp: new Date()
-      });
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeEvacuationData();
-      updateMLMetrics();
-      
-      // Simulate periodic updates
-      setInterval(() => {
-        if (!emergencyMode) {
-          updateMLMetrics();
-        }
-      }, 5000);
-    });
   </script>
 </body>
+
 </html>
