@@ -1,4 +1,4 @@
-Y@echo off
+@echo off
 echo 🐍 Starting Flask Image Processing Server...
 echo.
 echo 📍 Flask server will run at: http://localhost:5000

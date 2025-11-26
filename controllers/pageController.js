@@ -218,7 +218,7 @@ exports.showHistory = async (req, res) => {
       avgVibration: calcAvg(extract('vibration')),
     };
 
-    const selected = combined[index] || {};
+    const selected = combined[index] || null;
 
     res.render('history', {
       record: selected,
