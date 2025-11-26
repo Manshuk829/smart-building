@@ -18,14 +18,13 @@ exports.showDashboard = async (req, res) => {
     for (const floor of floors) {
       const entries = await SensorData.find({ floor: String(floor) })
         .sort({ createdAt: -1 })
-        .limit(sensorTypes.length * nodesPerFloor) // Increased limit for multiple nodes
+        .limit(sensorTypes.length * nodesPerFloor)
         .lean();
 
       const sensorData = {};
       let latestTimestamp = null;
 
       for (const entry of entries) {
-        // Use the latest value for each sensor type (not just first)
         const existingTimestamp = sensorData[entry.type + '_timestamp'] || new Date(0);
         if (!sensorData[entry.type] || entry.createdAt > existingTimestamp) {
           sensorData[entry.type] = entry.payload;
@@ -36,7 +35,7 @@ exports.showDashboard = async (req, res) => {
         }
       }
 
-      // Special handling for flame sensors (4 nodes per floor)
+      // Special handling for flame sensors
       const flameEntries = await SensorData.find({
         floor: String(floor),
         type: 'flame'
@@ -44,7 +43,6 @@ exports.showDashboard = async (req, res) => {
         .sort({ createdAt: -1 })
         .lean();
 
-      // Group by node and get the latest reading for each node
       const nodeData = {};
       flameEntries.forEach(entry => {
         const node = entry.node || 1;
@@ -57,13 +55,9 @@ exports.showDashboard = async (req, res) => {
         }
       });
 
-      // Convert to array and ensure we have nodes 1-4
       flameDataByFloor[floor] = [];
       for (let nodeNum = 1; nodeNum <= nodesPerFloor; nodeNum++) {
-        if (nodeData[nodeNum]) {
-          flameDataByFloor[floor].push(nodeData[nodeNum]);
-        } else {
-          // Add placeholder for missing nodes
+        if (!nodeData[nodeNum]) {
           flameDataByFloor[floor].push({
             node: nodeNum,
             value: 0,
@@ -74,31 +68,24 @@ exports.showDashboard = async (req, res) => {
           // Check if data is stale (> 5 minutes)
           const isStale = (new Date() - new Date(nodeData[nodeNum].timestamp)) > 5 * 60 * 1000;
           if (isStale && nodeData[nodeNum].value === 1) {
-            // Reset stale fire alerts
             nodeData[nodeNum].value = 0;
           }
           flameDataByFloor[floor].push(nodeData[nodeNum]);
         }
       }
 
-      // Debug logging for flame sensor data
       console.log(`Floor ${floor} flame data:`, flameDataByFloor[floor]);
 
-      // Ensure createdAt is a valid Date object
       if (latestTimestamp) {
         sensorData.createdAt = latestTimestamp instanceof Date ? latestTimestamp : new Date(latestTimestamp);
-        // Validate date
         if (isNaN(sensorData.createdAt.getTime())) {
-          // Invalid date, use current time
           sensorData.createdAt = new Date();
         }
       } else {
-        // No timestamp, use current time
         sensorData.createdAt = new Date();
       }
 
       dataByFloor[floor] = sensorData;
-
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
