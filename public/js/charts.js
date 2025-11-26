@@ -22,7 +22,7 @@ function detectAnomalies(data, threshold = 2) {
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
   const stdDev = Math.sqrt(variance);
-  
+
   return data.map(d => ({
     ...d,
     isAnomaly: Math.abs(d.value - mean) > threshold * stdDev,
@@ -32,20 +32,20 @@ function detectAnomalies(data, threshold = 2) {
 
 function predictTrend(data, steps = 5) {
   if (data.length < 3) return [];
-  
+
   const x = data.map((_, i) => i);
   const y = data.map(d => d.value);
-  
+
   // Simple linear regression
   const n = x.length;
   const sumX = x.reduce((a, b) => a + b, 0);
   const sumY = y.reduce((a, b) => a + b, 0);
   const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
   const sumXX = x.reduce((a, b) => a + b * b, 0);
-  
+
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
-  
+
   const predictions = [];
   for (let i = 0; i < steps; i++) {
     const futureX = data.length + i;
@@ -56,7 +56,7 @@ function predictTrend(data, steps = 5) {
       isPrediction: true
     });
   }
-  
+
   return predictions;
 }
 
@@ -66,7 +66,7 @@ function calculateSmartThresholds(data) {
   const q1 = sorted[Math.floor(sorted.length * 0.25)];
   const q3 = sorted[Math.floor(sorted.length * 0.75)];
   const iqr = q3 - q1;
-  
+
   return {
     lowerBound: q1 - 1.5 * iqr,
     upperBound: q3 + 1.5 * iqr,
@@ -79,7 +79,7 @@ function calculateSmartThresholds(data) {
 function generateSampleData() {
   const sampleData = [];
   const now = new Date();
-  
+
   for (let i = 0; i < 50; i++) {
     const timestamp = new Date(now.getTime() - (50 - i) * 60000); // 1 min intervals
     sampleData.push({
@@ -87,22 +87,23 @@ function generateSampleData() {
       temperature: 20 + Math.sin(i * 0.2) * 5 + Math.random() * 2,
       humidity: 50 + Math.cos(i * 0.3) * 10 + Math.random() * 5,
       gas: 200 + Math.sin(i * 0.1) * 50 + Math.random() * 20,
-      flame: Math.random() > 0.95 ? 1 : 0,
+      flame: 0, // Disable random fire alerts in sample data
       motion: Math.random() > 0.8 ? 1 : 0,
       vibration: Math.random() * 2 + Math.sin(i * 0.4) * 0.5
     });
   }
-  
+
   return sampleData;
 }
 
 // -------------------- Data Validation and Processing --------------------
 function validateAndProcessData(data) {
+  console.log('Validating data:', data ? data.length : 'null');
   if (!data || !Array.isArray(data)) {
-    console.log('No valid data provided, generating sample data...');
+    console.log('No valid data provided (not an array), generating sample data...');
     return generateSampleData();
   }
-  
+
   // Filter out invalid entries
   const validData = data.filter(entry => {
     return entry && entry.createdAt && (
@@ -114,12 +115,12 @@ function validateAndProcessData(data) {
       entry.vibration !== undefined
     );
   });
-  
+
   if (validData.length === 0) {
     console.log('No valid sensor data found, generating sample data...');
     return generateSampleData();
   }
-  
+
   return validData;
 }
 
@@ -309,17 +310,17 @@ function updateAIAnalytics() {
 
   let html = '<div class="ai-analytics">';
   html += '<h3>🤖 AI/ML Analytics</h3>';
-  
+
   Object.keys(chartRefs).forEach(chartId => {
     const predictions = aiPredictions[chartId] || [];
     const thresholds = anomalyThresholds[chartId] || {};
     const data = sensorData.filter(d => d[getDataKey(chartId)] !== undefined);
-    
+
     if (data.length > 0) {
       const latestValue = data[data.length - 1][getDataKey(chartId)];
       const trend = predictions.length > 0 ? predictions[predictions.length - 1].value : latestValue;
       const trendDirection = trend > latestValue ? '↗️ Rising' : trend < latestValue ? '↘️ Falling' : '→ Stable';
-      
+
       html += `
         <div class="ai-metric">
           <h4>${getChartLabel(chartId)}</h4>
@@ -330,7 +331,7 @@ function updateAIAnalytics() {
       `;
     }
   });
-  
+
   html += '</div>';
   aiContainer.innerHTML = html;
 }
@@ -362,10 +363,10 @@ function getChartLabel(chartId) {
 // -------------------- Enhanced Rendering --------------------
 function renderCharts() {
   console.log('Starting chart rendering...');
-  
+
   // Validate and process data
   sensorData = validateAndProcessData(sensorData);
-  
+
   console.log('Sensor data available:', sensorData.length, 'records');
 
   const prepareData = key => {
@@ -373,7 +374,7 @@ function renderCharts() {
       value: d[key],
       createdAt: d.createdAt
     })).filter(d => d.value !== undefined && d.value !== null);
-    
+
     // If no data available, return empty array (don't generate sample data here)
     return data;
   };
@@ -393,7 +394,7 @@ function renderCharts() {
       console.warn(`Canvas element ${id} not found`);
       return;
     }
-    
+
     const data = prepareData(key);
     if (data.length === 0) {
       console.warn(`No data for ${key}, skipping chart creation`);
@@ -409,14 +410,14 @@ function renderCharts() {
       }
       return;
     }
-    
+
     const type = chartTypes[id] || 'line';
     const mlLines = mlOverlays[id] || [];
-    
+
     if (chartRefs[id]) {
       chartRefs[id].destroy();
     }
-    
+
     createChart(canvas, label, data, color, type, mlLines);
   });
 
@@ -438,8 +439,8 @@ function updatePerformanceMetrics() {
   const values = sensorData.map(d => d.temperature || d.humidity || d.gas || 0);
   const trendDirectionEl = document.getElementById('trendDirection');
   if (trendDirectionEl && values.length > 1) {
-    const trend = values[values.length - 1] > values[0] ? '↗️ Rising' : 
-                 values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
+    const trend = values[values.length - 1] > values[0] ? '↗️ Rising' :
+      values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
     trendDirectionEl.textContent = trend;
   }
 
@@ -467,7 +468,7 @@ const socket = io();
 socket.on('sensor-update', newData => {
   console.log('Received sensor update:', newData);
   if (!sensorData) sensorData = [];
-  
+
   // Convert the new data to the expected format
   const chartData = {
     createdAt: new Date(),
@@ -478,17 +479,17 @@ socket.on('sensor-update', newData => {
     motion: newData.motion !== undefined && newData.motion !== null ? (typeof newData.motion === 'boolean' ? (newData.motion ? 1 : 0) : newData.motion) : undefined,
     vibration: newData.vibration !== undefined && newData.vibration !== null ? newData.vibration : undefined
   };
-  
+
   // Only add if we have at least one valid sensor value
-  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined || 
-      chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
+  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined ||
+    chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
     sensorData.push(chartData);
-    
+
     // Keep only last 100 data points
     if (sensorData.length > 100) {
       sensorData = sensorData.slice(-100);
     }
-    
+
     renderCharts();
   }
 });
@@ -496,7 +497,7 @@ socket.on('sensor-update', newData => {
 socket.on('chart-update', newData => {
   console.log('Received chart update:', newData);
   if (!sensorData) sensorData = [];
-  
+
   // Convert the new data to the expected format
   const chartData = {
     createdAt: newData.timestamp || new Date(),
@@ -507,17 +508,17 @@ socket.on('chart-update', newData => {
     motion: newData.data?.motion !== undefined && newData.data?.motion !== null ? (typeof newData.data.motion === 'boolean' ? (newData.data.motion ? 1 : 0) : newData.data.motion) : undefined,
     vibration: newData.data?.vibration !== undefined && newData.data?.vibration !== null ? newData.data.vibration : undefined
   };
-  
+
   // Only add if we have at least one valid sensor value
-  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined || 
-      chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
+  if (chartData.temperature !== undefined || chartData.humidity !== undefined || chartData.gas !== undefined ||
+    chartData.flame !== undefined || chartData.motion !== undefined || chartData.vibration !== undefined) {
     sensorData.push(chartData);
-    
+
     // Keep only last 100 data points
     if (sensorData.length > 100) {
       sensorData = sensorData.slice(-100);
     }
-    
+
     renderCharts();
   }
 });
@@ -552,7 +553,7 @@ function toggleChartType(chartId, key, label) {
       value: d[key],
       createdAt: d.createdAt
     })).filter(d => d.value !== undefined && d.value !== null);
-    
+
     if (data.length > 0) {
       createChart(canvas, label, data, colorMap[chartId], newType, mlOverlays[chartId] || []);
     }
@@ -592,10 +593,10 @@ function checkAIAlerts() {
   Object.keys(chartRefs).forEach(chartId => {
     const thresholds = anomalyThresholds[chartId];
     const data = sensorData.filter(d => d[getDataKey(chartId)] !== undefined);
-    
+
     if (data.length > 0 && thresholds) {
       const latestValue = data[data.length - 1][getDataKey(chartId)];
-      
+
       if (latestValue > thresholds.upperBound || latestValue < thresholds.lowerBound) {
         const alertMessage = `🚨 AI Alert: ${getChartLabel(chartId)} value (${latestValue}) is outside normal range!`;
         showAIAlert(alertMessage, 'warning');
@@ -613,7 +614,7 @@ function showAIAlert(message, type = 'info') {
     <button onclick="this.parentElement.remove()">×</button>
   `;
   alertContainer.appendChild(alert);
-  
+
   setTimeout(() => alert.remove(), 10000);
 }
 
@@ -628,7 +629,7 @@ function createAlertContainer() {
 // -------------------- Initialize when DOM is loaded --------------------
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Charts.js initialized');
-  
+
   // Initialize with sample data if no data is available
   if (!window.sensorData || window.sensorData.length === 0) {
     console.log('Initializing with sample data...');
@@ -636,15 +637,15 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     sensorData = window.sensorData;
   }
-  
+
   renderCharts();
-  
+
   const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
   darkModeMedia.addEventListener('change', applyDarkModeToCharts);
-  
+
   // Check AI alerts every 30 seconds
   setInterval(checkAIAlerts, 30000);
-  
+
   // Update charts every 5 seconds with new data
   setInterval(() => {
     if (sensorData.length > 0) {
@@ -655,17 +656,17 @@ window.addEventListener('DOMContentLoaded', () => {
         temperature: lastData.temperature + (Math.random() - 0.5) * 2,
         humidity: lastData.humidity + (Math.random() - 0.5) * 5,
         gas: lastData.gas + (Math.random() - 0.5) * 20,
-        flame: Math.random() > 0.98 ? 1 : 0,
+        flame: 0, // Disable random fire alerts
         motion: Math.random() > 0.85 ? 1 : 0,
         vibration: lastData.vibration + (Math.random() - 0.5) * 0.5
       };
       sensorData.push(newData);
-      
+
       // Keep only last 100 data points
       if (sensorData.length > 100) {
         sensorData = sensorData.slice(-100);
       }
-      
+
       renderCharts();
     }
   }, 5000);

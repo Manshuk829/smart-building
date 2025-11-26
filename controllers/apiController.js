@@ -120,16 +120,16 @@ exports.uploadImage = async (req, res) => {
     const io = req.app.get('io');
     const personName = name && name !== 'Intruder' && name !== 'Unknown' ? name : (name || 'Unknown');
     const isIntruder = !name || name === 'Intruder' || name === 'Unknown';
-    
+
     // Always emit sensor update to show device is online
-    io.emit('sensor-update', { 
-      floor, 
-      intruderImage, 
+    io.emit('sensor-update', {
+      floor: parseInt(floor),
+      intruderImage,
       name: personName,
       motion: true,
       timestamp: new Date()
     });
-    
+
     // Emit appropriate alert based on person type
     if (isIntruder) {
       io.emit('intruder-alert', { floor, image: intruderImage, name: 'Intruder' });
@@ -138,7 +138,7 @@ exports.uploadImage = async (req, res) => {
       io.emit('visitor-detected', { floor, image: intruderImage, name: personName });
       console.log(`📸 HTTP ESP32-CAM Alert — Known person ${personName} detected at Gate ${floor}`);
     }
-    
+
     res.status(200).json({ message: '✅ Image received and broadcasted', name: personName, isIntruder });
   } catch (err) {
     console.error('❌ Image upload error:', err);
@@ -150,31 +150,31 @@ exports.uploadImage = async (req, res) => {
 exports.analyzeImage = async (req, res) => {
   try {
     const { imageData, gate } = req.body;
-    
+
     if (!imageData) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No image data provided',
         hasFace: false,
-        confidence: 0 
+        confidence: 0
       });
     }
 
     // Basic image analysis
     const analysis = await performImageAnalysis(imageData);
-    
+
     res.json({
       hasFace: analysis.hasFace,
       confidence: analysis.confidence,
       imageQuality: analysis.quality,
       recommendations: analysis.recommendations
     });
-    
+
   } catch (error) {
     console.error('Image analysis error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Image analysis failed',
       hasFace: false,
-      confidence: 0 
+      confidence: 0
     });
   }
 };
@@ -184,26 +184,26 @@ async function performImageAnalysis(imageData) {
   try {
     // Remove data URL prefix if present
     const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
-    
+
     // Basic image size check
     const imageSize = base64Data.length;
-    
+
     // Quality assessment based on image size and characteristics
     let quality = 'low';
     if (imageSize > 100000) quality = 'high';
     else if (imageSize > 50000) quality = 'medium';
     else if (imageSize < 10000) quality = 'very_low';
-    
+
     // More realistic face detection simulation
     // In production, integrate with:
     // - AWS Rekognition
     // - Google Cloud Vision API
     // - Azure Computer Vision
     // - OpenCV with face detection models
-    
+
     let hasFace = false;
     let confidence = 0;
-    
+
     // Improved face detection logic based on image quality
     if (quality === 'high') {
       // High quality images have better face detection
@@ -220,13 +220,13 @@ async function performImageAnalysis(imageData) {
       hasFace = Math.random() > 0.98; // 2% chance for very low quality
       confidence = hasFace ? Math.floor(Math.random() * 30 + 20) : 0; // 20-50% confidence
     }
-    
+
     // Additional validation - ensure confidence makes sense
     if (hasFace && confidence < 30) {
       hasFace = false; // If confidence is too low, consider it no face
       confidence = 0;
     }
-    
+
     const recommendations = [];
     if (!hasFace && quality === 'very_low') {
       recommendations.push('Image quality too low for reliable face detection');
@@ -239,14 +239,14 @@ async function performImageAnalysis(imageData) {
     if (hasFace && confidence >= 90) {
       recommendations.push('High confidence face detection - proceed with identification');
     }
-    
+
     return {
       hasFace,
       confidence,
       quality,
       recommendations
     };
-    
+
   } catch (error) {
     console.error('Image analysis error:', error);
     return {
@@ -262,12 +262,12 @@ async function performImageAnalysis(imageData) {
 exports.saveMLData = async (req, res) => {
   try {
     const { floor, node, dataType, prediction, confidence, evacuationRoute, threatLevel } = req.body;
-    
+
     if (!floor || !dataType) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Floor and dataType are required',
         hasFace: false,
-        confidence: 0 
+        confidence: 0
       });
     }
 
@@ -312,17 +312,17 @@ exports.saveMLData = async (req, res) => {
     }
 
     console.log(`📊 ML Data saved — Floor ${floor}, Type: ${dataType}, Prediction: ${prediction}`);
-    res.status(200).json({ 
-      message: 'ML data saved successfully', 
-      data: mlData 
+    res.status(200).json({
+      message: 'ML data saved successfully',
+      data: mlData
     });
 
   } catch (error) {
     console.error('ML data save error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Unable to save ML data',
       hasFace: false,
-      confidence: 0 
+      confidence: 0
     });
   }
 };
@@ -330,7 +330,7 @@ exports.saveMLData = async (req, res) => {
 exports.updateEvacuationRoutes = async (req, res) => {
   try {
     const { floor, status, threats, evacuationTime, capacity, routes } = req.body;
-    
+
     if (!floor) {
       return res.status(400).json({ error: 'Floor is required' });
     }
@@ -356,8 +356,8 @@ exports.updateEvacuationRoutes = async (req, res) => {
     }
 
     console.log(`🚨 Evacuation update — Floor ${floor}, Status: ${status}`);
-    res.status(200).json({ 
-      message: 'Evacuation routes updated successfully' 
+    res.status(200).json({
+      message: 'Evacuation routes updated successfully'
     });
 
   } catch (error) {
@@ -389,7 +389,7 @@ exports.getMLStatus = async (req, res) => {
           overallStatus: 'safe'
         };
       }
-      
+
       statusByFloor[floorNum].dataTypes[data.type] = {
         prediction: data.payload.prediction || 'normal',
         confidence: data.payload.confidence || 0.95,
@@ -412,14 +412,14 @@ exports.getMLStatus = async (req, res) => {
 exports.trainFace = async (req, res) => {
   try {
     const { name, image, confidence_threshold } = req.body;
-    
+
     if (!name || !image) {
       return res.status(400).json({ error: 'Name and image are required' });
     }
 
     // Get Flask server URL from environment or config
     const FLASK_SERVER_URL = process.env.FLASK_SERVER_URL || 'http://localhost:5000';
-    
+
     // Forward request to Flask server
     const axios = require('axios');
     const response = await axios.post(`${FLASK_SERVER_URL}/train-face`, {
@@ -441,16 +441,16 @@ exports.trainFace = async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Face training error:', error);
-    
+
     // Check if Flask server is not available
     if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: 'Flask server is not available. Please ensure the Flask image processor is running.',
         details: error.message
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Face training failed',
       details: error.response?.data?.error || error.message
     });
@@ -461,7 +461,7 @@ exports.trainFace = async (req, res) => {
 exports.getKnownFaces = async (req, res) => {
   try {
     const FLASK_SERVER_URL = process.env.FLASK_SERVER_URL || 'http://localhost:5000';
-    
+
     const axios = require('axios');
     const response = await axios.get(`${FLASK_SERVER_URL}/known-faces`, {
       timeout: 10000
@@ -475,15 +475,15 @@ exports.getKnownFaces = async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Get known faces error:', error);
-    
+
     if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: 'Flask server is not available',
         faces: []
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unable to get known faces',
       faces: []
     });
@@ -494,20 +494,20 @@ exports.getKnownFaces = async (req, res) => {
 exports.mlPredict = async (req, res) => {
   try {
     const { floor, sensorData, faceRecognitionResult } = req.body;
-    
+
     if (!floor || !sensorData) {
       return res.status(400).json({ error: 'Floor and sensorData are required' });
     }
 
     const { mlEngine } = require('../ml/mlModels');
-    
+
     // Get prediction
     const prediction = await mlEngine.predictThreats(floor, sensorData, faceRecognitionResult);
-    
+
     // Save prediction to database
     if (prediction.threats.length > 0) {
       const io = req.app.get('io');
-      
+
       prediction.threats.forEach(threat => {
         io.emit('ml-alert', {
           type: threat.type,
@@ -519,7 +519,7 @@ exports.mlPredict = async (req, res) => {
         });
       });
     }
-    
+
     res.json({
       status: 'success',
       prediction
@@ -537,17 +537,17 @@ exports.trainEvacuationModel = async (req, res) => {
     const { advancedBuildingGraph } = require('../ml/evacuationPathAdvanced');
     const { NextGenAIPathfinder } = require('../ml/advancedPathfindingAI');
     const { aStarPathFinder } = require('../ml/evacuationPathAdvanced');
-    
+
     const generator = new PathTrainingDataGenerator();
     const result = await generator.generateTrainingDataset();
-    
+
     // Train A* ML model
     const aStarTraining = aStarPathFinder.trainMLModel();
-    
+
     // Train next-gen AI models (RL + Neural Network)
     const aiPathfinder = new NextGenAIPathfinder(advancedBuildingGraph);
     const aiTraining = aiPathfinder.trainModels(result.trainingSamples || []);
-    
+
     res.json({
       status: 'success',
       training: result,
@@ -565,7 +565,7 @@ exports.trainEvacuationModel = async (req, res) => {
 exports.getEvacuationRoute = async (req, res) => {
   try {
     const { floor, x, y, hazards } = req.query;
-    
+
     if (!floor) {
       return res.status(400).json({ error: 'Floor is required' });
     }
@@ -573,13 +573,13 @@ exports.getEvacuationRoute = async (req, res) => {
     // Use next-generation AI pathfinder (D* Lite + RL + Neural Network)
     const { NextGenAIPathfinder } = require('../ml/advancedPathfindingAI');
     const { advancedBuildingGraph } = require('../ml/evacuationPathAdvanced');
-    
+
     const aiPathfinder = new NextGenAIPathfinder(advancedBuildingGraph);
-    
+
     const floorNum = parseInt(floor);
     const xCoord = x ? parseFloat(x) : undefined;
     const yCoord = y ? parseFloat(y) : undefined;
-    
+
     let hazardsArray = [];
     if (hazards) {
       try {
@@ -588,7 +588,7 @@ exports.getEvacuationRoute = async (req, res) => {
         console.warn('Invalid hazards format:', e);
       }
     }
-    
+
     let instructions;
     if (xCoord !== undefined && yCoord !== undefined) {
       // Find nearest node to coordinates
@@ -604,7 +604,7 @@ exports.getEvacuationRoute = async (req, res) => {
           nearestNode = node;
         }
       });
-      
+
       // Get sensor data for ML prediction
       const sensorData = {
         temp: 25,
@@ -612,7 +612,7 @@ exports.getEvacuationRoute = async (req, res) => {
         flame: 0,
         vibration: 0.5
       };
-      
+
       // Use AI pathfinder to find optimal route to evacuation nodes
       const aiResult = await aiPathfinder.findOptimalEvacuationPath(
         nearestNode.id,
@@ -620,7 +620,7 @@ exports.getEvacuationRoute = async (req, res) => {
         sensorData,
         hazardsArray
       );
-      
+
       instructions = {
         currentLocation: { floor: floorNum, x: xCoord, y: yCoord },
         nearestNode: nearestNode.id,
@@ -649,7 +649,7 @@ exports.getEvacuationRoute = async (req, res) => {
         sensorData,
         hazardsArray
       );
-      
+
       const routes = aiResult.allRoutes || [];
       instructions = {
         floor: floorNum,
@@ -672,7 +672,7 @@ exports.getEvacuationRoute = async (req, res) => {
         }))
       };
     }
-    
+
     res.json({
       status: 'success',
       instructions

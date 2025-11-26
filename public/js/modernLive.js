@@ -28,22 +28,22 @@ class ModernLivePage {
 
   async initialize() {
     console.log('🚀 Initializing Modern Live Page...');
-    
+
     // Initialize Real-Time ML Processor
     await this.initializeRealTimeML();
-    
+
     // Initialize Edge AI
     await this.initializeEdgeAI();
-    
+
     // Initialize Analytics
     this.initializeAnalytics();
-    
+
     // Setup WebSocket streams
     this.setupStreams();
-    
+
     // Setup real-time updates
     this.setupRealTimeUpdates();
-    
+
     console.log('✅ Modern Live Page initialized');
   }
 
@@ -112,7 +112,7 @@ class ModernLivePage {
         this.updateAnalyticsDisplay();
       }
     };
-    
+
     // Fetch real-time analytics
     setInterval(async () => {
       try {
@@ -157,21 +157,25 @@ class ModernLivePage {
   setupRealTimeUpdates() {
     // Sensor updates
     socket.on('sensor-update', async (data) => {
+      console.log('Received sensor update:', data);
       await this.processSensorUpdate(data);
     });
 
     // ML alerts
     socket.on('ml-alert', (data) => {
+      console.log('Received ML alert:', data);
       this.handleMLAlert(data);
     });
 
     // Intruder alerts
     socket.on('intruder-alert', (data) => {
+      console.log('Received intruder alert:', data);
       this.handleIntruderAlert(data);
     });
 
     // Visitor detected
     socket.on('visitor-detected', (data) => {
+      console.log('Received visitor detected:', data);
       this.handleVisitorDetected(data);
     });
   }
@@ -263,23 +267,23 @@ class ModernLivePage {
 
     if (prediction.prediction) {
       const { anomaly, threat } = prediction.prediction;
-      
+
       let html = '<div class="ml-prediction">';
-      
+
       if (anomaly && anomaly.isAnomaly) {
         html += `<div class="ml-alert anomaly">
           <i class="fas fa-exclamation-triangle"></i>
           Anomaly: ${anomaly.confidence.toFixed(1)}% confidence
         </div>`;
       }
-      
+
       if (threat && threat.overall > 0.5) {
         html += `<div class="ml-alert threat">
           <i class="fas fa-shield-alt"></i>
           Threat Level: ${(threat.overall * 100).toFixed(1)}%
         </div>`;
       }
-      
+
       html += '</div>';
       mlContainer.innerHTML = html;
     }
@@ -293,13 +297,13 @@ class ModernLivePage {
     if (!edgeContainer || !edgeResult.result) return;
 
     const { fire, gas, overall, latency } = edgeResult.result;
-    
+
     let html = '<div class="edge-ai-badge">';
     html += `<span class="edge-label">Edge AI</span>`;
     html += `<span class="edge-threat">Threat: ${(overall * 100).toFixed(0)}%</span>`;
     html += `<span class="edge-latency">${latency}ms</span>`;
     html += '</div>';
-    
+
     edgeContainer.innerHTML = html;
   }
 
@@ -319,13 +323,14 @@ class ModernLivePage {
     if (isOnline && (image || name)) {
       // Online and has data
       if (image) {
-        cam.src = `data:image/jpeg;base64,${image}`;
+        // Check if image is already a data URL or needs prefix
+        cam.src = image.startsWith('data:image') ? image : `data:image/jpeg;base64,${image}`;
       } else {
         cam.src = `/snapshot/${gate}.jpg?ts=${Date.now()}`;
       }
       cam.style.display = 'block';
       placeholder.style.display = 'none';
-      
+
       if (led) {
         led.classList.remove('offline');
         led.classList.add('online');
@@ -367,7 +372,7 @@ class ModernLivePage {
     }
 
     this.motionHistory[gate].push(Date.now());
-    
+
     // Keep last minute
     const oneMinuteAgo = Date.now() - 60000;
     this.motionHistory[gate] = this.motionHistory[gate].filter(t => t > oneMinuteAgo);
@@ -456,7 +461,7 @@ class ModernLivePage {
   handleIntruderAlert(data) {
     this.analytics.metrics.intrudersDetected++;
     this.analytics.update();
-    
+
     this.showAlert({
       type: 'intruder',
       severity: 'critical',
@@ -512,12 +517,12 @@ class ModernLivePage {
    */
   updateAnalyticsDisplay() {
     const metrics = this.analytics.metrics;
-    
+
     document.getElementById('active-cameras').textContent = metrics.activeCameras || this.gateCount;
     document.getElementById('intruders-detected').textContent = metrics.intrudersDetected || 0;
     document.getElementById('motion-events').textContent = metrics.motionEvents || 0;
     document.getElementById('security-score').textContent = `${metrics.securityScore || 95}%`;
-    
+
     // Update AI confidence if available
     const aiConfidenceEl = document.getElementById('ai-confidence');
     if (aiConfidenceEl) {
@@ -534,14 +539,14 @@ class ModernLivePage {
       for (let gate = 1; gate <= this.gateCount; gate++) {
         const lastUpdate = this.lastUpdateTimes[gate];
         const isOnline = lastUpdate && (now - lastUpdate) < 30000;
-        
+
         const statusEl = document.getElementById(`status-text-${gate}`);
         const ledEl = document.getElementById(`led-gate-${gate}`);
-        
+
         if (statusEl) {
           statusEl.textContent = isOnline ? 'Online' : 'Offline';
         }
-        
+
         if (ledEl) {
           if (isOnline) {
             ledEl.classList.remove('offline');

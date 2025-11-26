@@ -37,9 +37,9 @@ exports.showDashboard = async (req, res) => {
       }
 
       // Special handling for flame sensors (4 nodes per floor)
-      const flameEntries = await SensorData.find({ 
-        floor: String(floor), 
-        type: 'flame' 
+      const flameEntries = await SensorData.find({
+        floor: String(floor),
+        type: 'flame'
       })
         .sort({ createdAt: -1 })
         .lean();
@@ -70,9 +70,17 @@ exports.showDashboard = async (req, res) => {
             timestamp: new Date(),
             status: 'offline'
           });
+        } else {
+          // Check if data is stale (> 5 minutes)
+          const isStale = (new Date() - new Date(nodeData[nodeNum].timestamp)) > 5 * 60 * 1000;
+          if (isStale && nodeData[nodeNum].value === 1) {
+            // Reset stale fire alerts
+            nodeData[nodeNum].value = 0;
+          }
+          flameDataByFloor[floor].push(nodeData[nodeNum]);
         }
       }
-      
+
       // Debug logging for flame sensor data
       console.log(`Floor ${floor} flame data:`, flameDataByFloor[floor]);
 
@@ -88,29 +96,29 @@ exports.showDashboard = async (req, res) => {
         // No timestamp, use current time
         sensorData.createdAt = new Date();
       }
-      
+
       dataByFloor[floor] = sensorData;
 
       alerts[floor] = await Alert.findOne({ floor }).sort({ createdAt: -1 }).lean();
     }
 
-    res.render('dashboard', { 
-      dataByFloor, 
+    res.render('dashboard', {
+      dataByFloor,
       flameDataByFloor,
-      thresholds, 
-      alerts, 
+      thresholds,
+      alerts,
       nodesPerFloor,
-      error: null 
+      error: null
     });
   } catch (err) {
     console.error('❌ Dashboard error:', err);
-    res.render('dashboard', { 
-      dataByFloor: {}, 
+    res.render('dashboard', {
+      dataByFloor: {},
       flameDataByFloor: {},
-      thresholds, 
-      alerts: {}, 
+      thresholds,
+      alerts: {},
       nodesPerFloor,
-      error: 'Unable to load dashboard at this time. Please try again later.' 
+      error: 'Unable to load dashboard at this time. Please try again later.'
     });
   }
 };
@@ -126,7 +134,7 @@ exports.showLive = async (req, res) => {
     for (const gate of gates) {
       // Convert gate string to floor number (e.g., "gate1" -> 1)
       const floorNumber = parseInt(gate.replace('gate', ''), 10);
-      
+
       const entries = await SensorData.find({ floor: gate })
         .sort({ createdAt: -1 })
         .limit(sensorTypes.length)
@@ -161,10 +169,10 @@ exports.showLive = async (req, res) => {
       visitorsByGate[gate] = currentVisitors;
     }
 
-    res.render('live', { 
-      dataByFloor, 
-      thresholds, 
-      alerts, 
+    res.render('live', {
+      dataByFloor,
+      thresholds,
+      alerts,
       visitorsByGate,
       gracePeriodMinutes: req.app.get('visitorSettings').gracePeriodMinutes
     });
@@ -191,28 +199,28 @@ exports.showHistory = async (req, res) => {
     const combined = [];
     for (let i = 0; i < 10; i++) {
       combined.push({
-        temp: recentData.temp[i]?.payload ?? 'N/A',
-        humidity: recentData.humidity[i]?.payload ?? 'N/A',
-        gas: recentData.gas[i]?.payload ?? 'N/A',
-        vibration: recentData.vibration[i]?.payload ?? 'N/A',
-        flame: recentData.flame[i]?.payload ?? 'N/A',
-        motion: recentData.motion[i]?.payload ?? 'N/A',
-        quake: recentData.quake[i]?.payload ?? 'N/A',
+        temp: recentData.temp?.[i]?.payload ?? 'N/A',
+        humidity: recentData.humidity?.[i]?.payload ?? 'N/A',
+        gas: recentData.gas?.[i]?.payload ?? 'N/A',
+        vibration: recentData.vibration?.[i]?.payload ?? 'N/A',
+        flame: recentData.flame?.[i]?.payload ?? 'N/A',
+        motion: recentData.motion?.[i]?.payload ?? 'N/A',
+        quake: recentData.quake?.[i]?.payload ?? 'N/A',
         timestamp:
-          recentData.temp[i]?.createdAt ||
-          recentData.humidity[i]?.createdAt ||
-          recentData.gas[i]?.createdAt ||
+          recentData.temp?.[i]?.createdAt ||
+          recentData.humidity?.[i]?.createdAt ||
+          recentData.gas?.[i]?.createdAt ||
           new Date(),
       });
     }
 
     const calcAvg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : 'N/A';
-    const extract = type => recentData[type].map(d => typeof d.payload === 'number' ? d.payload : 0);
+    const extract = type => (recentData[type] || []).map(d => typeof d.payload === 'number' ? d.payload : 0);
 
     const stats = {
       avgTemp: calcAvg(extract('temp')),
-      minTemp: Math.min(...extract('temp')).toFixed(2),
-      maxTemp: Math.max(...extract('temp')).toFixed(2),
+      minTemp: extract('temp').length ? Math.min(...extract('temp')).toFixed(2) : 'N/A',
+      maxTemp: extract('temp').length ? Math.max(...extract('temp')).toFixed(2) : 'N/A',
       avgHumidity: calcAvg(extract('humidity')),
       avgGas: calcAvg(extract('gas')),
       avgVibration: calcAvg(extract('vibration')),
@@ -297,7 +305,7 @@ exports.showCharts = async (req, res) => {
     });
 
     let records = Object.values(groupedRecords).sort((a, b) => a.createdAt - b.createdAt);
-    
+
     // Ensure we have proper data structure for charts
     records = records.map(record => ({
       createdAt: record.createdAt,
@@ -315,7 +323,7 @@ exports.showCharts = async (req, res) => {
       console.log('No sensor data found, generating sample data for charts...');
       records = [];
       const sampleCount = 50;
-      
+
       for (let i = 0; i < sampleCount; i++) {
         const timestamp = new Date(now.getTime() - (sampleCount - i) * 60000); // 1 min intervals
         records.push({
@@ -349,23 +357,23 @@ exports.showEvacuation = async (req, res) => {
     const { NextGenAIPathfinder } = require('../ml/advancedPathfindingAI');
     const { advancedBuildingGraph } = require('../ml/evacuationPathAdvanced');
     const { mlEngine } = require('../ml/mlModels');
-    
+
     // Initialize AI pathfinder
     const aiPathfinder = new NextGenAIPathfinder(advancedBuildingGraph);
-    
+
     // Get current evacuation data from database
     const evacuationData = {};
     const floors = [1, 2, 3, 4];
-    
+
     for (const floor of floors) {
       // Get latest sensor data for this floor
-      const sensorEntries = await SensorData.find({ 
-        floor: String(floor), 
+      const sensorEntries = await SensorData.find({
+        floor: String(floor),
         source: 'sensor'
       })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean();
 
       // Aggregate sensor data
       const sensorData = {};
@@ -395,11 +403,11 @@ exports.showEvacuation = async (req, res) => {
       if (mlPrediction.threats.length > 0) {
         mlPrediction.threats.forEach(threat => {
           threats.push(threat.type);
-          
+
           if (threat.severity === 'critical') {
             status = 'danger';
             evacuationTime = 1;
-            
+
             // Add hazard location (approximate based on floor)
             if (threat.type === 'fire' || threat.type === 'gas_leak') {
               hazards.push({
@@ -425,14 +433,14 @@ exports.showEvacuation = async (req, res) => {
         flame: mlPrediction.fire?.isFire ? 120 : 0,
         vibration: mlPrediction.structural?.probability > 50 ? 4.5 : 0.5
       };
-      
+
       const aiResult = await aiPathfinder.findOptimalEvacuationPath(
         startNode,
         floor,
         aiSensorData,
         hazards
       );
-      
+
       const routes = aiResult.bestRoute ? [{
         startNode: { id: startNode },
         path: aiResult.bestRoute.path,
@@ -441,7 +449,7 @@ exports.showEvacuation = async (req, res) => {
         evacuationNode: aiResult.bestRoute.evacuationNode,
         aiAnalysis: aiResult.aiAnalysis
       }] : [];
-      
+
       // Get best routes (top 3 shortest)
       const bestRoutes = routes
         .filter(r => r.distance !== null && r.distance !== Infinity)

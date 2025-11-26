@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>📈 Smart Building Charts</title>
@@ -17,12 +18,14 @@
       --heading: #2c3e50;
       --card-bg: #ffffff;
     }
+
     [data-theme="dark"] {
       --bg: #121212;
       --text: #e0e0e0;
       --heading: #f0f0f0;
       --card-bg: #1e1e1e;
     }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: var(--bg);
@@ -30,10 +33,12 @@
       padding: 20px;
       transition: background 0.3s ease;
     }
+
     h1 {
       text-align: center;
       color: var(--heading);
     }
+
     .filters {
       max-width: 1000px;
       margin: 20px auto;
@@ -42,6 +47,7 @@
       gap: 12px;
       justify-content: center;
     }
+
     .filters select,
     .filters input[type="checkbox"],
     .filters button {
@@ -50,6 +56,7 @@
       border-radius: 6px;
       border: 1px solid #ccc;
     }
+
     .chart-section {
       max-width: 1000px;
       margin: 30px auto;
@@ -58,15 +65,18 @@
       border-radius: 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
     .chart-section h2 {
       text-align: center;
       margin-bottom: 10px;
       color: var(--heading);
     }
+
     canvas {
       max-height: 350px;
       width: 100%;
     }
+
     .controls {
       display: flex;
       justify-content: center;
@@ -74,6 +84,7 @@
       margin-top: 10px;
       flex-wrap: wrap;
     }
+
     .controls button {
       padding: 6px 12px;
       border: none;
@@ -83,27 +94,32 @@
       cursor: pointer;
       font-size: 13px;
     }
+
     .no-data {
       text-align: center;
       font-size: 18px;
       color: #888;
       margin-top: 60px;
     }
+
     .back {
       text-align: center;
       margin-top: 40px;
     }
+
     .back a {
       text-decoration: none;
       font-weight: bold;
       color: #007bff;
       margin: 0 10px;
     }
+
     .theme-toggle {
       position: fixed;
       top: 20px;
       right: 20px;
     }
+
     .theme-toggle button {
       padding: 8px 12px;
       background: #007bff;
@@ -112,7 +128,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    
+
     /* AI/ML Analytics Styles */
     .ai-analytics {
       max-width: 1000px;
@@ -123,30 +139,36 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       border-left: 4px solid #4caf50;
     }
+
     .ai-analytics h3 {
       color: var(--heading);
       margin-bottom: 20px;
       text-align: center;
     }
+
     .ai-metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
     }
+
     .ai-metric {
       background: rgba(76, 175, 80, 0.1);
       padding: 15px;
       border-radius: 8px;
       border-left: 3px solid #4caf50;
     }
+
     .ai-metric h4 {
       margin: 0 0 10px 0;
       color: var(--heading);
     }
+
     .ai-metric p {
       margin: 5px 0;
       font-size: 14px;
     }
+
     .ai-alerts {
       position: fixed;
       top: 80px;
@@ -154,6 +176,7 @@
       z-index: 1000;
       max-width: 300px;
     }
+
     .ai-alert {
       background: #fff3cd;
       border: 1px solid #ffeaa7;
@@ -161,16 +184,18 @@
       padding: 12px;
       margin-bottom: 10px;
       border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+
     .ai-alert-warning {
       background: #f8d7da;
       border-color: #f5c6cb;
       color: #721c24;
     }
+
     .ai-alert button {
       background: none;
       border: none;
@@ -178,6 +203,7 @@
       cursor: pointer;
       color: inherit;
     }
+
     .ai-features {
       max-width: 1000px;
       margin: 20px auto;
@@ -185,13 +211,15 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
     }
+
     .ai-feature {
       background: var(--card-bg);
       padding: 15px;
       border-radius: 8px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+
     .ai-feature i {
       font-size: 24px;
       color: #4caf50;
@@ -207,26 +235,30 @@
       gap: 20px;
       justify-content: center;
     }
+
     .metric-card {
       background: var(--card-bg);
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
     }
+
     .metric-card i {
       font-size: 36px;
       color: #4caf50;
       margin-bottom: 10px;
     }
+
     .metric-card h4 {
       color: var(--heading);
       margin-bottom: 5px;
     }
+
     .metric-card p {
       font-size: 18px;
       font-weight: bold;
@@ -234,6 +266,7 @@
     }
   </style>
 </head>
+
 <body data-theme="light">
   <div class="theme-toggle">
     <button id="toggleTheme"><i class="fas fa-adjust"></i> Toggle Theme</button>
@@ -263,15 +296,16 @@
 
   <form class="filters" method="GET" action="/charts">
     <select name="floor">
-      <% for (let i = 1; i <= 4; i++) { %>
-        <option value="<%= i %>" <%= parseInt(query.floor) === i ? 'selected' : '' %>>🏢 Floor <%= i %></option>
-      <% } %>
+      <% for (let i=1; i <=4; i++) { %>
+        <option value="<%= i %>" <%=parseInt(query.floor)===i ? 'selected' : '' %>>🏢 Floor <%= i %>
+        </option>
+        <% } %>
     </select>
     <select name="range">
       <option value="">📅 All Time</option>
-      <option value="1h" <%= query.range === '1h' ? 'selected' : '' %>>⏱ Last 1 Hour</option>
-      <option value="24h" <%= query.range === '24h' ? 'selected' : '' %>>🕒 Last 24 Hours</option>
-      <option value="7d" <%= query.range === '7d' ? 'selected' : '' %>>📆 Last 7 Days</option>
+      <option value="1h" <%=query.range==='1h' ? 'selected' : '' %>>⏱ Last 1 Hour</option>
+      <option value="24h" <%=query.range==='24h' ? 'selected' : '' %>>🕒 Last 24 Hours</option>
+      <option value="7d" <%=query.range==='7d' ? 'selected' : '' %>>📆 Last 7 Days</option>
     </select>
     <select name="chartType">
       <option value="line">📈 Line Chart</option>
@@ -325,7 +359,7 @@
 
   <script>
     // Initialize sensorData globally with fallback to sample data
-    let sensorData = <%- JSON.stringify(records.map(r => ({
+    let sensorData = <% - JSON.stringify(records && records.length > 0 ? records.map(r => ({
       createdAt: r.createdAt,
       temperature: r.temperature,
       humidity: r.humidity,
@@ -334,14 +368,14 @@
       motion: r.motion ? 1 : 0,
       vibration: r.vibration ?? 0,
       mlPrediction: r.mlPrediction ?? null
-    }))) %>;
-    
+    })) : []) %> || [];
+
     // Generate sample data if no real data exists
     if (!sensorData || sensorData.length === 0) {
       console.log('No sensor data found, generating sample data...');
       sensorData = [];
       const now = new Date();
-      
+
       for (let i = 0; i < 50; i++) {
         const timestamp = new Date(now.getTime() - (50 - i) * 60000);
         sensorData.push({
@@ -355,10 +389,10 @@
         });
       }
     }
-    
+
     // Make sensorData globally available for charts.js
     window.sensorData = sensorData;
-    
+
     // Initialize charts when page loads
     document.addEventListener('DOMContentLoaded', () => {
       console.log('Charts page loaded with data:', sensorData.length, 'records');
@@ -368,23 +402,23 @@
         console.error('renderCharts function not found');
       }
     });
-    
+
     // Update performance metrics
     document.addEventListener('DOMContentLoaded', () => {
       if (sensorData && sensorData.length > 0) {
         document.getElementById('dataPoints').textContent = sensorData.length;
-        
+
         // Calculate trend direction
         const values = sensorData.map(d => d.temperature || d.humidity || d.gas || 0);
-        const trend = values[values.length - 1] > values[0] ? '↗️ Rising' : 
-                     values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
+        const trend = values[values.length - 1] > values[0] ? '↗️ Rising' :
+          values[values.length - 1] < values[0] ? '↘️ Falling' : '→ Stable';
         document.getElementById('trendDirection').textContent = trend;
-        
+
         // Calculate anomalies (simplified)
         const mean = values.reduce((a, b) => a + b, 0) / values.length;
         const anomalies = values.filter(v => Math.abs(v - mean) > mean * 0.3).length;
         document.getElementById('anomalyCount').textContent = anomalies;
-        
+
         // AI confidence based on data quality
         const confidence = Math.min(95, Math.max(60, 100 - (anomalies / values.length * 100)));
         document.getElementById('aiConfidence').textContent = `${confidence.toFixed(1)}%`;
@@ -392,47 +426,47 @@
     });
   </script>
 
-  <% if (records.length === 0) { %>
+  <% if (records.length===0) { %>
     <div class="no-data">No records found for selected filters.</div>
-  <% } else { %>
-    <% const sensors = [
-      { id: 'tempChart', label: '🌡 Temperature (°C)', key: 'temperature' },
-      { id: 'humidityChart', label: '💧 Humidity (%)', key: 'humidity' },
-      { id: 'gasChart', label: '🌫 Gas (ppm)', key: 'gas' },
-      { id: 'flameChart', label: '🔥 Flame', key: 'flame' },
-      { id: 'motionChart', label: '🚶 Motion', key: 'motion' },
-      { id: 'vibrationChart', label: '💥 Vibration', key: 'vibration' }
-    ]; %>
+    <% } else { %>
+      <% const sensors=[ { id: 'tempChart' , label: '🌡 Temperature (°C)' , key: 'temperature' }, { id: 'humidityChart'
+        , label: '💧 Humidity (%)' , key: 'humidity' }, { id: 'gasChart' , label: '🌫 Gas (ppm)' , key: 'gas' }, {
+        id: 'flameChart' , label: '🔥 Flame' , key: 'flame' }, { id: 'motionChart' , label: '🚶 Motion' , key: 'motion'
+        }, { id: 'vibrationChart' , label: '💥 Vibration' , key: 'vibration' } ]; %>
 
-    <% sensors.forEach(sensor => { %>
-      <div class="chart-section">
-        <h2><%= sensor.label %></h2>
-        <canvas id="<%= sensor.id %>"></canvas>
-        <div class="controls">
-          <button onclick="toggleChartType('<%= sensor.id %>', '<%= sensor.key %>', '<%= sensor.label %>')">🔄 Toggle Type</button>
-          <button onclick="exportChart('<%= sensor.id %>')">📀 Export</button>
-          <button onclick="printChart('<%= sensor.id %>')">🖸 Print</button>
-          <button onclick="resetZoom('<%= sensor.id %>')">🔍 Reset Zoom</button>
-        </div>
-      </div>
-    <% }); %>
+        <% sensors.forEach(sensor=> { %>
+          <div class="chart-section">
+            <h2>
+              <%= sensor.label %>
+            </h2>
+            <canvas id="<%= sensor.id %>"></canvas>
+            <div class="controls">
+              <button onclick="toggleChartType('<%= sensor.id %>', '<%= sensor.key %>', '<%= sensor.label %>')">🔄
+                Toggle Type</button>
+              <button onclick="exportChart('<%= sensor.id %>')">📀 Export</button>
+              <button onclick="printChart('<%= sensor.id %>')">🖸 Print</button>
+              <button onclick="resetZoom('<%= sensor.id %>')">🔍 Reset Zoom</button>
+            </div>
+          </div>
+          <% }); %>
 
-    <script src="/js/charts.js"></script>
-  <% } %>
+            <script src="/js/charts.js"></script>
+            <% } %>
 
-  <div class="back">
-    <a href="/">← Back to Dashboard</a>
-    <a href="/live">📷 View ESP32-CAM</a>
-  </div>
+              <div class="back">
+                <a href="/">← Back to Dashboard</a>
+                <a href="/live">📷 View ESP32-CAM</a>
+              </div>
 
-  <script>
-    const theme = localStorage.getItem("theme") || "light";
-    document.body.setAttribute("data-theme", theme);
-    document.getElementById("toggleTheme").addEventListener("click", () => {
-      const newTheme = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";
-      document.body.setAttribute("data-theme", newTheme);
-      localStorage.setItem("theme", newTheme);
-    });
-  </script>
+              <script>
+                const theme = localStorage.getItem("theme") || "light";
+                document.body.setAttribute("data-theme", theme);
+                document.getElementById("toggleTheme").addEventListener("click", () => {
+                  const newTheme = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";
+                  document.body.setAttribute("data-theme", newTheme);
+                  localStorage.setItem("theme", newTheme);
+                });
+              </script>
 </body>
+
 </html>
