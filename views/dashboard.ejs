@@ -933,32 +933,18 @@
                             ✅ None
                             <% } %>
                     </div>
+                    <% } else { %>
+                      <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
+                      </p>
+                      <% } %>
+                        <% } %>
+
+                          <div class="nav">
+                            <a href="/history">📜 View History</a>
+                            <a href="/charts">📈 View Charts</a>
+                            <a href="/live">📷 View Live (ESP32-CAM)</a>
+                          </div>
                   </div>
-                </div>
-              </div>
-
-              <div id="ml-alert-<%= floor %>" class="status-alert"
-                style="margin-top: 10px; color: <%= data.mlAlert ? 'red' : 'green' %>;">
-                <%= data.mlAlert ? `⚠ ML Alert: ${String(data.mlAlert).toUpperCase()}` : '✅ ML Status: Normal' %>
-              </div>
-
-              <div style="text-align: center; margin-top: 10px; font-size: 14px;">
-                <i class="fas fa-clock"></i> Last updated: <span id="last-updated-floor-<%= floor %>">
-                  <%= updatedAt ? updatedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A' %>
-                </span>
-              </div>
-              <% } else { %>
-                <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
-                </p>
-                <% } %>
-                  <% } %>
-
-                    <div class="nav">
-                      <a href="/history">📜 View History</a>
-                      <a href="/charts">📈 View Charts</a>
-                      <a href="/live">📷 View Live (ESP32-CAM)</a>
-                    </div>
-    </div>
 </body>
 
 </html>

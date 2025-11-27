@@ -99,14 +99,23 @@ exports.showDashboard = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Dashboard error:', err);
-    res.render('dashboard', {
-      dataByFloor: {},
-      flameDataByFloor: {},
-      thresholds,
-      alerts: {},
-      nodesPerFloor,
-      error: 'Unable to load dashboard at this time. Please try again later.'
-    });
+    try {
+      res.render('dashboard', {
+        dataByFloor: {},
+        flameDataByFloor: {},
+        thresholds,
+        alerts: {},
+        nodesPerFloor,
+        error: 'Unable to load dashboard at this time. Please try again later.'
+      });
+    } catch (renderErr) {
+      console.error('❌ Critical: Failed to render error state:', renderErr);
+      res.status(500).send(`
+        <h1>Internal Server Error</h1>
+        <p>The dashboard could not be loaded.</p>
+        <p>Error details: ${process.env.NODE_ENV === 'production' ? 'Check server logs' : renderErr.message}</p>
+      `);
+    }
   }
 };
 
