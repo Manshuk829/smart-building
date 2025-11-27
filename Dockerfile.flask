@@ -1,12 +1,4 @@
-# Use Python 3.9 slim bookworm (stable)
-FROM python:3.9-slim-bookworm
-
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies for OpenCV and dlib
-RUN apt-get update && apt-get install -y \
-    build-essential \
+build-essential \
     cmake \
     libopenblas-dev \
     liblapack-dev \
