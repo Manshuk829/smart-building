@@ -815,129 +815,108 @@ padding: 10px;
           </div>
           <div class="analytics-card">
             <h4>Uptime</h4>
-            <div class="analytics-value" id="uptime">99.9%</div>
-          </div>
-        </div>
-      </div>
-
-      <% const now=new Date(); %>
-        <% for (let floor=1; floor <=4; floor++) { const data=dataByFloor[floor]; let updatedAt=null; let diff=null; let
-          days=0, hrs=0, mins=0, secs=0; if (data && data.createdAt) { try { // Handle both Date objects and ISO strings
-          updatedAt=data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt); // Validate date is not
-          invalid if (!isNaN(updatedAt.getTime())) { diff=Math.floor((now.getTime() - updatedAt.getTime()) / 1000); //
-          Only calculate if diff is positive and reasonable (not in future, not too old) if (diff>= 0 && diff <
-            31536000) { // Less than 1 year days=Math.floor(diff / 86400); hrs=Math.floor((diff % 86400) / 3600);
-            mins=Math.floor((diff % 3600) / 60); secs=diff % 60; } else { // Invalid or future date - treat as no data
-            diff=null; updatedAt=null; } } else { diff=null; updatedAt=null; } } catch (e) { console.error('Error
-            parsing date for floor', floor, e); diff=null; updatedAt=null; } } %>
-            <div class="floor-heading">
-              🏢 Floor <%= floor %>
-                <div class="floor-ai-status" id="floor-ai-status-<%= floor %>">Normal</div>
+            <div id="update-warning-floor-<%= floor %>">
+              <% if (diff !==null && diff> 30) { %>
+                <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m
+                        <%= secs %>s</div>
+                <% } else if (diff===null) { %>
+                  <div class="status-alert" style="color: orange;">⚠ Data timestamp unavailable</div>
+                  <% } %>
             </div>
 
-            <% if (data) { %>
-              <div id="update-warning-floor-<%= floor %>">
-                <% if (diff !==null && diff> 30) { %>
-                  <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m
-                          <%= secs %>s</div>
-                  <% } else if (diff===null) { %>
-                    <div class="status-alert" style="color: orange;">⚠ Data timestamp unavailable</div>
-                    <% } %>
+            <div class="card">
+              <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
+                <div>
+                  <div class="sensor-label">Temperature</div>
+                  <div class="sensor-value" id="temp-floor-<%= floor %>">
+                    <% if (data['temp'] !==undefined) { %>
+                      <%= data['temp'] %> °C
+                        <% } else { %>
+                          N/A
+                          <% } %>
+                  </div>
+                </div>
               </div>
-
-              <div class="card">
-                <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
-                  <div>
-                    <div class="sensor-label">Temperature</div>
-                    <div class="sensor-value" id="temp-floor-<%= floor %>">
-                      <% if (data['temp'] !==undefined) { %>
-                        <%= data['temp'] %> °C
-                          <% } else { %>
-                            N/A
-                            <% } %>
-                    </div>
+              <div class="sensor-box"><i class="fas fa-tint"></i>
+                <div>
+                  <div class="sensor-label">Humidity</div>
+                  <div class="sensor-value" id="humidity-floor-<%= floor %>">
+                    <% if (data['humidity'] !==undefined) { %>
+                      <%= data['humidity'] %> %
+                        <% } else { %>
+                          N/A
+                          <% } %>
                   </div>
                 </div>
-                <div class="sensor-box"><i class="fas fa-tint"></i>
-                  <div>
-                    <div class="sensor-label">Humidity</div>
-                    <div class="sensor-value" id="humidity-floor-<%= floor %>">
-                      <% if (data['humidity'] !==undefined) { %>
-                        <%= data['humidity'] %> %
-                          <% } else { %>
-                            N/A
-                            <% } %>
-                    </div>
+              </div>
+              <div class="sensor-box"><i class="fas fa-smog"></i>
+                <div>
+                  <div class="sensor-label">Gas</div>
+                  <div class="sensor-value" id="gas-floor-<%= floor %>">
+                    <% if (data['gas'] !==undefined && data['gas'] !==null) { %>
+                      <%= typeof data['gas']==='number' ? data['gas'].toFixed(2) : data['gas'] %> ppm
+                        <% } else { %>
+                          N/A
+                          <% } %>
                   </div>
                 </div>
-                <div class="sensor-box"><i class="fas fa-smog"></i>
-                  <div>
-                    <div class="sensor-label">Gas</div>
-                    <div class="sensor-value" id="gas-floor-<%= floor %>">
-                      <% if (data['gas'] !==undefined && data['gas'] !==null) { %>
-                        <%= typeof data['gas']==='number' ? data['gas'].toFixed(2) : data['gas'] %> ppm
-                          <% } else { %>
-                            N/A
-                            <% } %>
-                    </div>
+              </div>
+              <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
+                <div>
+                  <div class="sensor-label">Vibration</div>
+                  <div class="sensor-value" id="vibration-floor-<%= floor %>">
+                    <% if (data['vibration'] !==undefined) { %>
+                      <%= data['vibration'] %>
+                        <% } else { %>
+                          N/A
+                          <% } %>
                   </div>
                 </div>
-                <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
-                  <div>
-                    <div class="sensor-label">Vibration</div>
-                    <div class="sensor-value" id="vibration-floor-<%= floor %>">
-                      <% if (data['vibration'] !==undefined) { %>
-                        <%= data['vibration'] %>
-                          <% } else { %>
-                            N/A
-                            <% } %>
-                    </div>
-                  </div>
-                </div>
-                <div class="sensor-box"><i class="fas fa-fire"></i>
-                  <div>
-                    <div class="sensor-label">Flame Sensors</div>
-                    <div class="flame-nodes" id="flame-nodes-<%= floor %>">
-                      <% if (flameDataByFloor && flameDataByFloor[floor] && flameDataByFloor[floor].length> 0) { %>
-                        <% flameDataByFloor[floor].forEach(node=> { %>
-                          <div class="flame-node">
-                            <span class="node-label">Node <%= node.node %>:</span>
-                            <% if (node.status==='offline' ) { %>
-                              <span class="node-value offline">� Offline</span>
-                              <% } else { %>
-                                <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
-                                  <%= node.value> thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
-                                </span>
-                                <% } %>
-                          </div>
-                          <% }); %>
+              </div>
+              <div class="sensor-box"><i class="fas fa-fire"></i>
+                <div>
+                  <div class="sensor-label">Flame Sensors</div>
+                  <div class="flame-nodes" id="flame-nodes-<%= floor %>">
+                    <% if (flameDataByFloor && flameDataByFloor[floor] && flameDataByFloor[floor].length> 0) { %>
+                      <% flameDataByFloor[floor].forEach(node=> { %>
+                        <div class="flame-node">
+                          <span class="node-label">Node <%= node.node %>:</span>
+                          <% if (node.status==='offline' ) { %>
+                            <span class="node-value offline">� Offline</span>
                             <% } else { %>
-                              <div class="no-data">No flame sensor data</div>
+                              <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
+                                <%= node.value> thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
+                              </span>
                               <% } %>
-                    </div>
+                        </div>
+                        <% }); %>
+                          <% } else { %>
+                            <div class="no-data">No flame sensor data</div>
+                            <% } %>
                   </div>
                 </div>
-                <div class="sensor-box"><i class="fas fa-running"></i>
-                  <div>
-                    <div class="sensor-label">Motion</div>
-                    <div class="sensor-value" id="motion-floor-<%= floor %>">
-                      <% if (data['motion'] !==undefined) { %>
-                        <%= data['motion'] ? '� Detected' : '✅ None' %>
-                          <% } else { %>
-                            ✅ None
-                            <% } %>
-                              <% } else { %>
-                                <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
-                                </p>
+              </div>
+              <div class="sensor-box"><i class="fas fa-running"></i>
+                <div>
+                  <div class="sensor-label">Motion</div>
+                  <div class="sensor-value" id="motion-floor-<%= floor %>">
+                    <% if (data['motion'] !==undefined) { %>
+                      <%= data['motion'] ? '� Detected' : '✅ None' %>
+                        <% } else { %>
+                          ✅ None
+                          <% } %>
+                            <% } else { %>
+                              <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
+                              </p>
+                              <% } %>
                                 <% } %>
-                                  <% } %>
 
-                                    <div class="nav">
-                                      <a href="/history">📜 View History</a>
-                                      <a href="/charts">📈 View Charts</a>
-                                      <a href="/live">📷 View Live (ESP32-CAM)</a>
-                                    </div>
-                    </div>
+                                  <div class="nav">
+                                    <a href="/history">📜 View History</a>
+                                    <a href="/charts">📈 View Charts</a>
+                                    <a href="/live">📷 View Live (ESP32-CAM)</a>
+                                  </div>
+                  </div>
 </body>
 
 </html>
