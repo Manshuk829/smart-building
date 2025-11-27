@@ -1,745 +1,744 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <%- include('partials/head') %> <!-- Loads meta, styles, charts, socket.io -->
-    <title>🏢 Smart Building Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      body {
-        font-family: 'Segoe UI', sans-serif;
-        background-color: #eef2f7;
-        margin: 0;
-        padding: 20px;
-        transition: background 0.3s, color 0.3s;
-      }
-
-      body.dark {
-        background-color: #1e1e1e;
-        color: #f0f0f0;
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: auto;
-        background: white;
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      }
-
-      body.dark .container {
-        background: #2a2a2a;
-      }
-
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      h1 {
-        font-size: 26px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .refresh {
-        font-size: 14px;
-        color: #777;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .dark-mode-toggle {
-        background: #f0f0f0;
-        border: none;
-        padding: 8px 14px;
-        font-size: 14px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      body.dark .dark-mode-toggle {
-        background: #444;
-        color: #f1f1f1;
-      }
-
-      /* AI/ML Analytics Dashboard */
-      .ai-dashboard {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 25px;
-        border-radius: 16px;
-        margin-bottom: 30px;
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-      }
-
-      .ai-dashboard h2 {
-        margin: 0 0 20px 0;
-        font-size: 24px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .ai-metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 20px;
-      }
-
-      .ai-metric {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 12px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-      }
-
-      .ai-metric i {
-        font-size: 32px;
-        margin-bottom: 10px;
-      }
-
-      .ai-metric h3 {
-        margin: 5px 0;
-        font-size: 18px;
-      }
-
-      .ai-metric p {
-        margin: 0;
-        font-size: 24px;
-        font-weight: bold;
-      }
-
-      .ai-predictions {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 12px;
-        margin-top: 20px;
-      }
-
-      .ai-predictions h3 {
-        margin: 0 0 15px 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .prediction-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .prediction-item:last-child {
-        border-bottom: none;
-      }
-
-      .prediction-confidence {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-      }
-
-      /* Smart Alerts */
-      .smart-alerts {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        color: #856404;
-        padding: 15px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        display: none;
-      }
-
-      .smart-alerts.warning {
-        background: #f8d7da;
-        border-color: #f5c6cb;
-        color: #721c24;
-      }
-
-      .smart-alerts.critical {
-        background: #f8d7da;
-        border-color: #dc3545;
-        color: #721c24;
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-
-        0%,
-        100% {
-          opacity: 1;
-        }
-
-        50% {
-          opacity: 0.7;
-        }
-      }
-
-      /* Enhanced Floor Cards */
-      .floor-heading {
-        margin-top: 30px;
-        font-size: 20px;
-        font-weight: bold;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: 5px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .floor-ai-status {
-        font-size: 14px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        background: #28a745;
-        color: white;
-      }
-
-      .floor-ai-status.warning {
-        background: #ffc107;
-        color: #212529;
-      }
-
-      .floor-ai-status.danger {
-        background: #dc3545;
-        color: white;
-      }
-
-      .card {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-top: 10px;
-      }
-
-      .sensor-box {
-        background: #f9fbfe;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .sensor-box:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-      }
-
-      .sensor-box.anomaly {
-        border-left: 4px solid #dc3545;
-        background: #fff5f5;
-      }
-
-      .sensor-box.trending-up {
-        border-left: 4px solid #28a745;
-        background: #f8fff8;
-      }
-
-      .sensor-box.trending-down {
-        border-left: 4px solid #ffc107;
-        background: #fffbf0;
-      }
-
-      .sensor-box i {
-        font-size: 28px;
-        color: #007bff;
-      }
-
-      .sensor-box.anomaly i {
-        color: #dc3545;
-      }
-
-      .sensor-box.trending-up i {
-        color: #28a745;
-      }
-
-      .sensor-box.trending-down i {
-        color: #ffc107;
-      }
-
-      .sensor-label {
-        font-weight: bold;
-      }
-
-      .sensor-value {
-        font-size: 20px;
-      }
-
-      .sensor-trend {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        font-size: 12px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.1);
-      }
-
-      .status-alert {
-        text-align: center;
-        margin: 10px 0;
-        font-weight: bold;
-        font-size: 16px;
-      }
-
-      .highlight {
-        animation: flash 1.5s ease;
-      }
-
-      @keyframes flash {
-
-        0%,
-        100% {
-          background-color: transparent;
-        }
-
-        50% {
-          background-color: yellow;
-        }
-      }
-
-      /* Real-time Analytics */
-      .analytics-section {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 12px;
-        margin: 20px 0;
-      }
-
-      body.dark .analytics-section {
-        background: #333;
-      }
-
-      .analytics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-      }
-
-      .analytics-card {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      body.dark .analytics-card {
-        background: #444;
-      }
-
-      .analytics-card h4 {
-        margin: 0 0 10px 0;
-        color: #666;
-      }
-
-      body.dark .analytics-card h4 {
-        color: #ccc;
-      }
-
-      .analytics-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #007bff;
-      }
-
-      .nav {
-        text-align: center;
-        margin-top: 40px;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 20px;
-      }
-
-      .nav a {
-        color: #007bff;
-        font-weight: bold;
-        text-decoration: none;
-      }
-
-      .nav a:hover {
-        text-decoration: underline;
-      }
-
-      /* Mini Charts */
-      .mini-chart {
-        height: 60px;
-        margin-top: 10px;
-      }
-
-      /* Flame Sensor Nodes */
-      .flame-nodes {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-
-      .flame-node {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px 8px;
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 4px;
-        font-size: 12px;
-      }
-
-      .node-label {
-        font-weight: bold;
-        color: #666;
-      }
-
-      .node-value {
-        font-weight: bold;
-      }
-
-      .node-value.normal {
-        color: #28a745;
-      }
-
-      .node-value.danger {
-        color: #dc3545;
-        animation: pulse 1s infinite;
-      }
-
-      .node-value.offline {
-        color: #6c757d;
-        font-style: italic;
-      }
-
-      .no-data {
-        color: #999;
-        font-style: italic;
-        text-align: center;
-        padding: 10px;
-      }
-    </style>
-    <script defer>
-      document.addEventListener("DOMContentLoaded", () => {
-        const socket = io();
-        let sensorHistory = {};
-        let aiPredictions = {};
-        let anomalyThresholds = {};
-
-        // AI/ML Analytics Functions
-        function calculateMovingAverage(data, window = 5) {
-          if (data.length < window) return data;
-          const result = [];
-          for (let i = window - 1; i < data.length; i++) {
-            const avg = data.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window;
-            result.push(avg);
-          }
-          return result;
-        }
-
-        function detectAnomaly(value, history, threshold = 2) {
-          if (history.length < 3) return false;
-          const mean = history.reduce((a, b) => a + b, 0) / history.length;
-          const variance = history.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / history.length;
-          const stdDev = Math.sqrt(variance);
-          return Math.abs(value - mean) > threshold * stdDev;
-        }
-
-        function predictTrend(history, steps = 3) {
-          if (history.length < 3) return null;
-          const x = history.map((_, i) => i);
-          const y = history;
-          const n = x.length;
-          const sumX = x.reduce((a, b) => a + b, 0);
-          const sumY = y.reduce((a, b) => a + b, 0);
-          const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
-          const sumXX = x.reduce((a, b) => a + b * b, 0);
-          const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-          return slope;
-        }
-
-        function updateAIAnalytics() {
-          const totalFloors = 4;
-          let activeSensors = 0;
-          let anomalies = 0;
-          let predictions = 0;
-
-          for (let floor = 1; floor <= totalFloors; floor++) {
-            if (sensorHistory[floor]) {
-              activeSensors += Object.keys(sensorHistory[floor]).length;
-              Object.values(sensorHistory[floor]).forEach(history => {
-                if (history.length > 0) {
-                  const latest = history[history.length - 1];
-                  if (detectAnomaly(latest, history)) anomalies++;
-                  if (predictTrend(history)) predictions++;
-                }
-              });
-            }
-          }
-
-          document.getElementById('active-sensors').textContent = activeSensors;
-          document.getElementById('anomalies-detected').textContent = anomalies;
-          document.getElementById('predictions-made').textContent = predictions;
-          document.getElementById('ai-confidence').textContent = `${Math.min(95, Math.max(60, 100 - (anomalies / Math.max(activeSensors, 1) * 20)))}%`;
-        }
-
-        function updateSmartAlerts(data) {
-          const { floor, temp, humidity, gas, vibration, flame, motion } = data;
-          const alerts = [];
-
-          // Temperature alerts
-          if (temp !== undefined) {
-            if (temp > 30) alerts.push(`High temperature detected on Floor ${floor}: ${temp}°C`);
-            if (temp < 15) alerts.push(`Low temperature detected on Floor ${floor}: ${temp}°C`);
-          }
-
-          // Humidity alerts
-          if (humidity !== undefined) {
-            if (humidity > 80) alerts.push(`High humidity detected on Floor ${floor}: ${humidity}%`);
-            if (humidity < 30) alerts.push(`Low humidity detected on Floor ${floor}: ${humidity}%`);
-          }
-
-          // Gas alerts
-          if (gas !== undefined && gas > 100) {
-            alerts.push(`High gas levels detected on Floor ${floor}: ${gas} ppm`);
-          }
-
-          // Flame alerts
-          if (flame === true) {
-            alerts.push(`🔥 FIRE DETECTED on Floor ${floor}!`);
-          }
-
-          // Motion alerts
-          if (motion === true) {
-            alerts.push(`👤 Motion detected on Floor ${floor}`);
-          }
-
-          if (alerts.length > 0) {
-            const alertBox = document.getElementById('smart-alerts');
-            alertBox.innerHTML = alerts.map(alert => `<div>⚠️ ${alert}</div>`).join('');
-            alertBox.style.display = 'block';
-            alertBox.className = 'smart-alerts ' + (alerts.some(a => a.includes('FIRE')) ? 'critical' : 'warning');
-          }
-        }
-
-        function updateFloorAIStatus(floor, data) {
-          const statusElement = document.getElementById(`floor-ai-status-${floor}`);
-          if (!statusElement) return;
-
-          let riskLevel = 'normal';
-          let statusText = 'Normal';
-
-          if (data.flame === true) {
-            riskLevel = 'danger';
-            statusText = 'FIRE DETECTED';
-          } else if (data.gas > 100 || data.temp > 30) {
-            riskLevel = 'warning';
-            statusText = 'Warning';
-          }
-
-          statusElement.className = `floor-ai-status ${riskLevel}`;
-          statusElement.textContent = statusText;
-        }
-
-        function updateSensorTrends(floor, data) {
-          Object.keys(data).forEach(sensorType => {
-            const value = data[sensorType];
-            if (value === undefined || value === null) return;
-
-            const sensorBox = document.querySelector(`#${sensorType}-floor-${floor}`).closest('.sensor-box');
-            if (!sensorBox) return;
-
-            // Initialize history if not exists
-            if (!sensorHistory[floor]) sensorHistory[floor] = {};
-            if (!sensorHistory[floor][sensorType]) sensorHistory[floor][sensorType] = [];
-
-            const history = sensorHistory[floor][sensorType];
-            history.push(value);
-            if (history.length > 10) history.shift(); // Keep last 10 values
-
-            // Detect anomalies
-            if (history.length >= 3) {
-              const isAnomaly = detectAnomaly(value, history);
-              sensorBox.classList.toggle('anomaly', isAnomaly);
-            }
-
-            // Detect trends
-            if (history.length >= 3) {
-              const trend = predictTrend(history);
-              sensorBox.classList.remove('trending-up', 'trending-down');
-              if (trend > 0.1) {
-                sensorBox.classList.add('trending-up');
-              } else if (trend < -0.1) {
-                sensorBox.classList.add('trending-down');
-              }
-            }
-
-            // Update trend indicator
-            let trendIndicator = sensorBox.querySelector('.sensor-trend');
-            if (!trendIndicator) {
-              trendIndicator = document.createElement('div');
-              trendIndicator.className = 'sensor-trend';
-              sensorBox.appendChild(trendIndicator);
-            }
-
-            if (history.length >= 2) {
-              const current = history[history.length - 1];
-              const previous = history[history.length - 2];
-              if (current > previous) {
-                trendIndicator.textContent = '↗️';
-              } else if (current < previous) {
-                trendIndicator.textContent = '↘️';
-              } else {
-                trendIndicator.textContent = '→';
-              }
+background-color: #eef2f7;
+margin: 0;
+padding: 20px;
+transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+background-color: #1e1e1e;
+color: #f0f0f0;
+}
+
+.container {
+max-width: 1200px;
+margin: auto;
+background: white;
+padding: 30px;
+border-radius: 16px;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .container {
+background: #2a2a2a;
+}
+
+.header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+flex-wrap: wrap;
+gap: 10px;
+}
+
+h1 {
+font-size: 26px;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.refresh {
+font-size: 14px;
+color: #777;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.dark-mode-toggle {
+background: #f0f0f0;
+border: none;
+padding: 8px 14px;
+font-size: 14px;
+border-radius: 6px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+body.dark .dark-mode-toggle {
+background: #444;
+color: #f1f1f1;
+}
+
+/* AI/ML Analytics Dashboard */
+.ai-dashboard {
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+padding: 25px;
+border-radius: 16px;
+margin-bottom: 30px;
+box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.ai-dashboard h2 {
+margin: 0 0 20px 0;
+font-size: 24px;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.ai-metrics {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 20px;
+margin-bottom: 20px;
+}
+
+.ai-metric {
+background: rgba(255, 255, 255, 0.1);
+padding: 20px;
+border-radius: 12px;
+text-align: center;
+backdrop-filter: blur(10px);
+}
+
+.ai-metric i {
+font-size: 32px;
+margin-bottom: 10px;
+}
+
+.ai-metric h3 {
+margin: 5px 0;
+font-size: 18px;
+}
+
+.ai-metric p {
+margin: 0;
+font-size: 24px;
+font-weight: bold;
+}
+
+.ai-predictions {
+background: rgba(255, 255, 255, 0.1);
+padding: 20px;
+border-radius: 12px;
+margin-top: 20px;
+}
+
+.ai-predictions h3 {
+margin: 0 0 15px 0;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.prediction-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 10px 0;
+border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.prediction-item:last-child {
+border-bottom: none;
+}
+
+.prediction-confidence {
+background: rgba(255, 255, 255, 0.2);
+padding: 4px 8px;
+border-radius: 12px;
+font-size: 12px;
+}
+
+/* Smart Alerts */
+.smart-alerts {
+background: #fff3cd;
+border: 1px solid #ffeaa7;
+color: #856404;
+padding: 15px;
+border-radius: 12px;
+margin-bottom: 20px;
+display: none;
+}
+
+.smart-alerts.warning {
+background: #f8d7da;
+border-color: #f5c6cb;
+color: #721c24;
+}
+
+.smart-alerts.critical {
+background: #f8d7da;
+border-color: #dc3545;
+color: #721c24;
+animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+0%,
+100% {
+opacity: 1;
+}
+
+50% {
+opacity: 0.7;
+}
+}
+
+/* Enhanced Floor Cards */
+.floor-heading {
+margin-top: 30px;
+font-size: 20px;
+font-weight: bold;
+border-bottom: 2px solid #ddd;
+padding-bottom: 5px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+.floor-ai-status {
+font-size: 14px;
+padding: 4px 12px;
+border-radius: 20px;
+background: #28a745;
+color: white;
+}
+
+.floor-ai-status.warning {
+background: #ffc107;
+color: #212529;
+}
+
+.floor-ai-status.danger {
+background: #dc3545;
+color: white;
+}
+
+.card {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+gap: 20px;
+margin-top: 10px;
+}
+
+.sensor-box {
+background: #f9fbfe;
+padding: 20px;
+border-radius: 12px;
+box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+display: flex;
+align-items: center;
+gap: 15px;
+transition: all 0.3s ease;
+position: relative;
+overflow: hidden;
+}
+
+.sensor-box:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.sensor-box.anomaly {
+border-left: 4px solid #dc3545;
+background: #fff5f5;
+}
+
+.sensor-box.trending-up {
+border-left: 4px solid #28a745;
+background: #f8fff8;
+}
+
+.sensor-box.trending-down {
+border-left: 4px solid #ffc107;
+background: #fffbf0;
+}
+
+.sensor-box i {
+font-size: 28px;
+color: #007bff;
+}
+
+.sensor-box.anomaly i {
+color: #dc3545;
+}
+
+.sensor-box.trending-up i {
+color: #28a745;
+}
+
+.sensor-box.trending-down i {
+color: #ffc107;
+}
+
+.sensor-label {
+font-weight: bold;
+}
+
+.sensor-value {
+font-size: 20px;
+}
+
+.sensor-trend {
+position: absolute;
+top: 5px;
+right: 5px;
+font-size: 12px;
+padding: 2px 6px;
+border-radius: 10px;
+background: rgba(0, 0, 0, 0.1);
+}
+
+.status-alert {
+text-align: center;
+margin: 10px 0;
+font-weight: bold;
+font-size: 16px;
+}
+
+.highlight {
+animation: flash 1.5s ease;
+}
+
+@keyframes flash {
+
+0%,
+100% {
+background-color: transparent;
+}
+
+50% {
+background-color: yellow;
+}
+}
+
+/* Real-time Analytics */
+.analytics-section {
+background: #f8f9fa;
+padding: 20px;
+border-radius: 12px;
+margin: 20px 0;
+}
+
+body.dark .analytics-section {
+background: #333;
+}
+
+.analytics-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 15px;
+}
+
+.analytics-card {
+background: white;
+padding: 15px;
+border-radius: 8px;
+text-align: center;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .analytics-card {
+background: #444;
+}
+
+.analytics-card h4 {
+margin: 0 0 10px 0;
+color: #666;
+}
+
+body.dark .analytics-card h4 {
+color: #ccc;
+}
+
+.analytics-value {
+font-size: 24px;
+font-weight: bold;
+color: #007bff;
+}
+
+.nav {
+text-align: center;
+margin-top: 40px;
+display: flex;
+flex-wrap: wrap;
+justify-content: center;
+gap: 20px;
+}
+
+.nav a {
+color: #007bff;
+font-weight: bold;
+text-decoration: none;
+}
+
+.nav a:hover {
+text-decoration: underline;
+}
+
+/* Mini Charts */
+.mini-chart {
+height: 60px;
+margin-top: 10px;
+}
+
+/* Flame Sensor Nodes */
+.flame-nodes {
+display: flex;
+flex-direction: column;
+gap: 5px;
+}
+
+.flame-node {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 4px 8px;
+background: rgba(0, 0, 0, 0.05);
+border-radius: 4px;
+font-size: 12px;
+}
+
+.node-label {
+font-weight: bold;
+color: #666;
+}
+
+.node-value {
+font-weight: bold;
+}
+
+.node-value.normal {
+color: #28a745;
+}
+
+.node-value.danger {
+color: #dc3545;
+animation: pulse 1s infinite;
+}
+
+.node-value.offline {
+color: #6c757d;
+font-style: italic;
+}
+
+.no-data {
+color: #999;
+font-style: italic;
+text-align: center;
+padding: 10px;
+}
+</style>
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    const socket = io();
+    let sensorHistory = {};
+    let aiPredictions = {};
+    let anomalyThresholds = {};
+
+    // AI/ML Analytics Functions
+    function calculateMovingAverage(data, window = 5) {
+      if (data.length < window) return data;
+      const result = [];
+      for (let i = window - 1; i < data.length; i++) {
+        const avg = data.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window;
+        result.push(avg);
+      }
+      return result;
+    }
+
+    function detectAnomaly(value, history, threshold = 2) {
+      if (history.length < 3) return false;
+      const mean = history.reduce((a, b) => a + b, 0) / history.length;
+      const variance = history.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / history.length;
+      const stdDev = Math.sqrt(variance);
+      return Math.abs(value - mean) > threshold * stdDev;
+    }
+
+    function predictTrend(history, steps = 3) {
+      if (history.length < 3) return null;
+      const x = history.map((_, i) => i);
+      const y = history;
+      const n = x.length;
+      const sumX = x.reduce((a, b) => a + b, 0);
+      const sumY = y.reduce((a, b) => a + b, 0);
+      const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
+      const sumXX = x.reduce((a, b) => a + b * b, 0);
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      return slope;
+    }
+
+    function updateAIAnalytics() {
+      const totalFloors = 4;
+      let activeSensors = 0;
+      let anomalies = 0;
+      let predictions = 0;
+
+      for (let floor = 1; floor <= totalFloors; floor++) {
+        if (sensorHistory[floor]) {
+          activeSensors += Object.keys(sensorHistory[floor]).length;
+          Object.values(sensorHistory[floor]).forEach(history => {
+            if (history.length > 0) {
+              const latest = history[history.length - 1];
+              if (detectAnomaly(latest, history)) anomalies++;
+              if (predictTrend(history)) predictions++;
             }
           });
         }
+      }
 
-        socket.on('sensor-update', (data) => {
-          const { floor, temp, humidity, gas, vibration, flame, motion } = data;
+      document.getElementById('active-sensors').textContent = activeSensors;
+      document.getElementById('anomalies-detected').textContent = anomalies;
+      document.getElementById('predictions-made').textContent = predictions;
+      document.getElementById('ai-confidence').textContent = `${Math.min(95, Math.max(60, 100 - (anomalies / Math.max(activeSensors, 1) * 20)))}%`;
+    }
 
-          // Update sensor values
-          if (temp !== undefined && temp !== null) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
-          if (humidity !== undefined && humidity !== null) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
-          if (gas !== undefined && gas !== null) {
-            const gasValue = typeof gas === 'number' ? gas.toFixed(2) : gas;
-            document.getElementById(`gas-floor-${floor}`).textContent = `${gasValue} ppm`;
-          }
-          if (vibration !== undefined && vibration !== null) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
-          if (flame !== undefined) {
-            const flameElement = document.getElementById(`flame-floor-${floor}`);
-            if (flameElement) {
-              // Handle both boolean and numeric flame values
-              const isFlameDetected = typeof flame === 'boolean' ? flame : (flame > 0);
-              flameElement.textContent = isFlameDetected ? "🔥 Flame Detected" : "✅ Normal";
-              flameElement.style.color = isFlameDetected ? '#dc3545' : '#28a745';
-            }
-          }
-          if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ None";
+    function updateSmartAlerts(data) {
+      const { floor, temp, humidity, gas, vibration, flame, motion } = data;
+      const alerts = [];
 
-          // Set default motion value if not provided
-          if (motion === undefined) {
-            const motionElement = document.getElementById(`motion-floor-${floor}`);
-            if (motionElement) motionElement.textContent = "✅ None";
-          }
+      // Temperature alerts
+      if (temp !== undefined) {
+        if (temp > 30) alerts.push(`High temperature detected on Floor ${floor}: ${temp}°C`);
+        if (temp < 15) alerts.push(`Low temperature detected on Floor ${floor}: ${temp}°C`);
+      }
 
-          // Update AI analytics
-          updateSensorTrends(floor, data);
-          updateFloorAIStatus(floor, data);
-          updateSmartAlerts(data);
-          updateAIAnalytics();
+      // Humidity alerts
+      if (humidity !== undefined) {
+        if (humidity > 80) alerts.push(`High humidity detected on Floor ${floor}: ${humidity}%`);
+        if (humidity < 30) alerts.push(`Low humidity detected on Floor ${floor}: ${humidity}%`);
+      }
 
-          // Update Smart Predictions
-          if (data.mlPrediction && data.mlPrediction.predictions) {
-            const preds = data.mlPrediction.predictions;
+      // Gas alerts
+      if (gas !== undefined && gas > 100) {
+        alerts.push(`High gas levels detected on Floor ${floor}: ${gas} ppm`);
+      }
 
-            // Update Temperature Trend
-            const tempElem = document.getElementById('temp-prediction');
-            if (tempElem && preds.fire) {
-              if (preds.fire.probability > 50) {
-                tempElem.textContent = "Rising Rapidly ⚠";
-                tempElem.style.color = "red";
-              } else {
-                tempElem.textContent = "Stable";
-                tempElem.style.color = "green";
-              }
-            }
+      // Flame alerts
+      if (flame === true) {
+        alerts.push(`🔥 FIRE DETECTED on Floor ${floor}!`);
+      }
 
-            // Update Humidity Forecast
-            const humElem = document.getElementById('humidity-prediction');
-            if (humElem && humidity !== undefined) {
-              if (humidity < 30) {
-                humElem.textContent = "Dry (Fire Risk) ⚠";
-                humElem.style.color = "orange";
-              } else {
-                humElem.textContent = "Normal";
-                humElem.style.color = "green";
-              }
-            }
+      // Motion alerts
+      if (motion === true) {
+        alerts.push(`👤 Motion detected on Floor ${floor}`);
+      }
 
-            // Update Gas Prediction
-            const gasElem = document.getElementById('gas-prediction');
-            if (gasElem && preds.gasLeak) {
-              if (preds.gasLeak.isLeak) {
-                gasElem.textContent = "Critical Levels ⚠";
-                gasElem.style.color = "red";
-              } else {
-                gasElem.textContent = "Safe";
-                gasElem.style.color = "green";
-              }
-            }
-          }
-        });
+      if (alerts.length > 0) {
+        const alertBox = document.getElementById('smart-alerts');
+        alertBox.innerHTML = alerts.map(alert => `<div>⚠️ ${alert}</div>`).join('');
+        alertBox.style.display = 'block';
+        alertBox.className = 'smart-alerts ' + (alerts.some(a => a.includes('FIRE')) ? 'critical' : 'warning');
+      }
+    }
 
-        socket.on('ml-alert', ({ type, floor }) => {
-          const alertBox = document.getElementById(`ml-alert-${floor}`);
-          if (alertBox) {
-            alertBox.textContent = `⚠ ML Alert: ${type.toUpperCase()}`;
-            alertBox.style.color = 'red';
-            alertBox.classList.add('highlight');
-            setTimeout(() => alertBox.classList.remove('highlight'), 1500);
-          }
-        });
+    function updateFloorAIStatus(floor, data) {
+      const statusElement = document.getElementById(`floor-ai-status-${floor}`);
+      if (!statusElement) return;
 
-        socket.on('ml-normal', ({ floor }) => {
-          const alertBox = document.getElementById(`ml-alert-${floor}`);
-          if (alertBox) {
-            alertBox.textContent = `✅ ML Status: Normal`;
-            alertBox.style.color = 'green';
-            alertBox.classList.add('highlight');
-            setTimeout(() => alertBox.classList.remove('highlight'), 1500);
-          }
-        });
+      let riskLevel = 'normal';
+      let statusText = 'Normal';
 
-        // Initialize AI analytics
-        updateAIAnalytics();
+      if (data.flame === true) {
+        riskLevel = 'danger';
+        statusText = 'FIRE DETECTED';
+      } else if (data.gas > 100 || data.temp > 30) {
+        riskLevel = 'warning';
+        statusText = 'Warning';
+      }
 
-        const body = document.body;
-        const toggleBtn = document.querySelector('.dark-mode-toggle');
-        const icon = toggleBtn.querySelector('i');
-        const label = toggleBtn.querySelector('.mode-label');
+      statusElement.className = `floor-ai-status ${riskLevel}`;
+      statusElement.textContent = statusText;
+    }
 
-        function setMode(mode) {
-          if (mode === 'enabled') {
-            body.classList.add('dark');
-            icon.classList.replace('fa-moon', 'fa-sun');
-            label.textContent = 'Light Mode';
-          } else {
-            body.classList.remove('dark');
-            icon.classList.replace('fa-sun', 'fa-moon');
-            label.textContent = 'Dark Mode';
+    function updateSensorTrends(floor, data) {
+      Object.keys(data).forEach(sensorType => {
+        const value = data[sensorType];
+        if (value === undefined || value === null) return;
+
+        const sensorBox = document.querySelector(`#${sensorType}-floor-${floor}`).closest('.sensor-box');
+        if (!sensorBox) return;
+
+        // Initialize history if not exists
+        if (!sensorHistory[floor]) sensorHistory[floor] = {};
+        if (!sensorHistory[floor][sensorType]) sensorHistory[floor][sensorType] = [];
+
+        const history = sensorHistory[floor][sensorType];
+        history.push(value);
+        if (history.length > 10) history.shift(); // Keep last 10 values
+
+        // Detect anomalies
+        if (history.length >= 3) {
+          const isAnomaly = detectAnomaly(value, history);
+          sensorBox.classList.toggle('anomaly', isAnomaly);
+        }
+
+        // Detect trends
+        if (history.length >= 3) {
+          const trend = predictTrend(history);
+          sensorBox.classList.remove('trending-up', 'trending-down');
+          if (trend > 0.1) {
+            sensorBox.classList.add('trending-up');
+          } else if (trend < -0.1) {
+            sensorBox.classList.add('trending-down');
           }
         }
 
-        const saved = localStorage.getItem('darkMode') || 'disabled';
-        setMode(saved);
+        // Update trend indicator
+        let trendIndicator = sensorBox.querySelector('.sensor-trend');
+        if (!trendIndicator) {
+          trendIndicator = document.createElement('div');
+          trendIndicator.className = 'sensor-trend';
+          sensorBox.appendChild(trendIndicator);
+        }
 
-        toggleBtn.addEventListener('click', () => {
-          const isEnabled = body.classList.contains('dark');
-          const newMode = isEnabled ? 'disabled' : 'enabled';
-          setMode(newMode);
-          localStorage.setItem('darkMode', newMode);
-        });
+        if (history.length >= 2) {
+          const current = history[history.length - 1];
+          const previous = history[history.length - 2];
+          if (current > previous) {
+            trendIndicator.textContent = '↗️';
+          } else if (current < previous) {
+            trendIndicator.textContent = '↘️';
+          } else {
+            trendIndicator.textContent = '→';
+          }
+        }
       });
-    </script>
+    }
+
+    socket.on('sensor-update', (data) => {
+      const { floor, temp, humidity, gas, vibration, flame, motion } = data;
+
+      // Update sensor values
+      if (temp !== undefined && temp !== null) document.getElementById(`temp-floor-${floor}`).textContent = `${temp} °C`;
+      if (humidity !== undefined && humidity !== null) document.getElementById(`humidity-floor-${floor}`).textContent = `${humidity} %`;
+      if (gas !== undefined && gas !== null) {
+        const gasValue = typeof gas === 'number' ? gas.toFixed(2) : gas;
+        document.getElementById(`gas-floor-${floor}`).textContent = `${gasValue} ppm`;
+      }
+      if (vibration !== undefined && vibration !== null) document.getElementById(`vibration-floor-${floor}`).textContent = vibration;
+      if (flame !== undefined) {
+        const flameElement = document.getElementById(`flame-floor-${floor}`);
+        if (flameElement) {
+          // Handle both boolean and numeric flame values
+          const isFlameDetected = typeof flame === 'boolean' ? flame : (flame > 0);
+          flameElement.textContent = isFlameDetected ? "🔥 Flame Detected" : "✅ Normal";
+          flameElement.style.color = isFlameDetected ? '#dc3545' : '#28a745';
+        }
+      }
+      if (motion !== undefined) document.getElementById(`motion-floor-${floor}`).textContent = motion ? "👤 Motion Detected" : "✅ None";
+
+      // Set default motion value if not provided
+      if (motion === undefined) {
+        const motionElement = document.getElementById(`motion-floor-${floor}`);
+        if (motionElement) motionElement.textContent = "✅ None";
+      }
+
+      // Update Timestamp
+      const now = new Date();
+      const timeString = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const timeElement = document.getElementById(`last-updated-floor-${floor}`);
+      if (timeElement) timeElement.textContent = timeString;
+
+      // Hide "No updates" warning
+      const warningElement = document.getElementById(`update-warning-floor-${floor}`);
+      if (warningElement) warningElement.innerHTML = '';
+
+      // Update AI analytics
+      updateSensorTrends(floor, data);
+      updateFloorAIStatus(floor, data);
+      updateSmartAlerts(data);
+      updateAIAnalytics();
+
+      // Update Smart Predictions
+      if (data.mlPrediction && data.mlPrediction.predictions) {
+        const preds = data.mlPrediction.predictions;
+
+        // Update Temperature Trend
+        const tempElem = document.getElementById('temp-prediction');
+        if (tempElem && preds.fire) {
+          if (preds.fire.probability > 50) {
+            tempElem.textContent = "Rising Rapidly ⚠";
+            tempElem.style.color = "red";
+          } else {
+            tempElem.textContent = "Stable";
+            tempElem.style.color = "green";
+          }
+        }
+
+        // Update Humidity Forecast
+        const humElem = document.getElementById('humidity-prediction');
+        if (humElem && humidity !== undefined) {
+          if (humidity < 30) {
+            humElem.textContent = "Dry (Fire Risk) ⚠";
+            humElem.style.color = "orange";
+          } else {
+            humElem.textContent = "Normal";
+            humElem.style.color = "green";
+          }
+        }
+
+        // Update Gas Prediction
+        const gasElem = document.getElementById('gas-prediction');
+        if (gasElem && preds.gasLeak) {
+          if (preds.gasLeak.isLeak) {
+            gasElem.textContent = "Critical Levels ⚠";
+            gasElem.style.color = "red";
+          } else {
+            gasElem.textContent = "Safe";
+            gasElem.style.color = "green";
+          }
+        }
+      }
+    });
+
+    socket.on('ml-alert', ({ type, floor }) => {
+      const alertBox = document.getElementById(`ml-alert-${floor}`);
+      if (alertBox) {
+        alertBox.textContent = `⚠ ML Alert: ${type.toUpperCase()}`;
+        alertBox.style.color = 'red';
+        alertBox.classList.add('highlight');
+        setTimeout(() => alertBox.classList.remove('highlight'), 1500);
+      }
+    });
+
+    socket.on('ml-normal', ({ floor }) => {
+      const alertBox = document.getElementById(`ml-alert-${floor}`);
+      if (alertBox) {
+        alertBox.textContent = `✅ ML Status: Normal`;
+        alertBox.style.color = 'green';
+        alertBox.classList.add('highlight');
+        setTimeout(() => alertBox.classList.remove('highlight'), 1500);
+      }
+    });
+
+    // Initialize AI analytics
+    updateAIAnalytics();
+
+    const body = document.body;
+    const toggleBtn = document.querySelector('.dark-mode-toggle');
+    const icon = toggleBtn.querySelector('i');
+    const label = toggleBtn.querySelector('.mode-label');
+
+    function setMode(mode) {
+      if (mode === 'enabled') {
+        body.classList.add('dark');
+        icon.classList.replace('fa-moon', 'fa-sun');
+        label.textContent = 'Light Mode';
+      } else {
+        body.classList.remove('dark');
+        icon.classList.replace('fa-sun', 'fa-moon');
+        label.textContent = 'Dark Mode';
+      }
+    }
+
+    const saved = localStorage.getItem('darkMode') || 'disabled';
+    setMode(saved);
+
+    toggleBtn.addEventListener('click', () => {
+      const isEnabled = body.classList.contains('dark');
+      const newMode = isEnabled ? 'disabled' : 'enabled';
+      setMode(newMode);
+      localStorage.setItem('darkMode', newMode);
+    });
+  });
+</script>
 </head>
 
 <body>
@@ -837,122 +836,108 @@
             </div>
 
             <% if (data) { %>
-              <% if (diff !==null && diff> 30) { %>
-                <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m <%=
-                          secs %>s</div>
-                <% } else if (diff===null) { %>
-                  <div class="status-alert" style="color: orange;">⚠ Data timestamp unavailable</div>
-                  <% } %>
+              <div id="update-warning-floor-<%= floor %>">
+                <% if (diff !==null && diff> 30) { %>
+                  <div class="status-alert" style="color: red;">⚠ No updates for <%= days %>d <%= hrs %>h <%= mins %>m
+                          <%= secs %>s</div>
+                  <% } else if (diff===null) { %>
+                    <div class="status-alert" style="color: orange;">⚠ Data timestamp unavailable</div>
+                    <% } %>
+              </div>
 
-                    <div class="card">
-                      <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
-                        <div>
-                          <div class="sensor-label">Temperature</div>
-                          <div class="sensor-value" id="temp-floor-<%= floor %>">
-                            <% if (data['temp'] !==undefined) { %>
-                              <%= data['temp'] %> °C
-                                <% } else { %>
-                                  N/A
-                                  <% } %>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sensor-box"><i class="fas fa-tint"></i>
-                        <div>
-                          <div class="sensor-label">Humidity</div>
-                          <div class="sensor-value" id="humidity-floor-<%= floor %>">
-                            <% if (data['humidity'] !==undefined) { %>
-                              <%= data['humidity'] %> %
-                                <% } else { %>
-                                  N/A
-                                  <% } %>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sensor-box"><i class="fas fa-smog"></i>
-                        <div>
-                          <div class="sensor-label">Gas</div>
-                          <div class="sensor-value" id="gas-floor-<%= floor %>">
-                            <% if (data['gas'] !==undefined && data['gas'] !==null) { %>
-                              <%= typeof data['gas']==='number' ? data['gas'].toFixed(2) : data['gas'] %> ppm
-                                <% } else { %>
-                                  N/A
-                                  <% } %>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
-                        <div>
-                          <div class="sensor-label">Vibration</div>
-                          <div class="sensor-value" id="vibration-floor-<%= floor %>">
-                            <% if (data['vibration'] !==undefined) { %>
-                              <%= data['vibration'] %>
-                                <% } else { %>
-                                  N/A
-                                  <% } %>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sensor-box"><i class="fas fa-fire"></i>
-                        <div>
-                          <div class="sensor-label">Flame Sensors</div>
-                          <div class="flame-nodes" id="flame-nodes-<%= floor %>">
-                            <% if (flameDataByFloor && flameDataByFloor[floor] && flameDataByFloor[floor].length> 0) {
-                              %>
-                              <% flameDataByFloor[floor].forEach(node=> { %>
-                                <div class="flame-node">
-                                  <span class="node-label">Node <%= node.node %>:</span>
-                                  <% if (node.status==='offline' ) { %>
-                                    <span class="node-value offline">🔴 Offline</span>
-                                    <% } else { %>
-                                      <span
-                                        class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
-                                        <%= node.value> thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
-                                      </span>
-                                      <% } %>
-                                </div>
-                                <% }); %>
-                                  <% } else { %>
-                                    <div class="no-data">No flame sensor data</div>
-                                    <% } %>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sensor-box"><i class="fas fa-running"></i>
-                        <div>
-                          <div class="sensor-label">Motion</div>
-                          <div class="sensor-value" id="motion-floor-<%= floor %>">
-                            <% if (data['motion'] !==undefined) { %>
-                              <%= data['motion'] ? '👤 Detected' : '✅ None' %>
-                                <% } else { %>
-                                  ✅ None
-                                  <% } %>
-                          </div>
-                        </div>
-                      </div>
+              <div class="card">
+                <div class="sensor-box"><i class="fas fa-thermometer-half"></i>
+                  <div>
+                    <div class="sensor-label">Temperature</div>
+                    <div class="sensor-value" id="temp-floor-<%= floor %>">
+                      <% if (data['temp'] !==undefined) { %>
+                        <%= data['temp'] %> °C
+                          <% } else { %>
+                            N/A
+                            <% } %>
                     </div>
-
-                    <div id="ml-alert-<%= floor %>" class="status-alert"
-                      style="margin-top: 10px; color: <%= data.mlAlert ? 'red' : 'green' %>;">
-                      <%= data.mlAlert ? `⚠ ML Alert: ${data.mlAlert.toUpperCase()}` : '✅ ML Status: Normal' %>
+                  </div>
+                </div>
+                <div class="sensor-box"><i class="fas fa-tint"></i>
+                  <div>
+                    <div class="sensor-label">Humidity</div>
+                    <div class="sensor-value" id="humidity-floor-<%= floor %>">
+                      <% if (data['humidity'] !==undefined) { %>
+                        <%= data['humidity'] %> %
+                          <% } else { %>
+                            N/A
+                            <% } %>
                     </div>
-
-                    <div style="text-align: center; margin-top: 10px; font-size: 14px;">
-                      <i class="fas fa-clock"></i> Last updated: <%= updatedAt.toLocaleString('en-IN', {
-                        timeZone: 'Asia/Kolkata' }) %>
+                  </div>
+                </div>
+                <div class="sensor-box"><i class="fas fa-smog"></i>
+                  <div>
+                    <div class="sensor-label">Gas</div>
+                    <div class="sensor-value" id="gas-floor-<%= floor %>">
+                      <% if (data['gas'] !==undefined && data['gas'] !==null) { %>
+                        <%= typeof data['gas']==='number' ? data['gas'].toFixed(2) : data['gas'] %> ppm
+                          <% } else { %>
+                            N/A
+                            <% } %>
                     </div>
-                    <% } else { %>
-                      <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
-                      </p>
-                      <% } %>
-                        <% } %>
-
-                          <div class="nav">
-                            <a href="/history">📜 View History</a>
-                            <a href="/charts">📈 View Charts</a>
-                            <a href="/live">📷 View Live (ESP32-CAM)</a>
+                  </div>
+                </div>
+                <div class="sensor-box"><i class="fas fa-ruler-vertical"></i>
+                  <div>
+                    <div class="sensor-label">Vibration</div>
+                    <div class="sensor-value" id="vibration-floor-<%= floor %>">
+                      <% if (data['vibration'] !==undefined) { %>
+                        <%= data['vibration'] %>
+                          <% } else { %>
+                            N/A
+                            <% } %>
+                    </div>
+                  </div>
+                </div>
+                <div class="sensor-box"><i class="fas fa-fire"></i>
+                  <div>
+                    <div class="sensor-label">Flame Sensors</div>
+                    <div class="flame-nodes" id="flame-nodes-<%= floor %>">
+                      <% if (flameDataByFloor && flameDataByFloor[floor] && flameDataByFloor[floor].length> 0) { %>
+                        <% flameDataByFloor[floor].forEach(node=> { %>
+                          <div class="flame-node">
+                            <span class="node-label">Node <%= node.node %>:</span>
+                            <% if (node.status==='offline' ) { %>
+                              <span class="node-value offline">� Offline</span>
+                              <% } else { %>
+                                <span class="node-value <%= node.value > thresholds.flame ? 'danger' : 'normal' %>">
+                                  <%= node.value> thresholds.flame ? '🔥 Fire' : '✅ Normal' %> (<%= node.value %>)
+                                </span>
+                                <% } %>
                           </div>
-    </div>
+                          <% }); %>
+                            <% } else { %>
+                              <div class="no-data">No flame sensor data</div>
+                              <% } %>
+                    </div>
+                  </div>
+                </div>
+                <div class="sensor-box"><i class="fas fa-running"></i>
+                  <div>
+                    <div class="sensor-label">Motion</div>
+                    <div class="sensor-value" id="motion-floor-<%= floor %>">
+                      <% if (data['motion'] !==undefined) { %>
+                        <%= data['motion'] ? '� Detected' : '✅ None' %>
+                          <% } else { %>
+                            ✅ None
+                            <% } %>
+                              <% } else { %>
+                                <p style="text-align: center; color: #888;">No data available for Floor <%= floor %>
+                                </p>
+                                <% } %>
+                                  <% } %>
+
+                                    <div class="nav">
+                                      <a href="/history">📜 View History</a>
+                                      <a href="/charts">📈 View Charts</a>
+                                      <a href="/live">📷 View Live (ESP32-CAM)</a>
+                                    </div>
+                    </div>
 </body>
 
 </html>

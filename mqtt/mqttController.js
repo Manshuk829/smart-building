@@ -162,7 +162,7 @@ module.exports = async function handleMQTTMessage(topic, message, io) {
         motion: sensors.motion,
         intruderImage: personName?.toLowerCase() === 'intruder' ? intruderImage : undefined,
         name: personName ?? undefined,
-        mlPrediction: mlPrediction // Send full prediction object
+        mlPrediction: mlPrediction // Send full object for detailed dashboard predictions
       });
 
       // Also emit chart update for charts page
